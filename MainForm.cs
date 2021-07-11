@@ -1173,7 +1173,15 @@ without him none of this would be possible
             if (HadError)
                 return;
 
-            DialogResult dialogResult = FlexibleMessageBox.Show($"Are you sure you want to download the selected game(s)? The size is {String.Format("{0:0.00}", (double)selectedGamesSize)} MB", "Are you sure?", MessageBoxButtons.YesNo);
+            string game;
+            if (GameSizeGame.Length == 1)
+            {
+                game = $"\"{GameSizeGame[0]}\"";
+            } else
+            {
+                game = "the selected games";
+            }
+            DialogResult dialogResult = FlexibleMessageBox.Show($"Are you sure you want to download {game}? The size is {String.Format("{0:0.00}", (double)selectedGamesSize)} MB", "Are you sure?", MessageBoxButtons.YesNo);
             if (dialogResult != DialogResult.Yes)
             {
                 ChangeTitle("");
