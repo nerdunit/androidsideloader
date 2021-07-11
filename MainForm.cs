@@ -1132,13 +1132,13 @@ without him none of this would be possible
             ChangeTitle("Checking filesize...");
             long selectedGamesSize = 0;
             int count = 0;
-            string[] GameSizeGame = new string[1];
+            string[] gamesToDownload;
             if (gamesListView.SelectedItems.Count > 0)
             {
                 count = gamesListView.SelectedItems.Count;
-                GameSizeGame = new string[count];
+                gamesToDownload = new string[count];
                 for (int i = 0; i < count; i++)
-                    GameSizeGame[i] = gamesListView.SelectedItems[i].SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+                    gamesToDownload[i] = gamesListView.SelectedItems[i].SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
             }
             else return;
 
@@ -1147,10 +1147,10 @@ without him none of this would be possible
             {
                 for (int i = 0; i < count; i++)
                 {
-                    selectedGamesSize += SideloaderRCLONE.GetFolderSize(GameSizeGame[i], currentRemote);
+                    selectedGamesSize += SideloaderRCLONE.GetFolderSize(gamesToDownload[i], currentRemote);
                     if (selectedGamesSize == 0)
                     {
-                        FlexibleMessageBox.Show($"Couldnt find release {GameSizeGame[i]} on rclone, please deselect and try again or switch mirrors");
+                        FlexibleMessageBox.Show($"Couldnt find release {gamesToDownload[i]} on rclone, please deselect and try again or switch mirrors");
                         HadError = true;
                         return;
                     }
@@ -1166,9 +1166,9 @@ without him none of this would be possible
                 return;
 
             string game;
-            if (GameSizeGame.Length == 1)
+            if (gamesToDownload.Length == 1)
             {
-                game = $"\"{GameSizeGame[0]}\"";
+                game = $"\"{gamesToDownload[0]}\"";
             } else
             {
                 game = "the selected games";
@@ -1180,8 +1180,8 @@ without him none of this would be possible
                 return;
             }
             //Add games to the queue
-            for (int i = 0; i < gamesListView.SelectedItems.Count; i++)
-                gamesQueueList.Add(gamesListView.SelectedItems[i].SubItems[SideloaderRCLONE.ReleaseNameIndex].Text);
+            for (int i = 0; i < gamesToDownload.Length; i++)
+                gamesQueueList.Add(gamesToDownload[i]);
             gamesQueListBox.DataSource = null;
             gamesQueListBox.DataSource = gamesQueueList;
 
