@@ -1108,7 +1108,6 @@ without him none of this would be possible
 
         private bool gamesAreDownloading = false;
         private List<string> gamesQueueList = new List<string>();
-        private List<string> gamesToAddList = new List<string>();
         private int quotaTries = 0;
 
         public void SwitchMirrors()
@@ -1134,14 +1133,7 @@ without him none of this would be possible
             long selectedGamesSize = 0;
             int count = 0;
             string[] GameSizeGame = new string[1];
-            if (gamesToAddList.Count > 0)
-            {
-                count = gamesToAddList.Count;
-                GameSizeGame = new string[count];
-                for (int i = 0; i < count; i++)
-                    GameSizeGame[i] = gamesToAddList[i];
-            }
-            else if (gamesListView.SelectedItems.Count > 0)
+            if (gamesListView.SelectedItems.Count > 0)
             {
                 count = gamesListView.SelectedItems.Count;
                 GameSizeGame = new string[count];
@@ -1188,14 +1180,8 @@ without him none of this would be possible
                 return;
             }
             //Add games to the queue
-            if (gamesToAddList.Count > 0)
-                gamesQueueList.AddRange(gamesToAddList);
-            else
-            {
-                for (int i = 0; i < gamesListView.SelectedItems.Count; i++)
-                    gamesQueueList.Add(gamesListView.SelectedItems[i].SubItems[SideloaderRCLONE.ReleaseNameIndex].Text);
-            }
-            gamesToAddList.Clear();
+            for (int i = 0; i < gamesListView.SelectedItems.Count; i++)
+                gamesQueueList.Add(gamesListView.SelectedItems[i].SubItems[SideloaderRCLONE.ReleaseNameIndex].Text);
             gamesQueListBox.DataSource = null;
             gamesQueListBox.DataSource = gamesQueueList;
 
