@@ -26,15 +26,15 @@ namespace AndroidSideloader
 
 #if DEBUG
         public static bool debugMode = true;
-        public bool DeviceConnected = false;
 #else
+        public static bool debugMode = false;
+#endif
+        public bool DeviceConnected = false;
+
         public bool keyheld;
         public bool keyheld2;
         public static string CurrAPK;
         public static string CurrPCKG;
-        public static bool debugMode = false;
-        public bool DeviceConnected = false;
-#endif
 
         private bool isLoading = true;
 
@@ -1248,7 +1248,7 @@ namespace AndroidSideloader
             gamesListView.Items.AddRange(arr);
             gamesListView.EndUpdate();
             updatesnotified = true;
-            if(gamesListView.Columns.Count > 0)
+            if(gamesListView.Columns.Count > 1)
             {
                 gamesListView.Columns[1].Width = 280;
             }
