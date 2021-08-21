@@ -798,6 +798,11 @@ namespace AndroidSideloader
                 notify("Please select an app first");
                 return;
             }
+            DialogResult dialogResult = FlexibleMessageBox.Show($"Are you sure you want to upload this game? If you are not sure cancel the operation", "Upload game?", MessageBoxButtons.YesNo);
+            if (dialogResult == DialogResult.No)
+            {
+                return;
+            }
             if (!isworking)
             {
                 isworking = true;
@@ -881,7 +886,10 @@ namespace AndroidSideloader
                 ULLabel.Visible = false;
                 ULGif.Enabled = false;
             }
-            else MessageBox.Show("You must wait until each app is finished extracting to start another.");
+            else
+            {
+                MessageBox.Show("You must wait until each app is finished extracting to start another.");
+            }
         }
 
         private async void uninstallAppButton_Click(object sender, EventArgs e)
