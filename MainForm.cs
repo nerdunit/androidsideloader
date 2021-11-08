@@ -1893,7 +1893,7 @@ without him none of this would be possible
             {
                 if (quotaTries > remotesList.Items.Count)
                 {
-                    FlexibleMessageBox.Show("Quota reached for all mirrors ,exiting Application. Try the offline mode instead...");
+                    FlexibleMessageBox.Show($"Quota reached for all mirrors({remotesList.Items.Count}), exiting Application. Try the offline mode instead...");
                     Application.Exit();
                 }
                 if (remotesList.SelectedIndex + 1 == remotesList.Items.Count)
