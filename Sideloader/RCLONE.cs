@@ -104,24 +104,7 @@ namespace AndroidSideloader
                     }
                 }
             }
-            
-        }
 
-        public static void updateConfig(string remote)
-        {
-            string localHash = "";
-            try { localHash = File.ReadAllText(Environment.CurrentDirectory + "\\rclone\\hash.txt"); } catch { } //file may not exist
-
-            string hash = RCLONE.runRcloneCommand($"md5sum \"{remote}:Quest Homebrew/Sideloading Methods/1. Rookie Sideloader - VRP Edition/VRP.download.config\"").Output;
-            try { hash = hash.Substring(0, hash.LastIndexOf(" ")); } catch { return; } //remove stuff after hash
-
-            Debug.WriteLine("The local file hash is " + localHash + " and the current a file hash is " + hash);
-
-            if (!string.Equals(localHash, hash))
-            {
-                RCLONE.runRcloneCommand(string.Format($"copy \"{remote}:Quest Homebrew/Sideloading Methods/1. Rookie Sideloader - VRP Edition/VRP.download.config\" \"{Environment.CurrentDirectory}\\rclone\""));
-                File.WriteAllText(Environment.CurrentDirectory + "\\rclone\\hash.txt", hash);
-            }
         }
     }
 }

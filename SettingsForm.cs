@@ -31,7 +31,6 @@ namespace AndroidSideloader
             checkForUpdatesCheckBox.Checked = Properties.Settings.Default.checkForUpdates;
             enableMessageBoxesCheckBox.Checked = Properties.Settings.Default.enableMessageBoxes;
             deleteAfterInstallCheckBox.Checked = Properties.Settings.Default.deleteAllAfterInstall;
-            updateConfigCheckBox.Checked = Properties.Settings.Default.autoUpdateConfig;
             userJsonOnGameInstall.Checked = Properties.Settings.Default.userJsonOnGameInstall;
             nodevicemodeBox.Checked = Properties.Settings.Default.nodevicemode;
             bmbfBox.Checked = Properties.Settings.Default.BMBFchecked;
@@ -140,11 +139,6 @@ namespace AndroidSideloader
         private void deleteAfterInstallCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             Properties.Settings.Default.deleteAllAfterInstall = deleteAfterInstallCheckBox.Checked;
-        }
-
-        private void updateConfigCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.autoUpdateConfig = updateConfigCheckBox.Checked;
         }
 
         private void userJsonOnGameInstall_CheckedChanged(object sender, EventArgs e)
