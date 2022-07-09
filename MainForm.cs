@@ -16,7 +16,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using AndroidSideloader.Properties;
 
-
 namespace AndroidSideloader
 {
     public partial class MainForm : Form
@@ -143,7 +142,7 @@ namespace AndroidSideloader
 
             //Check backup path
             var path = Settings.Default.BackupPath;
-            if (path == null)
+            if (path == "")
             {
 	            Settings.Default.BackupPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"Rookie Backups");
                 Settings.Default.Save();
@@ -741,7 +740,7 @@ namespace AndroidSideloader
             catch { HasInternet = false; }
         }
 
-        public static string BackupFolder = Settings.Default.BackupPath; // in c# 8.0 no need to init in MainForm(), just "Properties.Settings.Default.BackupPath??= Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"Rookie Backups")" here;
+        public static string BackupFolder = Settings.Default.BackupPath;
         private async void backupbutton_Click(object sender, EventArgs e)
         {
             ProcessOutput output = new ProcessOutput("", "");
