@@ -1,4 +1,4 @@
-﻿using AndroidSideloader.Utilities;
+using AndroidSideloader.Utilities;
 using JR.Utils.GUI.Forms;
 using Newtonsoft.Json;
 using SergeUtils;
@@ -769,7 +769,8 @@ namespace AndroidSideloader
             ProcessOutput output = new ProcessOutput("", "");
             var dialog = new FolderSelectDialog
             {
-                Title = "Select full backup or packagename backup folder"
+                Title = "Select full backup or packagename backup folder",
+                InitialDirectory = BackupFolder
             };
             if (dialog.Show(Handle))
             {
@@ -1894,8 +1895,22 @@ without him none of this would be possible
             {
                 if (quotaTries > remotesList.Items.Count)
                 {
-                    ShowError_QuotaExceeded();
-                    Application.Exit();
+	                var dialog = ShowError_QuotaExceeded();
+	                switch (dialog)
+	                {
+		                case DialogResult.No:
+			                Application.Exit();
+                            break;
+
+                        case DialogResult.Yes:
+	                        isOffline = true;
+                            break; 
+
+                        default: throw new ArgumentOutOfRangeException(nameof(dialog));
+	                }
+
+	                
+                    
                 }
                 if (remotesList.SelectedIndex + 1 == remotesList.Items.Count)
                 {
@@ -1916,7 +1931,7 @@ without him none of this would be possible
             });
         }
 
-        private static void ShowError_QuotaExceeded()
+        private static DialogResult ShowError_QuotaExceeded()
         {
             const string errorMessage =
 @"Quota reached for all mirrors.
@@ -1930,9 +1945,10 @@ Things you can try:
 3) Use Resilio for p2p downloads (https://wiki.vrpirates.club/en/Howto/Resilio-Sync-setup-guide)
 4) Sponsor a private server (https://wiki.vrpirates.club/en/Howto/sponsored-mirrors)
 
-The application will now exit.";
+Run app in offline mode? If no, app will be exited
+";
 
-            FlexibleMessageBox.Show(errorMessage, "Quota exceeded");
+            return FlexibleMessageBox.Show(errorMessage, "Quota exceeded", MessageBoxButtons.YesNo);
         }
 
         public bool isinstalling = false;
