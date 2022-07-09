@@ -185,5 +185,8 @@
     <Setting Name="AppPackages" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="BackupPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)" ></Value>
+    </Setting>
   </Settings>
 </SettingsFile>
