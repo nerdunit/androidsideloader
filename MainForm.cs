@@ -3155,6 +3155,7 @@ Things you can try:
                     File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{GameName} v{VersionInt} {packageName}.zip");
                 Directory.Move($"{Properties.Settings.Default.MainDir}\\{GameName} v{VersionInt} {packageName}.zip", $"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{GameName} v{VersionInt} {packageName}.zip");
                 Directory.Delete($"{Properties.Settings.Default.MainDir}\\{packageName}", true);
+                isworking = false;
                 Program.form.ChangeTitle("                                   \n\n");
                 progressBar.Style = ProgressBarStyle.Continuous;
                 FlexibleMessageBox.Show($"{GameName} pulled to:\n\n{GameName} v{VersionInt} {packageName}.zip\n\nOn your desktop!");
