@@ -55,7 +55,7 @@ namespace AndroidSideloader
         public static bool hasPublicConfig = false;
         public static PublicConfig PublicConfigFile;
         public static string PublicMirrorExtraArgs = " --tpslimit 1.0 --tpslimit-burst 3";
-            public MainForm()
+        public MainForm()
         {
             // check for offline mode
             string[] args = Environment.GetCommandLineArgs();
@@ -305,7 +305,7 @@ namespace AndroidSideloader
             });
             t1.SetApartmentState(ApartmentState.STA);
             t1.IsBackground = true;
-            
+
             if (HasInternet)
                 t1.Start();
             while (t1.IsAlive)
@@ -370,7 +370,7 @@ namespace AndroidSideloader
                     ChangeTitle("Processing Metadata...");
                     SideloaderRCLONE.ProcessMetadataFromPublic();
                 }));
-                
+
                 t2.IsBackground = true;
                 if (HasInternet)
                 {
@@ -891,10 +891,14 @@ namespace AndroidSideloader
                 InstalledVersionCode = Utilities.StringUtilities.RemoveEverythingAfterFirst(InstalledVersionCode, " ");
                 ulong VersionInt = UInt64.Parse(Utilities.StringUtilities.KeepOnlyNumbers(InstalledVersionCode));
 
-                var gameZipName = $"{GameName} v{VersionInt} {packageName} {HWID.Substring(0,1)}.zip";
+                var gameName = $"{GameName} v{VersionInt} {packageName} {HWID.Substring(0, 1)}";
+                var gameZipName = $"{gameName}.zip";
 
+                // delete the zip and txt if they exist from a previously failed upload
                 if (File.Exists($"{Properties.Settings.Default.MainDir}\\{gameZipName}"))
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameZipName}");
+                if (File.Exists($"{Properties.Settings.Default.MainDir}\\{gameName}.txt"))
+                    File.Delete($"{Properties.Settings.Default.MainDir}\\{gameName}.txt");
 
                 ProcessOutput output = new ProcessOutput("", "");
                 ChangeTitle("Extracting APK....");
@@ -935,7 +939,7 @@ namespace AndroidSideloader
                 t4.Start();
                 while (t4.IsAlive)
                     await Task.Delay(100);
-                ChangeTitle("Uploading to shared drive, you can continue to use Rookie while it uploads in the background.");
+                ChangeTitle("Uploading to server, you can continue to use Rookie while it uploads in the background.");
                 ULGif.Visible = true;
                 ULLabel.Visible = true;
                 ULGif.Enabled = true;
@@ -944,9 +948,20 @@ namespace AndroidSideloader
                 Thread t3 = new Thread(() =>
                 {
                     string currentlyuploading = GameName;
-                    ChangeTitle("Uploading to shared drive, you can continue to use Rookie while it uploads in the background.");
+                    ChangeTitle("Uploading to server, you can continue to use Rookie while it uploads in the background.");
+
+                    // get size of pending zip upload and write to text file
+                    long zipSize = new FileInfo($"{Properties.Settings.Default.MainDir}\\{gameZipName}").Length;
+                    File.WriteAllText($"{Properties.Settings.Default.MainDir}\\{gameName}.txt", zipSize.ToString());
+                    // upload size file
+                    RCLONE.runRcloneCommand_UploadConfig($"copy \"{Properties.Settings.Default.MainDir}\\{gameName}.txt\" RSL-gameuploads:");
+                    // upload zip
                     RCLONE.runRcloneCommand_UploadConfig($"copy \"{Properties.Settings.Default.MainDir}\\{gameZipName}\" RSL-gameuploads:");
+
+                    // deleting uploaded files
+                    File.Delete($"{Properties.Settings.Default.MainDir}\\{gameName}.txt");
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameZipName}");
+
                     this.Invoke(() => FlexibleMessageBox.Show($"Upload of {currentlyuploading} is complete! Thank you for your contribution!"));
                     Directory.Delete($"{Properties.Settings.Default.MainDir}\\{packageName}", true);
                 });
@@ -1655,7 +1670,7 @@ namespace AndroidSideloader
 
         public static async void DoUpload()
         {
-            Program.form.ChangeTitle("Uploading to shared drive, you can continue to use Rookie while it uploads in the background.");
+            Program.form.ChangeTitle("Uploading to server, you can continue to use Rookie while it uploads in the background.");
             Program.form.ULGif.Visible = true;
             Program.form.ULLabel.Visible = true;
             Program.form.ULGif.Enabled = true;
@@ -1667,23 +1682,38 @@ namespace AndroidSideloader
                 Thread t3 = new Thread(() =>
                 {
                     string packagename = game.Pckgcommand;
-                    var gameZipName = $"{game.Uploadgamename} v{game.Uploadversion} {game.Pckgcommand} {SideloaderUtilities.UUID().Substring(0,1)}.zip";
+                    var gameName = $"{game.Uploadgamename} v{game.Uploadversion} {game.Pckgcommand} {SideloaderUtilities.UUID().Substring(0, 1)}";
+                    var gameZipName = $"{gameName}.zip";
 
+                    // delete the zip and txt if they exist from a previously failed upload
                     if (File.Exists($"{Properties.Settings.Default.MainDir}\\{gameZipName}"))
                         File.Delete($"{Properties.Settings.Default.MainDir}\\{gameZipName}");
+                    if (File.Exists($"{Properties.Settings.Default.MainDir}\\{gameName}.txt"))
+                        File.Delete($"{Properties.Settings.Default.MainDir}\\{gameName}.txt");
 
                     string path = $"{Properties.Settings.Default.MainDir}\\7z.exe";
                     string cmd = $"7z a -mx1 \"{Properties.Settings.Default.MainDir}\\{gameZipName}\" .\\{game.Pckgcommand}\\*";
                     Program.form.ChangeTitle("Zipping extracted application...");
                     ADB.RunCommandToString(cmd, path);
                     Directory.Delete($"{Properties.Settings.Default.MainDir}\\{game.Pckgcommand}", true);
-                    Program.form.ChangeTitle("Uploading to drive, you may continue to use Rookie while it uploads.");
+                    Program.form.ChangeTitle("Uploading to server, you may continue to use Rookie while it uploads.");
+
+                    // get size of pending zip upload and write to text file
+                    long zipSize = new FileInfo($"{Properties.Settings.Default.MainDir}\\{gameZipName}").Length;
+                    File.WriteAllText($"{Properties.Settings.Default.MainDir}\\{gameName}.txt", zipSize.ToString());
+                    // upload size file
+                    RCLONE.runRcloneCommand_UploadConfig($"copy \"{Properties.Settings.Default.MainDir}\\{gameName}.txt\" RSL-gameuploads:");
+                    // upload zip
                     RCLONE.runRcloneCommand_UploadConfig($"copy \"{Properties.Settings.Default.MainDir}\\{gameZipName}\" RSL-gameuploads:");
+
                     if (game.isUpdate)
                     {
                         Properties.Settings.Default.SubmittedUpdates += game.Pckgcommand + ("\n");
                         Properties.Settings.Default.Save();
                     }
+
+                    // deleting uploaded files
+                    File.Delete($"{Properties.Settings.Default.MainDir}\\{gameName}.txt");
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameZipName}");
 
                 });
@@ -2098,7 +2128,7 @@ Things you can try:
                     string dir = Path.GetDirectoryName(gameName);
                     string gameDirectory = Environment.CurrentDirectory + "\\" + gameName;
                     string path = gameDirectory;
-                   
+
                     var gameNameHash = string.Empty;
                     using (var md5 = MD5.Create())
                     {
@@ -2161,7 +2191,7 @@ Things you can try:
                             gameDownloadOutput = RCLONE.runRcloneCommand_DownloadConfig($"copy \"{currentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\" \"{Environment.CurrentDirectory}\\{gameName}\" --progress --rc", Properties.Settings.Default.BandwidthLimit);
                         });
                     }
-                    
+
                     t1.IsBackground = true;
                     t1.Start();
 
@@ -2831,7 +2861,7 @@ Things you can try:
 
         }
 
-        
+
         public void gamesListView_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (gamesListView.SelectedItems.Count < 1)
