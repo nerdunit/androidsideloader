@@ -1,4 +1,15 @@
-﻿RSL 2.15
+﻿RSL 2.16
+
+- Fix misleading error message when not enough disk space
+- Fix downloads silently failing in some cases
+- Fix failure to detect failed extraction when archive corrupt
+- Fix UI issues when resizing main form
+- Various code cleanups
+
+~SytheZN
+~fenopy
+
+RSL 2.15
 
 - Massive UI Changes:
 - Rounded buttons
