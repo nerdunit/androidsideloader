@@ -70,25 +70,6 @@ namespace AndroidSideloader
             {
                 FlexibleMessageBox.Show("Offline mode activated. You can't download games in this mode, only do local stuff.");
             }
-            else
-            {
-                if (File.Exists($"{Environment.CurrentDirectory}\\vrp-public.json"))
-                {
-                    SideloaderRCLONE.updatePublicConfig();
-                    try
-                    {
-                        var configFileData =
-                            File.ReadAllText($"{Environment.CurrentDirectory}\\vrp-public.json");
-                        var config = JsonConvert.DeserializeObject<PublicConfig>(configFileData);
-                        PublicConfigFile = config;
-                        hasPublicConfig = true;
-                    }
-                    catch
-                    {
-                        hasPublicConfig = false;
-                    }
-                }
-            }
 
             InitializeComponent();
             //Time between asking for new apps if user clicks No. 96,0,0 DEFAULT
@@ -168,6 +149,41 @@ namespace AndroidSideloader
         {
             var splash = new Splash();
             splash.Show();
+
+            if (!isOffline)
+            {
+                if (File.Exists($"{Environment.CurrentDirectory}\\vrp-public.json"))
+                {
+                    var worker = new Thread(() =>
+                    {
+                        SideloaderRCLONE.updatePublicConfig();
+                    });
+                    worker.Start();
+                    while (worker.IsAlive)
+                        Thread.Sleep(10);
+                    try
+                    {
+                        var configFileData =
+                            File.ReadAllText($"{Environment.CurrentDirectory}\\vrp-public.json");
+                        var config = JsonConvert.DeserializeObject<PublicConfig>(configFileData);
+                        
+                        if (config != null 
+                            && !string.IsNullOrWhiteSpace(config.BaseUri) 
+                            && !string.IsNullOrWhiteSpace(config.Password))
+                        {
+                            PublicConfigFile = config;
+                            hasPublicConfig = true;
+                        }
+                    }
+                    catch
+                    {
+                        hasPublicConfig = false;
+                    }
+
+                    if (!hasPublicConfig)
+                        FlexibleMessageBox.Show("Failed to fetch public mirror config, and the current one is unreadable.\r\nPlease ensure you can access https://wiki.vrpirates.club/ in your browser.", "Config Update Failed", MessageBoxButtons.OK);
+                }
+            }
 
             if (File.Exists("C:\\RSL\\platform-tools\\adb.exe"))
             {
