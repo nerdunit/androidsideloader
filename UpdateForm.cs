@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace AndroidSideloader
@@ -18,7 +12,7 @@ namespace AndroidSideloader
         public UpdateForm()
         {
             InitializeComponent();
-            this.CenterToScreen();
+            CenterToScreen();
             CurVerLabel.Text += " " + Updater.LocalVersion;
             UpdateVerLabel.Text += " " + Updater.currentVersion;
             UpdateTextBox.Text = Updater.changelog;
@@ -27,12 +21,12 @@ namespace AndroidSideloader
         private void YesUpdate_Click(object sender, EventArgs e)
         {
             Updater.doUpdate();
-            this.Close();
+            Close();
         }
 
         private void SkipUpdate_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void UpdateTextBox_TextChanged(object sender, EventArgs e)
@@ -50,10 +44,10 @@ namespace AndroidSideloader
         {
             if (mouseDown)
             {
-                this.Location = new Point(
-                    (this.Location.X - lastLocation.X) + e.X, (this.Location.Y - lastLocation.Y) + e.Y);
+                Location = new Point(
+                    Location.X - lastLocation.X + e.X, Location.Y - lastLocation.Y + e.Y);
 
-                this.Update();
+                Update();
             }
         }
 

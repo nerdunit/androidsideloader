@@ -254,7 +254,7 @@ namespace JR.Utils.GUI.Forms
         /// The form to show the customized message box.
         /// It is defined as an internal class to keep the public interface of the FlexibleMessageBox clean.
         /// </summary>
-        class FlexibleMessageBoxForm : Form
+        private class FlexibleMessageBoxForm : Form
         {
             #region Form-Designer generated code
 
@@ -282,128 +282,128 @@ namespace JR.Utils.GUI.Forms
             /// </summary>
             private void InitializeComponent()
             {
-                this.components = new System.ComponentModel.Container();
-                this.button1 = new System.Windows.Forms.Button();
-                this.richTextBoxMessage = new System.Windows.Forms.RichTextBox();
-                this.FlexibleMessageBoxFormBindingSource = new System.Windows.Forms.BindingSource(this.components);
-                this.panel1 = new System.Windows.Forms.Panel();
-                this.pictureBoxForIcon = new System.Windows.Forms.PictureBox();
-                this.button2 = new System.Windows.Forms.Button();
-                this.button3 = new System.Windows.Forms.Button();
-                ((System.ComponentModel.ISupportInitialize)(this.FlexibleMessageBoxFormBindingSource)).BeginInit();
-                this.panel1.SuspendLayout();
-                ((System.ComponentModel.ISupportInitialize)(this.pictureBoxForIcon)).BeginInit();
-                this.SuspendLayout();
+                components = new System.ComponentModel.Container();
+                button1 = new System.Windows.Forms.Button();
+                richTextBoxMessage = new System.Windows.Forms.RichTextBox();
+                FlexibleMessageBoxFormBindingSource = new System.Windows.Forms.BindingSource(components);
+                panel1 = new System.Windows.Forms.Panel();
+                pictureBoxForIcon = new System.Windows.Forms.PictureBox();
+                button2 = new System.Windows.Forms.Button();
+                button3 = new System.Windows.Forms.Button();
+                ((System.ComponentModel.ISupportInitialize)FlexibleMessageBoxFormBindingSource).BeginInit();
+                panel1.SuspendLayout();
+                ((System.ComponentModel.ISupportInitialize)pictureBoxForIcon).BeginInit();
+                SuspendLayout();
                 // 
                 // button1
                 // 
-                this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-                this.button1.AutoSize = true;
-                this.button1.DialogResult = System.Windows.Forms.DialogResult.OK;
-                this.button1.Location = new System.Drawing.Point(11, 67);
-                this.button1.MinimumSize = new System.Drawing.Size(0, 24);
-                this.button1.Name = "button1";
-                this.button1.Size = new System.Drawing.Size(75, 24);
-                this.button1.TabIndex = 2;
-                this.button1.Text = "OK";
-                this.button1.UseVisualStyleBackColor = true;
-                this.button1.Visible = false;
+                button1.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+                button1.AutoSize = true;
+                button1.DialogResult = System.Windows.Forms.DialogResult.OK;
+                button1.Location = new System.Drawing.Point(11, 67);
+                button1.MinimumSize = new System.Drawing.Size(0, 24);
+                button1.Name = "button1";
+                button1.Size = new System.Drawing.Size(75, 24);
+                button1.TabIndex = 2;
+                button1.Text = "OK";
+                button1.UseVisualStyleBackColor = true;
+                button1.Visible = false;
                 // 
                 // richTextBoxMessage
                 // 
-                this.richTextBoxMessage.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                | System.Windows.Forms.AnchorStyles.Left)
-                | System.Windows.Forms.AnchorStyles.Right)));
-                this.richTextBoxMessage.BackColor = System.Drawing.Color.White;
-                this.richTextBoxMessage.BorderStyle = System.Windows.Forms.BorderStyle.None;
-                this.richTextBoxMessage.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlexibleMessageBoxFormBindingSource, "MessageText", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-                this.richTextBoxMessage.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-                this.richTextBoxMessage.Location = new System.Drawing.Point(50, 26);
-                this.richTextBoxMessage.Margin = new System.Windows.Forms.Padding(0);
-                this.richTextBoxMessage.Name = "richTextBoxMessage";
-                this.richTextBoxMessage.ReadOnly = true;
-                this.richTextBoxMessage.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-                this.richTextBoxMessage.Size = new System.Drawing.Size(200, 20);
-                this.richTextBoxMessage.TabIndex = 0;
-                this.richTextBoxMessage.TabStop = false;
-                this.richTextBoxMessage.Text = "<Message>";
-                this.richTextBoxMessage.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(this.richTextBoxMessage_LinkClicked);
+                richTextBoxMessage.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom
+                | System.Windows.Forms.AnchorStyles.Left
+                | System.Windows.Forms.AnchorStyles.Right;
+                richTextBoxMessage.BackColor = System.Drawing.Color.White;
+                richTextBoxMessage.BorderStyle = System.Windows.Forms.BorderStyle.None;
+                richTextBoxMessage.DataBindings.Add(new System.Windows.Forms.Binding("Text", FlexibleMessageBoxFormBindingSource, "MessageText", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+                richTextBoxMessage.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+                richTextBoxMessage.Location = new System.Drawing.Point(50, 26);
+                richTextBoxMessage.Margin = new System.Windows.Forms.Padding(0);
+                richTextBoxMessage.Name = "richTextBoxMessage";
+                richTextBoxMessage.ReadOnly = true;
+                richTextBoxMessage.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
+                richTextBoxMessage.Size = new System.Drawing.Size(200, 20);
+                richTextBoxMessage.TabIndex = 0;
+                richTextBoxMessage.TabStop = false;
+                richTextBoxMessage.Text = "<Message>";
+                richTextBoxMessage.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(richTextBoxMessage_LinkClicked);
                 // 
                 // panel1
                 // 
-                this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                | System.Windows.Forms.AnchorStyles.Left)
-                | System.Windows.Forms.AnchorStyles.Right)));
-                this.panel1.BackColor = System.Drawing.Color.White;
-                this.panel1.Controls.Add(this.pictureBoxForIcon);
-                this.panel1.Controls.Add(this.richTextBoxMessage);
-                this.panel1.Location = new System.Drawing.Point(-3, -4);
-                this.panel1.Name = "panel1";
-                this.panel1.Size = new System.Drawing.Size(268, 59);
-                this.panel1.TabIndex = 1;
+                panel1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom
+                | System.Windows.Forms.AnchorStyles.Left
+                | System.Windows.Forms.AnchorStyles.Right;
+                panel1.BackColor = System.Drawing.Color.White;
+                panel1.Controls.Add(pictureBoxForIcon);
+                panel1.Controls.Add(richTextBoxMessage);
+                panel1.Location = new System.Drawing.Point(-3, -4);
+                panel1.Name = "panel1";
+                panel1.Size = new System.Drawing.Size(268, 59);
+                panel1.TabIndex = 1;
                 // 
                 // pictureBoxForIcon
                 // 
-                this.pictureBoxForIcon.BackColor = System.Drawing.Color.Transparent;
-                this.pictureBoxForIcon.Location = new System.Drawing.Point(15, 19);
-                this.pictureBoxForIcon.Name = "pictureBoxForIcon";
-                this.pictureBoxForIcon.Size = new System.Drawing.Size(32, 32);
-                this.pictureBoxForIcon.TabIndex = 8;
-                this.pictureBoxForIcon.TabStop = false;
+                pictureBoxForIcon.BackColor = System.Drawing.Color.Transparent;
+                pictureBoxForIcon.Location = new System.Drawing.Point(15, 19);
+                pictureBoxForIcon.Name = "pictureBoxForIcon";
+                pictureBoxForIcon.Size = new System.Drawing.Size(32, 32);
+                pictureBoxForIcon.TabIndex = 8;
+                pictureBoxForIcon.TabStop = false;
                 // 
                 // button2
                 // 
-                this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-                this.button2.DialogResult = System.Windows.Forms.DialogResult.OK;
-                this.button2.Location = new System.Drawing.Point(92, 67);
-                this.button2.MinimumSize = new System.Drawing.Size(0, 24);
-                this.button2.Name = "button2";
-                this.button2.Size = new System.Drawing.Size(75, 24);
-                this.button2.TabIndex = 3;
-                this.button2.Text = "OK";
-                this.button2.UseVisualStyleBackColor = true;
-                this.button2.Visible = false;
+                button2.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+                button2.DialogResult = System.Windows.Forms.DialogResult.OK;
+                button2.Location = new System.Drawing.Point(92, 67);
+                button2.MinimumSize = new System.Drawing.Size(0, 24);
+                button2.Name = "button2";
+                button2.Size = new System.Drawing.Size(75, 24);
+                button2.TabIndex = 3;
+                button2.Text = "OK";
+                button2.UseVisualStyleBackColor = true;
+                button2.Visible = false;
                 // 
                 // button3
                 // 
-                this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-                this.button3.AutoSize = true;
-                this.button3.DialogResult = System.Windows.Forms.DialogResult.OK;
-                this.button3.Location = new System.Drawing.Point(173, 67);
-                this.button3.MinimumSize = new System.Drawing.Size(0, 24);
-                this.button3.Name = "button3";
-                this.button3.Size = new System.Drawing.Size(75, 24);
-                this.button3.TabIndex = 0;
-                this.button3.Text = "OK";
-                this.button3.UseVisualStyleBackColor = true;
-                this.button3.Visible = false;
+                button3.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+                button3.AutoSize = true;
+                button3.DialogResult = System.Windows.Forms.DialogResult.OK;
+                button3.Location = new System.Drawing.Point(173, 67);
+                button3.MinimumSize = new System.Drawing.Size(0, 24);
+                button3.Name = "button3";
+                button3.Size = new System.Drawing.Size(75, 24);
+                button3.TabIndex = 0;
+                button3.Text = "OK";
+                button3.UseVisualStyleBackColor = true;
+                button3.Visible = false;
                 // 
                 // FlexibleMessageBoxForm
                 // 
-                this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-                this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-                this.ClientSize = new System.Drawing.Size(260, 102);
-                this.Controls.Add(this.button3);
-                this.Controls.Add(this.button2);
-                this.Controls.Add(this.panel1);
-                this.Controls.Add(this.button1);
-                this.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlexibleMessageBoxFormBindingSource, "CaptionText", true));
-                this.MaximizeBox = false;
-                this.MinimizeBox = false;
-                this.MinimumSize = new System.Drawing.Size(276, 140);
-                this.Name = "FlexibleMessageBoxForm";
-                this.ShowIcon = false;
-                this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
-                this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-                this.Text = "<Caption>";
-                this.Shown += new System.EventHandler(this.FlexibleMessageBoxForm_Shown);
-                ((System.ComponentModel.ISupportInitialize)(this.FlexibleMessageBoxFormBindingSource)).EndInit();
-                this.panel1.ResumeLayout(false);
-                ((System.ComponentModel.ISupportInitialize)(this.pictureBoxForIcon)).EndInit();
-                this.ResumeLayout(false);
-                this.PerformLayout();
+                AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+                AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+                ClientSize = new System.Drawing.Size(260, 102);
+                Controls.Add(button3);
+                Controls.Add(button2);
+                Controls.Add(panel1);
+                Controls.Add(button1);
+                DataBindings.Add(new System.Windows.Forms.Binding("Text", FlexibleMessageBoxFormBindingSource, "CaptionText", true));
+                MaximizeBox = false;
+                MinimizeBox = false;
+                MinimumSize = new System.Drawing.Size(276, 140);
+                Name = "FlexibleMessageBoxForm";
+                ShowIcon = false;
+                SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
+                StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+                Text = "<Caption>";
+                Shown += new System.EventHandler(FlexibleMessageBoxForm_Shown);
+                ((System.ComponentModel.ISupportInitialize)FlexibleMessageBoxFormBindingSource).EndInit();
+                panel1.ResumeLayout(false);
+                ((System.ComponentModel.ISupportInitialize)pictureBoxForIcon).EndInit();
+                ResumeLayout(false);
+                PerformLayout();
 
-                this.Activate();
+                Activate();
             }
 
             private System.Windows.Forms.Button button1;
@@ -419,19 +419,19 @@ namespace JR.Utils.GUI.Forms
             #region Private constants
 
             //These separators are used for the "copy to clipboard" standard operation, triggered by Ctrl + C (behavior and clipboard format is like in a standard MessageBox)
-            private static readonly String STANDARD_MESSAGEBOX_SEPARATOR_LINES = "---------------------------\n";
-            private static readonly String STANDARD_MESSAGEBOX_SEPARATOR_SPACES = "   ";
+            private static readonly string STANDARD_MESSAGEBOX_SEPARATOR_LINES = "---------------------------\n";
+            private static readonly string STANDARD_MESSAGEBOX_SEPARATOR_SPACES = "   ";
 
             //These are the possible buttons (in a standard MessageBox)
             private enum ButtonID { OK = 0, CANCEL, YES, NO, ABORT, RETRY, IGNORE };
-            
+
             //These are the buttons texts for different languages. 
             //If you want to add a new language, add it here and in the GetButtonText-Function
             private enum TwoLetterISOLanguageID { en, de, es, it };
-            private static readonly String[] BUTTON_TEXTS_ENGLISH_EN = { "OK", "Cancel", "&Yes", "&No", "&Abort", "&Retry", "&Ignore" }; //Note: This is also the fallback language
-            private static readonly String[] BUTTON_TEXTS_GERMAN_DE = { "OK", "Abbrechen", "&Ja", "&Nein", "&Abbrechen", "&Wiederholen", "&Ignorieren" };
-            private static readonly String[] BUTTON_TEXTS_SPANISH_ES = { "Aceptar", "Cancelar", "&Sí", "&No", "&Abortar", "&Reintentar", "&Ignorar" };
-            private static readonly String[] BUTTON_TEXTS_ITALIAN_IT = { "OK", "Annulla", "&Sì", "&No", "&Interrompi", "&Riprova", "&Ignora" };
+            private static readonly string[] BUTTON_TEXTS_ENGLISH_EN = { "OK", "Cancel", "&Yes", "&No", "&Abort", "&Retry", "&Ignore" }; //Note: This is also the fallback language
+            private static readonly string[] BUTTON_TEXTS_GERMAN_DE = { "OK", "Abbrechen", "&Ja", "&Nein", "&Abbrechen", "&Wiederholen", "&Ignorieren" };
+            private static readonly string[] BUTTON_TEXTS_SPANISH_ES = { "Aceptar", "Cancelar", "&Sí", "&No", "&Abortar", "&Reintentar", "&Ignorar" };
+            private static readonly string[] BUTTON_TEXTS_ITALIAN_IT = { "OK", "Annulla", "&Sì", "&No", "&Interrompi", "&Riprova", "&Ignora" };
 
             #endregion
 
@@ -439,7 +439,7 @@ namespace JR.Utils.GUI.Forms
 
             private MessageBoxDefaultButton defaultButton;
             private int visibleButtonsCount;
-            private TwoLetterISOLanguageID languageID = TwoLetterISOLanguageID.en;
+            private readonly TwoLetterISOLanguageID languageID = TwoLetterISOLanguageID.en;
 
             #endregion
 
@@ -453,10 +453,10 @@ namespace JR.Utils.GUI.Forms
                 InitializeComponent();
 
                 //Try to evaluate the language. If this fails, the fallback language English will be used
-                Enum.TryParse<TwoLetterISOLanguageID>(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName, out this.languageID);
+                _ = Enum.TryParse<TwoLetterISOLanguageID>(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName, out languageID);
 
-                this.KeyPreview = true;
-                this.KeyUp += FlexibleMessageBoxForm_KeyUp;
+                KeyPreview = true;
+                KeyUp += FlexibleMessageBoxForm_KeyUp;
             }
 
             #endregion
@@ -470,9 +470,12 @@ namespace JR.Utils.GUI.Forms
             /// <returns>The string rows as 1-dimensional array</returns>
             private static string[] GetStringRows(string message)
             {
-                if (string.IsNullOrEmpty(message)) return null;
+                if (string.IsNullOrEmpty(message))
+                {
+                    return null;
+                }
 
-                var messageRows = message.Split(new char[] { '\n' }, StringSplitOptions.None);
+                string[] messageRows = message.Split(new char[] { '\n' }, StringSplitOptions.None);
                 return messageRows;
             }
 
@@ -484,15 +487,15 @@ namespace JR.Utils.GUI.Forms
             /// <returns>The button text</returns>
             private string GetButtonText(ButtonID buttonID)
             {
-                var buttonTextArrayIndex = Convert.ToInt32(buttonID);
-                
-                switch (this.languageID)
+                int buttonTextArrayIndex = Convert.ToInt32(buttonID);
+
+                switch (languageID)
                 {
                     case TwoLetterISOLanguageID.de: return BUTTON_TEXTS_GERMAN_DE[buttonTextArrayIndex];
                     case TwoLetterISOLanguageID.es: return BUTTON_TEXTS_SPANISH_ES[buttonTextArrayIndex];
                     case TwoLetterISOLanguageID.it: return BUTTON_TEXTS_ITALIAN_IT[buttonTextArrayIndex];
 
-                    default:                        return BUTTON_TEXTS_ENGLISH_EN[buttonTextArrayIndex];
+                    default: return BUTTON_TEXTS_ENGLISH_EN[buttonTextArrayIndex];
                 }
             }
 
@@ -509,10 +512,7 @@ namespace JR.Utils.GUI.Forms
                 const double MIN_FACTOR = 0.2;
                 const double MAX_FACTOR = 1.0;
 
-                if (workingAreaFactor < MIN_FACTOR) return MIN_FACTOR;
-                if (workingAreaFactor > MAX_FACTOR) return MAX_FACTOR;
-
-                return workingAreaFactor;
+                return workingAreaFactor < MIN_FACTOR ? MIN_FACTOR : workingAreaFactor > MAX_FACTOR ? MAX_FACTOR : workingAreaFactor;
             }
 
             /// <summary>
@@ -526,10 +526,10 @@ namespace JR.Utils.GUI.Forms
                 //If no owner given: Center on current screen
                 if (owner == null)
                 {
-                    var screen = Screen.FromPoint(Cursor.Position);
+                    Screen screen = Screen.FromPoint(Cursor.Position);
                     flexibleMessageBoxForm.StartPosition = FormStartPosition.Manual;
-                    flexibleMessageBoxForm.Left = screen.Bounds.Left + screen.Bounds.Width / 2 - flexibleMessageBoxForm.Width / 2;
-                    flexibleMessageBoxForm.Top = screen.Bounds.Top + screen.Bounds.Height / 2 - flexibleMessageBoxForm.Height / 2;
+                    flexibleMessageBoxForm.Left = screen.Bounds.Left + (screen.Bounds.Width / 2) - (flexibleMessageBoxForm.Width / 2);
+                    flexibleMessageBoxForm.Top = screen.Bounds.Top + (screen.Bounds.Height / 2) - (flexibleMessageBoxForm.Height / 2);
                 }
             }
 
@@ -547,21 +547,24 @@ namespace JR.Utils.GUI.Forms
                                                               Convert.ToInt32(SystemInformation.WorkingArea.Height * FlexibleMessageBoxForm.GetCorrectedWorkingAreaFactor(MAX_HEIGHT_FACTOR)));
 
                 //Get rows. Exit if there are no rows to render...
-                var stringRows = GetStringRows(text);
-                if (stringRows == null) return;
+                string[] stringRows = GetStringRows(text);
+                if (stringRows == null)
+                {
+                    return;
+                }
 
                 //Calculate whole text height
-                var textHeight = TextRenderer.MeasureText(text, FONT).Height;
-                    
+                int textHeight = TextRenderer.MeasureText(text, FONT).Height;
+
                 //Calculate width for longest text line
                 const int SCROLLBAR_WIDTH_OFFSET = 15;
-                var longestTextRowWidth = stringRows.Max(textForRow => TextRenderer.MeasureText(textForRow, FONT).Width);
-                var captionWidth = TextRenderer.MeasureText(caption, SystemFonts.CaptionFont).Width;
-                var textWidth = Math.Max(longestTextRowWidth + SCROLLBAR_WIDTH_OFFSET, captionWidth);
-                
+                int longestTextRowWidth = stringRows.Max(textForRow => TextRenderer.MeasureText(textForRow, FONT).Width);
+                int captionWidth = TextRenderer.MeasureText(caption, SystemFonts.CaptionFont).Width;
+                int textWidth = Math.Max(longestTextRowWidth + SCROLLBAR_WIDTH_OFFSET, captionWidth);
+
                 //Calculate margins
-                var marginWidth = flexibleMessageBoxForm.Width - flexibleMessageBoxForm.richTextBoxMessage.Width;
-                var marginHeight = flexibleMessageBoxForm.Height - flexibleMessageBoxForm.richTextBoxMessage.Height;
+                int marginWidth = flexibleMessageBoxForm.Width - flexibleMessageBoxForm.richTextBoxMessage.Width;
+                int marginHeight = flexibleMessageBoxForm.Height - flexibleMessageBoxForm.richTextBoxMessage.Height;
 
                 //Set calculated dialog size (if the calculated values exceed the maximums, they were cut by windows forms automatically)
                 flexibleMessageBoxForm.Size = new Size(textWidth + marginWidth,
@@ -625,7 +628,7 @@ namespace JR.Utils.GUI.Forms
                         flexibleMessageBoxForm.button3.Visible = true;
                         flexibleMessageBoxForm.button3.Text = flexibleMessageBoxForm.GetButtonText(ButtonID.IGNORE);
                         flexibleMessageBoxForm.button3.DialogResult = DialogResult.Ignore;
-                        
+
                         flexibleMessageBoxForm.ControlBox = false;
                         break;
 
@@ -715,11 +718,11 @@ namespace JR.Utils.GUI.Forms
             /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
             private void FlexibleMessageBoxForm_Shown(object sender, EventArgs e)
             {
-                int buttonIndexToFocus = 1;
                 Button buttonToFocus;
 
+                int buttonIndexToFocus;
                 //Set the default button...
-                switch (this.defaultButton)
+                switch (defaultButton)
                 {
                     case MessageBoxDefaultButton.Button1:
                     default:
@@ -733,22 +736,14 @@ namespace JR.Utils.GUI.Forms
                         break;
                 }
 
-                if (buttonIndexToFocus > this.visibleButtonsCount) buttonIndexToFocus = this.visibleButtonsCount;
-
-                if (buttonIndexToFocus == 3)
+                if (buttonIndexToFocus > visibleButtonsCount)
                 {
-                    buttonToFocus = this.button3;
-                }
-                else if (buttonIndexToFocus == 2)
-                {
-                    buttonToFocus = this.button2;
-                }
-                else
-                {
-                    buttonToFocus = this.button1;
+                    buttonIndexToFocus = visibleButtonsCount;
                 }
 
-                buttonToFocus.Focus();
+                buttonToFocus = buttonIndexToFocus == 3 ? button3 : buttonIndexToFocus == 2 ? button2 : button1;
+
+                _ = buttonToFocus.Focus();
             }
 
             /// <summary>
@@ -761,7 +756,7 @@ namespace JR.Utils.GUI.Forms
                 try
                 {
                     Cursor.Current = Cursors.WaitCursor;
-                    Process.Start(e.LinkText);
+                    _ = Process.Start(e.LinkText);
                 }
                 catch (Exception)
                 {
@@ -780,20 +775,20 @@ namespace JR.Utils.GUI.Forms
             /// </summary>
             /// <param name="sender">The source of the event.</param>
             /// <param name="e">The <see cref="System.Windows.Forms.KeyEventArgs"/> instance containing the event data.</param>
-            void FlexibleMessageBoxForm_KeyUp(object sender, KeyEventArgs e)
+            private void FlexibleMessageBoxForm_KeyUp(object sender, KeyEventArgs e)
             {
                 //Handle standard key strikes for clipboard copy: "Ctrl + C" and "Ctrl + Insert"
                 if (e.Control && (e.KeyCode == Keys.C || e.KeyCode == Keys.Insert))
                 {
-                    var buttonsTextLine = (this.button1.Visible ? this.button1.Text + STANDARD_MESSAGEBOX_SEPARATOR_SPACES : string.Empty)
-                                        + (this.button2.Visible ? this.button2.Text + STANDARD_MESSAGEBOX_SEPARATOR_SPACES : string.Empty)
-                                        + (this.button3.Visible ? this.button3.Text + STANDARD_MESSAGEBOX_SEPARATOR_SPACES : string.Empty);
+                    string buttonsTextLine = (button1.Visible ? button1.Text + STANDARD_MESSAGEBOX_SEPARATOR_SPACES : string.Empty)
+                                        + (button2.Visible ? button2.Text + STANDARD_MESSAGEBOX_SEPARATOR_SPACES : string.Empty)
+                                        + (button3.Visible ? button3.Text + STANDARD_MESSAGEBOX_SEPARATOR_SPACES : string.Empty);
 
                     //Build same clipboard text like the standard .Net MessageBox
-                    var textForClipboard = STANDARD_MESSAGEBOX_SEPARATOR_LINES
-                                         + this.Text + Environment.NewLine
+                    string textForClipboard = STANDARD_MESSAGEBOX_SEPARATOR_LINES
+                                         + Text + Environment.NewLine
                                          + STANDARD_MESSAGEBOX_SEPARATOR_LINES
-                                         + this.richTextBoxMessage.Text + Environment.NewLine
+                                         + richTextBoxMessage.Text + Environment.NewLine
                                          + STANDARD_MESSAGEBOX_SEPARATOR_LINES
                                          + buttonsTextLine.Replace("&", string.Empty) + Environment.NewLine
                                          + STANDARD_MESSAGEBOX_SEPARATOR_LINES;
@@ -834,12 +829,14 @@ namespace JR.Utils.GUI.Forms
             public static DialogResult Show(IWin32Window owner, string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon, MessageBoxDefaultButton defaultButton)
             {
                 //Create a new instance of the FlexibleMessageBox form
-                var flexibleMessageBoxForm = new FlexibleMessageBoxForm();
-                flexibleMessageBoxForm.ShowInTaskbar = false;
+                FlexibleMessageBoxForm flexibleMessageBoxForm = new FlexibleMessageBoxForm
+                {
+                    ShowInTaskbar = false,
 
-                //Bind the caption and the message text
-                flexibleMessageBoxForm.CaptionText = caption;
-                flexibleMessageBoxForm.MessageText = text;
+                    //Bind the caption and the message text
+                    CaptionText = caption,
+                    MessageText = text
+                };
                 flexibleMessageBoxForm.FlexibleMessageBoxFormBindingSource.DataSource = flexibleMessageBoxForm;
 
                 //Set the buttons visibilities and texts. Also set a default button.

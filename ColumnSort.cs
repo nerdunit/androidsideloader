@@ -6,20 +6,11 @@ using System.Windows.Forms;
 /// </summary>
 public class ListViewColumnSorter : IComparer
 {
-    /// <summary>
-    /// Specifies the column to be sorted
-    /// </summary>
-    private int ColumnToSort;
-
-    /// <summary>
-    /// Specifies the order in which to sort (i.e. 'Ascending').
-    /// </summary>
-    private SortOrder OrderOfSort;
 
     /// <summary>
     /// Case insensitive comparer object
     /// </summary>
-    private CaseInsensitiveComparer ObjectCompare;
+    private readonly CaseInsensitiveComparer ObjectCompare;
 
     /// <summary>
     /// Class constructor. Initializes various elements
@@ -27,10 +18,10 @@ public class ListViewColumnSorter : IComparer
     public ListViewColumnSorter()
     {
         // Initialize the column to '0'
-        ColumnToSort = 0;
+        SortColumn = 0;
 
         // Initialize the sort order to 'none'
-        OrderOfSort = SortOrder.Ascending;
+        Order = SortOrder.Ascending;
 
         // Initialize the CaseInsensitiveComparer object
         ObjectCompare = new CaseInsensitiveComparer();
@@ -50,39 +41,30 @@ public class ListViewColumnSorter : IComparer
         // Cast the objects to be compared to ListViewItem objects
         listviewX = (ListViewItem)x;
         listviewY = (ListViewItem)y;
-        if (ColumnToSort == 5 ) {
+        if (SortColumn == 5)
+        {
             try
             {
-                int yNum = int.Parse(cleanNumber(listviewY.SubItems[ColumnToSort].Text));
-                int xNum = int.Parse(cleanNumber(listviewX.SubItems[ColumnToSort].Text));
-                if (xNum == yNum )
-                {
-                    return 0;
-                } 
-                else if(xNum > yNum && OrderOfSort == SortOrder.Ascending)
-                {
-                    return -1;
-                }
-                else
-                {
-                    return 1;
-                }
-            } catch { }
+                int yNum = int.Parse(cleanNumber(listviewY.SubItems[SortColumn].Text));
+                int xNum = int.Parse(cleanNumber(listviewX.SubItems[SortColumn].Text));
+                return xNum == yNum ? 0 : xNum > yNum && Order == SortOrder.Ascending ? -1 : 1;
+            }
+            catch { }
         }
 
         // Compare the two items
-        compareResult = ObjectCompare.Compare(listviewX.SubItems[ColumnToSort].Text, listviewY.SubItems[ColumnToSort].Text);
+        compareResult = ObjectCompare.Compare(listviewX.SubItems[SortColumn].Text, listviewY.SubItems[SortColumn].Text);
 
         // Calculate correct return value based on object comparison
-        if (OrderOfSort == SortOrder.Ascending)
+        if (Order == SortOrder.Ascending)
         {
             // Ascending sort is selected, return normal result of compare operation
             return compareResult;
         }
-        else if (OrderOfSort == SortOrder.Descending)
+        else if (Order == SortOrder.Descending)
         {
             // Descending sort is selected, return negative result of compare operation
-            return (-compareResult);
+            return -compareResult;
         }
         else
         {
@@ -94,32 +76,12 @@ public class ListViewColumnSorter : IComparer
     /// <summary>
     /// Gets or sets the number of the column to which to apply the sorting operation (Defaults to '0').
     /// </summary>
-    public int SortColumn
-    {
-        set
-        {
-            ColumnToSort = value;
-        }
-        get
-        {
-            return ColumnToSort;
-        }
-    }
+    public int SortColumn { set; get; }
 
     /// <summary>
     /// Gets or sets the order of sorting to apply (for example, 'Ascending' or 'Descending').
     /// </summary>
-    public SortOrder Order
-    {
-        set
-        {
-            OrderOfSort = value;
-        }
-        get
-        {
-            return OrderOfSort;
-        }
-    }
+    public SortOrder Order { set; get; }
 
     private string cleanNumber(string number)
     {

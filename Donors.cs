@@ -1,22 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace AndroidSideloader
 {
-    class Donors
+    internal class Donors
     {
         public static int GameNameIndex = 0;
         public static int PackageNameIndex = 1;
         public static int VersionCodeIndex = 2;
         public static int UpdateOrNew = 3;
-         /* Game Name
-         * Package Name
-         * Version Code
-         * Update or New app
-         */
+        /* Game Name
+        * Package Name
+        * Version Code
+        * Update or New app
+        */
         public static List<string> newAppProperties = new List<string>();
         public static List<string> donorGameProperties = new List<string>();
 
@@ -52,7 +48,7 @@ namespace AndroidSideloader
                     if (game.Length > 1)
                     {
                         string[] splitGame = game.Split(';');
-                        newApps.Add(splitGame); 
+                        newApps.Add(splitGame);
                     }
                 }
             }

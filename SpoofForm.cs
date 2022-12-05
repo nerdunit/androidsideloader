@@ -1,9 +1,9 @@
 ﻿using JR.Utils.GUI.Forms;
-using System;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Windows.Forms;
 using Spoofer;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace AndroidSideloader
 {
@@ -18,7 +18,7 @@ namespace AndroidSideloader
         {
             if (!spoofer.HasDependencies())
             {
-                MessageBox.Show("You are missing the dependencies... Cannot spoof games");
+                _ = MessageBox.Show("You are missing the dependencies... Cannot spoof games");
                 return;
             }
             string NewPackageName = PackageNameTextBox.Text;
@@ -31,9 +31,13 @@ namespace AndroidSideloader
                 openFileDialog.RestoreDirectory = true;
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
                     path = openFileDialog.FileName;
+                }
                 else
+                {
                     return;
+                }
             }
 
             progressBar1.Style = ProgressBarStyle.Marquee;
@@ -44,21 +48,22 @@ namespace AndroidSideloader
             {
                 spoofer.Init();
                 output += spoofer.SpoofApk(path, NewPackageName);
-            });
-            t1.IsBackground = true;
+            })
+            {
+                IsBackground = true
+            };
             t1.Start();
 
             while (t1.IsAlive)
+            {
                 await Task.Delay(100);
-
-            
+            }
 
             progressBar1.Style = ProgressBarStyle.Continuous;
 
-            if (output.Contains("is not recognized as an internal or external command"))
-                FlexibleMessageBox.Show(Sideloader.SpooferWarning);
-            else
-                FlexibleMessageBox.Show($"App spoofed from {spoofer.originalPackageName} to {NewPackageName}");
+            _ = output.Contains("is not recognized as an internal or external command")
+                ? FlexibleMessageBox.Show(Sideloader.SpooferWarning)
+                : FlexibleMessageBox.Show($"App spoofed from {spoofer.originalPackageName} to {NewPackageName}");
         }
 
         private void SpoofForm_Load(object sender, EventArgs e)

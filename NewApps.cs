@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace AndroidSideloader
@@ -30,10 +25,10 @@ namespace AndroidSideloader
         {
             if (mouseDown)
             {
-                this.Location = new Point(
-                    (this.Location.X - lastLocation.X) + e.X, (this.Location.Y - lastLocation.Y) + e.Y);
+                Location = new Point(
+                    Location.X - lastLocation.X + e.X, Location.Y - lastLocation.Y + e.Y);
 
-                this.Update();
+                Update();
             }
         }
 
@@ -59,7 +54,7 @@ namespace AndroidSideloader
                 }
             }
             MainForm.newpackageupload();
-            this.Close();
+            Close();
         }
 
         private void NewApps_Load(object sender, EventArgs e)
@@ -71,7 +66,9 @@ namespace AndroidSideloader
             {
                 ListViewItem NGame = new ListViewItem(release);
                 if (!NewAppList.Contains(NGame))
-                NewAppList.Add(NGame);
+                {
+                    NewAppList.Add(NGame);
+                }
             }
             ListViewItem[] arr = NewAppList.ToArray();
             NewAppsListView.BeginUpdate();

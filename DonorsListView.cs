@@ -1,18 +1,6 @@
-﻿using AndroidSideloader.Utilities;
-using JR.Utils.GUI.Forms;
-using Newtonsoft.Json;
-using SergeUtils;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Net.NetworkInformation;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace AndroidSideloader
@@ -49,16 +37,24 @@ namespace AndroidSideloader
         {
             MainForm.updatesnotified = true;
             if (MainForm.updates && MainForm.newapps)
+            {
                 bothdet.Visible = true;
+            }
             else if (MainForm.updates && !MainForm.newapps)
+            {
                 upddet.Visible = true;
+            }
             else
+            {
                 newdet.Visible = true;
+            }
 
             foreach (ListViewItem listItem in DonorsListView.Items)
-            { 
+            {
                 if (listItem.SubItems[Donors.UpdateOrNew].Text.Contains("Update"))
+                {
                     listItem.BackColor = Color.FromArgb(0, 79, 97);
+                }
             }
 
         }
@@ -81,24 +77,29 @@ namespace AndroidSideloader
                 }
                 if (uncheckednewapps)
                 {
-     
+
                     NewApps NewAppForm = new NewApps();
-                    NewAppForm.ShowDialog();
-                    this.Hide();
+                    _ = NewAppForm.ShowDialog();
+                    Hide();
                 }
                 else
-                this.Hide();
-                int count = 0;
-                count = DonorsListView.CheckedItems.Count;
-                string[] gamesToUpload;
-                gamesToUpload = new string[count];
+                {
+                    Hide();
+                }
+                int count = DonorsListView.CheckedItems.Count;
+                _ = new string[count];
                 for (int i = 0; i < count; i++)
                 {
                     ulong vcode = Convert.ToUInt64(DonorsListView.CheckedItems[i].SubItems[Donors.VersionCodeIndex].Text);
                     if (DonorsListView.CheckedItems[i].SubItems[Donors.UpdateOrNew].Text.Contains("Update"))
-                     await Program.form.extractAndPrepareGameToUploadAsync(DonorsListView.CheckedItems[i].SubItems[Donors.GameNameIndex].Text, DonorsListView.CheckedItems[i].SubItems[Donors.PackageNameIndex].Text, vcode, true);
-                    else 
-                     await Program.form.extractAndPrepareGameToUploadAsync(DonorsListView.CheckedItems[i].SubItems[Donors.GameNameIndex].Text, DonorsListView.CheckedItems[i].SubItems[Donors.PackageNameIndex].Text, vcode, false);
+                    {
+                        await Program.form.extractAndPrepareGameToUploadAsync(DonorsListView.CheckedItems[i].SubItems[Donors.GameNameIndex].Text, DonorsListView.CheckedItems[i].SubItems[Donors.PackageNameIndex].Text, vcode, true);
+                    }
+                    else
+                    {
+                        await Program.form.extractAndPrepareGameToUploadAsync(DonorsListView.CheckedItems[i].SubItems[Donors.GameNameIndex].Text, DonorsListView.CheckedItems[i].SubItems[Donors.PackageNameIndex].Text, vcode, false);
+                    }
+
                     ifuploads = true;
                 }
             }
@@ -107,8 +108,8 @@ namespace AndroidSideloader
             {
                 MainForm.DoUpload();
             }
-            this.Close();
-        } 
+            Close();
+        }
 
         private void DonorsListView_ItemChecked(object sender, ItemCheckedEventArgs e)
         {
@@ -142,9 +143,9 @@ namespace AndroidSideloader
             if (uncheckednewapps)
             {
                 NewApps NewAppForm = new NewApps();
-                NewAppForm.ShowDialog();
+                _ = NewAppForm.ShowDialog();
             }
-            this.Close();
+            Close();
         }
 
         private void DonorsListViewForm_MouseDown(object sender, MouseEventArgs e)
@@ -157,9 +158,9 @@ namespace AndroidSideloader
         {
             if (mouseDown)
             {
-                this.Location = new Point(
-                    (this.Location.X - lastLocation.X) + e.X, (this.Location.Y - lastLocation.Y) + e.Y);
-                this.Update();
+                Location = new Point(
+                    Location.X - lastLocation.X + e.X, Location.Y - lastLocation.Y + e.Y);
+                Update();
             }
         }
 

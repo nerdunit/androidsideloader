@@ -16,10 +16,7 @@ namespace AndroidSideloader.Models
         public string Password
         {
             get => password;
-            set
-            {
-                password = Encoding.UTF8.GetString(Convert.FromBase64String(value));
-            }
+            set => password = Encoding.UTF8.GetString(Convert.FromBase64String(value));
         }
     }
 }

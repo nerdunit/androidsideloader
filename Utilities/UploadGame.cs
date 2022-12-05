@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace AndroidSideloader.Utilities
+﻿namespace AndroidSideloader.Utilities
 {
-    class UploadGame
+    internal class UploadGame
     {
         public UploadGame(string Uploadcommand, string Pckgcommand, string Uploadgamename, ulong Uploadversion, bool isUpdate)
         {
@@ -17,12 +11,12 @@ namespace AndroidSideloader.Utilities
         }
         public UploadGame()
         {
-            
+
         }
         public bool isUpdate { get; set; }
 
         public string Pckgcommand { get; set; }
-        
+
         public string Uploadgamename { get; set; }
 
         public ulong Uploadversion { get; set; }

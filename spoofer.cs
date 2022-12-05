@@ -2,8 +2,6 @@
 using AndroidSideloader.Utilities;
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.IO;
 
 namespace Spoofer
@@ -18,7 +16,7 @@ namespace Spoofer
             //If there is no keystore or details (user and pw for keystore) generate them!
             if ((File.Exists("keystore.key") == false || File.Exists("details.txt") == false) && HasDependencies())
             {
-                var rand = new Random();
+                Random rand = new Random();
                 alias = GeneralUtilities.randomString(8);
                 password = GeneralUtilities.randomString(16);
                 string subject = $"CN = {GeneralUtilities.randomString(rand.Next(2, 6))}, OU = {GeneralUtilities.randomString(rand.Next(2, 6))}, O = {GeneralUtilities.randomString(rand.Next(2, 6))}, L = {GeneralUtilities.randomString(rand.Next(2, 6))}, ST = {GeneralUtilities.randomString(rand.Next(2, 6))}, C = {GeneralUtilities.randomString(rand.Next(2, 6))}";
@@ -30,19 +28,19 @@ namespace Spoofer
                 cmd.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
                 cmd.StartInfo.CreateNoWindow = true;
                 cmd.StartInfo.UseShellExecute = false;
-                cmd.Start();
+                _ = cmd.Start();
                 cmd.StandardInput.WriteLine($"keytool -genkeypair -alias {alias} -keyalg RSA -keysize 2048 -keystore keystore.key -keypass {password} -storepass {password} -dname \"{subject}\"");
                 cmd.StandardInput.Flush();
                 cmd.StandardInput.Close();
                 cmd.WaitForExit();
                 string keyerror = cmd.StandardError.ReadToEnd();
                 string keyoutput = cmd.StandardOutput.ReadToEnd();
-                Logger.Log($"Output: {keyoutput} Error: {keyerror}");
+                _ = Logger.Log($"Output: {keyoutput} Error: {keyerror}");
                 File.WriteAllText("details.txt", $"{alias};{password}");
             }
             else
             {
-                var temp = File.ReadAllText("details.txt").Split(';');
+                string[] temp = File.ReadAllText("details.txt").Split(';');
                 alias = temp[0];
                 password = temp[1];
             }
@@ -71,15 +69,15 @@ namespace Spoofer
         {
             //Rename
             ProcessOutput output = new ProcessOutput("", "");
-            string oldGameName = Path.GetFileName(apkPath);
+            _ = Path.GetFileName(apkPath);
             folderPath = apkPath.Replace(Path.GetFileName(apkPath), "");
             File.Move(apkPath, $"{folderPath}temp.apk");
             apkPath = $"{folderPath}temp.apk";
             decompiledPath = apkPath.Replace(".apk", "");
             //newPackageName = $"com.{Utilities.randomString(rand.Next(3, 8))}.{Utilities.randomString(rand.Next(3, 8))}";
             originalPackageName = PackageName(apkPath);
-            Logger.Log($"Your app will be spoofed as {newPackageName}");
-            Logger.Log($"Folderpath: {folderPath} decompiledPaht: {decompiledPath} ");
+            _ = Logger.Log($"Your app will be spoofed as {newPackageName}");
+            _ = Logger.Log($"Folderpath: {folderPath} decompiledPaht: {decompiledPath} ");
             if (obbPath.Length > 1)
             {
                 RenameObb(obbPath, newPackageName, originalPackageName);
@@ -98,7 +96,7 @@ namespace Spoofer
                     File.WriteAllText(file, foo);
                 }
             }
-            
+
             //spoofedApkPath = $"{Path.GetFileName(apkPath).Replace(".apk", "")}_Spoofed as {newPackageName}.apk";
             spoofedApkPath = Path.GetDirectoryName(apkPath) + "\\" + spoofedFileName;
             string apkDecompiledPath = Path.GetFileName(apkPath).Replace(".apk", "");
@@ -107,12 +105,18 @@ namespace Spoofer
 
             //Sign the new apk
             if (File.Exists(folderPath + "keystore.key") == false)
+            {
                 File.Copy("keystore.key", $"{folderPath}keystore.key");
+            }
+
             output += SignApk(spoofedApkPath);
 
             //Delete the copy of the key and the decompiled apk folder
             if (string.Equals(folderPath, Environment.CurrentDirectory + "\\") == false)
+            {
                 File.Delete($"{folderPath}keystore.key");
+            }
+
             Directory.Delete(decompiledPath, true);
             File.Delete(apkPath);
 
@@ -130,7 +134,7 @@ namespace Spoofer
             cmdSign.StartInfo.UseShellExecute = false;
             cmdSign.StartInfo.RedirectStandardOutput = true; //
             cmdSign.StartInfo.RedirectStandardError = true; //
-            cmdSign.Start();
+            _ = cmdSign.Start();
             cmdSign.StandardInput.WriteLine($"jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore keystore.key \"{path}\" {alias}");
             cmdSign.StandardInput.WriteLine(password);
             cmdSign.StandardInput.Flush();
@@ -154,9 +158,7 @@ namespace Spoofer
 
         public static bool HasDependencies()
         {
-            if (ExistsOnPath("jarsigner") && ExistsOnPath("apktool") && ExistsOnPath("aapt"))
-                return true;
-            return false;
+            return ExistsOnPath("jarsigner") && ExistsOnPath("apktool") && ExistsOnPath("aapt");
         }
 
         public static bool ExistsOnPath(string exeName)
@@ -169,9 +171,9 @@ namespace Spoofer
                     p.StartInfo.FileName = "where";
                     p.StartInfo.CreateNoWindow = true;
                     p.StartInfo.Arguments = exeName;
-                    p.Start();
+                    _ = p.Start();
                     p.WaitForExit();
-                    return p.ExitCode==0;
+                    return p.ExitCode == 0;
                 }
             }
             catch
@@ -191,12 +193,14 @@ namespace Spoofer
                     p.StartInfo.Arguments = exeName;
                     p.StartInfo.CreateNoWindow = true;
                     p.StartInfo.RedirectStandardOutput = true;
-                    p.Start();
+                    _ = p.Start();
                     string output = p.StandardOutput.ReadToEnd();
                     p.WaitForExit();
 
                     if (p.ExitCode != 0)
+                    {
                         return null;
+                    }
 
                     // just return first match
                     return output.Substring(0, output.IndexOf(Environment.NewLine));
@@ -224,10 +228,10 @@ namespace Spoofer
 
         public static string PackageName(string path)
         {
-            Logger.Log($"aapt dump badging \"{path}\"");
+            _ = Logger.Log($"aapt dump badging \"{path}\"");
 
             string originalPackageName = GeneralUtilities.startProcess("cmd.exe", path.Replace(Path.GetFileName(path), string.Empty), $"aapt dump badging \"{path}\" | findstr -i \"package: name\"").Output;
-            Logger.Log($"originalPackageName: {originalPackageName}");
+            _ = Logger.Log($"originalPackageName: {originalPackageName}");
             try
             {
                 originalPackageName = originalPackageName.Substring(originalPackageName.IndexOf("package: name='") + 15);

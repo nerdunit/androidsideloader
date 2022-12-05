@@ -10,17 +10,16 @@ namespace AndroidSideloader
     public class RoundButton : Control, IButtonControl
     {
         #region Variables
-        int radius;
-        bool transparency;
-        MouseState state;
-        RoundedRectangleF roundedRect;
-        Color inactive1, inactive2, active1, active2;
+        private int radius;
+        private MouseState state;
+        private RoundedRectangleF roundedRect;
+        private Color inactive1, inactive2, active1, active2;
         private Color strokeColor;
         private bool stroke;
 
         public bool Stroke
         {
-            get { return stroke; }
+            get => stroke;
             set
             {
                 stroke = value;
@@ -30,7 +29,7 @@ namespace AndroidSideloader
 
         public Color StrokeColor
         {
-            get { return strokeColor; }
+            get => strokeColor;
             set
             {
                 strokeColor = value;
@@ -61,21 +60,23 @@ namespace AndroidSideloader
             ForeColor = Color.Black;
             Font = new System.Drawing.Font("Comic Sans MS", 10, FontStyle.Bold);
             state = MouseState.Leave;
-            transparency = false;
+            Transparency = false;
         }
         #endregion
         #region Events
         protected override void OnPaint(PaintEventArgs e)
         {
             #region Transparency
-            if (transparency)
+            if (Transparency)
+            {
                 Transparenter.MakeTransparent(this, e.Graphics);
+            }
             #endregion
 
             #region Drawing
             e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
             roundedRect = new RoundedRectangleF(Width, Height, radius);
-            e.Graphics.FillRectangle(Brushes.Transparent, this.ClientRectangle);
+            e.Graphics.FillRectangle(Brushes.Transparent, ClientRectangle);
 
             int R1 = (active1.R + inactive1.R) / 2;
             int G1 = (active1.G + inactive1.G) / 2;
@@ -87,21 +88,38 @@ namespace AndroidSideloader
 
             Rectangle rect = new Rectangle(0, 0, Width, Height);
 
-            if (this.Enabled)
+            if (Enabled)
             {
                 if (state == MouseState.Leave)
+                {
                     using (LinearGradientBrush inactiveGB = new LinearGradientBrush(rect, inactive1, inactive2, 90f))
+                    {
                         e.Graphics.FillPath(inactiveGB, roundedRect.Path);
+                    }
+                }
                 else if (state == MouseState.Enter)
+                {
                     using (LinearGradientBrush activeGB = new LinearGradientBrush(rect, active1, active2, 90f))
+                    {
                         e.Graphics.FillPath(activeGB, roundedRect.Path);
+                    }
+                }
                 else if (state == MouseState.Down)
+                {
                     using (LinearGradientBrush downGB = new LinearGradientBrush(rect, Color.FromArgb(R1, G1, B1), Color.FromArgb(R2, G2, B2), 90f))
+                    {
                         e.Graphics.FillPath(downGB, roundedRect.Path);
+                    }
+                }
+
                 if (stroke)
+                {
                     using (Pen pen = new Pen(strokeColor, 1))
                     using (GraphicsPath path = new RoundedRectangleF(Width - (radius > 0 ? 0 : 1), Height - (radius > 0 ? 0 : 1), radius).Path)
+                    {
                         e.Graphics.DrawPath(pen, path);
+                    }
+                }
             }
             else
             {
@@ -124,7 +142,9 @@ namespace AndroidSideloader
                 Alignment = StringAlignment.Center,
             })
             using (Brush brush = new SolidBrush(ForeColor))
-                e.Graphics.DrawString(Text, Font, brush, this.ClientRectangle, sf);
+            {
+                e.Graphics.DrawString(Text, Font, brush, ClientRectangle, sf);
+            }
             #endregion
             base.OnPaint(e);
         }
@@ -170,7 +190,10 @@ namespace AndroidSideloader
         protected override void OnMouseUp(MouseEventArgs e)
         {
             if (state != MouseState.Leave)
+            {
                 state = MouseState.Enter;
+            }
+
             base.OnMouseUp(e);
             Invalidate();
         }
@@ -180,10 +203,7 @@ namespace AndroidSideloader
 
         public int Radius
         {
-            get
-            {
-                return radius;
-            }
+            get => radius;
             set
             {
                 radius = value;
@@ -192,10 +212,7 @@ namespace AndroidSideloader
         }
         public Color Inactive1
         {
-            get
-            {
-                return inactive1;
-            }
+            get => inactive1;
             set
             {
                 inactive1 = value;
@@ -204,10 +221,7 @@ namespace AndroidSideloader
         }
         public Color Inactive2
         {
-            get
-            {
-                return inactive2;
-            }
+            get => inactive2;
             set
             {
                 inactive2 = value;
@@ -216,10 +230,7 @@ namespace AndroidSideloader
         }
         public Color Active1
         {
-            get
-            {
-                return active1;
-            }
+            get => active1;
             set
             {
                 active1 = value;
@@ -228,33 +239,17 @@ namespace AndroidSideloader
         }
         public Color Active2
         {
-            get
-            {
-                return active2;
-            }
+            get => active2;
             set
             {
                 active2 = value;
                 Invalidate();
             }
         }
-        public bool Transparency
-        {
-            get
-            {
-                return transparency;
-            }
-            set
-            {
-                transparency = value;
-            }
-        }
+        public bool Transparency { get; set; }
         public override string Text
         {
-            get
-            {
-                return base.Text;
-            }
+            get => base.Text;
             set
             {
                 base.Text = value;
@@ -263,10 +258,7 @@ namespace AndroidSideloader
         }
         public override Color ForeColor
         {
-            get
-            {
-                return base.ForeColor;
-            }
+            get => base.ForeColor;
             set
             {
                 base.ForeColor = value;
@@ -276,10 +268,7 @@ namespace AndroidSideloader
 
         public DialogResult DialogResult
         {
-            get
-            {
-                return System.Windows.Forms.DialogResult.OK;
-            }
+            get => System.Windows.Forms.DialogResult.OK;
             set
             {
             }

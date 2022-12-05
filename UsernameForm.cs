@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Windows.Forms;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace AndroidSideloader
 {
@@ -14,7 +14,7 @@ namespace AndroidSideloader
             InitializeComponent();
         }
 
-        string defaultText;
+        private string defaultText;
 
         private void usernameForm_Load(object sender, EventArgs e)
         {
@@ -26,7 +26,7 @@ namespace AndroidSideloader
         {
             if (textBox1.Text == defaultText || textBox1.Text.Length == 0)
             {
-                MessageBox.Show("Please enter your username first");
+                _ = MessageBox.Show("Please enter your username first");
                 return;
             }
 
@@ -34,12 +34,16 @@ namespace AndroidSideloader
             {
                 createUserJson(textBox1.Text);
 
-            });
-            t1.IsBackground = true;
+            })
+            {
+                IsBackground = true
+            };
             t1.Start();
 
             while (t1.IsAlive)
+            {
                 await Task.Delay(100);
+            }
 
             MainForm.notify("Done");
 
@@ -49,11 +53,11 @@ namespace AndroidSideloader
 
         public static void createUserJson(string username)
         {
-            ADB.RunAdbCommandToString($"shell settings put global username {username}");
-            foreach (var jsonFileName in userJsons)
+            _ = ADB.RunAdbCommandToString($"shell settings put global username {username}");
+            foreach (string jsonFileName in userJsons)
             {
                 createUserJsonByName(username, jsonFileName);
-                ADB.RunAdbCommandToString("push \"" + Environment.CurrentDirectory + $"\\{jsonFileName}\" " + " /sdcard/");
+                _ = ADB.RunAdbCommandToString("push \"" + Environment.CurrentDirectory + $"\\{jsonFileName}\" " + " /sdcard/");
                 File.Delete(jsonFileName);
             }
 

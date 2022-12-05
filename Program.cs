@@ -1,19 +1,18 @@
 ﻿using System;
-using System.Windows.Forms;
-using System.Security.Permissions;
 using System.IO;
-using System.Drawing.Drawing2D;
+using System.Security.Permissions;
+using System.Windows.Forms;
 
 namespace AndroidSideloader
 {
-    static class Program
+    internal static class Program
     {
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
         [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.ControlAppDomain)]
-        static void Main()
+        private static void Main()
         {
 
             AppDomain currentDomain = AppDomain.CurrentDomain;
@@ -26,7 +25,8 @@ namespace AndroidSideloader
             //form.Show();
         }
         public static MainForm form;
-        static void MyHandler(object sender, UnhandledExceptionEventArgs args)
+
+        private static void MyHandler(object sender, UnhandledExceptionEventArgs args)
         {
             Exception e = (Exception)args.ExceptionObject;
             string date_time = DateTime.Now.ToString("dddd, MMMM dd @ hh:mmtt (UTC)");

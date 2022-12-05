@@ -1,18 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 
 namespace AndroidSideloader.Utilities
 {
-    class StringUtilities
+    internal class StringUtilities
     {
         public static string RemoveEverythingAfterFirst(string s, string removeMe)
         {
             int index = s.IndexOf(removeMe);
             if (index > 0)
+            {
                 s = s.Substring(0, index);
+            }
+
             return s;
         }
 
@@ -20,7 +19,10 @@ namespace AndroidSideloader.Utilities
         {
             int index = s.LastIndexOf(removeMe);
             if (index > 0)
+            {
                 s = s.Substring(0, index);
+            }
+
             return s;
         }
 
@@ -28,7 +30,10 @@ namespace AndroidSideloader.Utilities
         {
             int index = s.IndexOf(removeMe);
             if (index > 0)
+            {
                 s = s.Substring(index);
+            }
+
             return s;
         }
 
@@ -50,7 +55,10 @@ namespace AndroidSideloader.Utilities
         {
             int index = s.LastIndexOf(removeMe);
             if (index > 0)
+            {
                 s = s.Substring(index);
+            }
+
             return s;
         }
     }

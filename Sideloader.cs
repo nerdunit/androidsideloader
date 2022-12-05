@@ -1,17 +1,13 @@
-﻿using System;
-using System.Diagnostics;
+﻿using JR.Utils.GUI.Forms;
+using System;
 using System.IO;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using Newtonsoft.Json;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using JR.Utils.GUI.Forms;
 
 namespace AndroidSideloader
 {
-    class Sideloader
+    internal class Sideloader
     {
         public static string TempFolder = Path.Combine(Environment.CurrentDirectory, "temp");
         public static string CrashLogPath = "crashlog.txt";
@@ -26,10 +22,10 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
         public static void PushUserJsons()
         {
             ADB.WakeDevice();
-            foreach (var userJson in UsernameForm.userJsons)
+            foreach (string userJson in UsernameForm.userJsons)
             {
                 UsernameForm.createUserJsonByName(Utilities.GeneralUtilities.randomString(16), userJson);
-                ADB.RunAdbCommandToString("push \"" + Environment.CurrentDirectory + $"\\{userJson}\" " + " /sdcard/");
+                _ = ADB.RunAdbCommandToString("push \"" + Environment.CurrentDirectory + $"\\{userJson}\" " + " /sdcard/");
                 File.Delete(userJson);
             }
         }
@@ -52,7 +48,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
         {
             ADB.WakeDevice();
             ProcessOutput output = new ProcessOutput();
-            var commands = File.ReadAllLines(path);
+            string[] commands = File.ReadAllLines(path);
             string currfolder = Path.GetDirectoryName(path);
             string[] zipz = Directory.GetFiles(currfolder, "*.7z", SearchOption.AllDirectories);
             foreach (string zip in zipz)
@@ -65,19 +61,23 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
                 {
                     string replacement = "";
                     string pattern = "adb";
-                    if (ADB.DeviceID.Length > 1)
-                        replacement = $"{Properties.Settings.Default.ADBPath} -s {ADB.DeviceID}";
-                    else
-                        replacement = $"{Properties.Settings.Default.ADBPath}";
+                    replacement = ADB.DeviceID.Length > 1
+                        ? $"{Properties.Settings.Default.ADBPath} -s {ADB.DeviceID}"
+                        : $"{Properties.Settings.Default.ADBPath}";
                     Regex rgx = new Regex(pattern);
                     string result = rgx.Replace(cmd, replacement);
                     Program.form.ChangeTitle($"Running {result}");
-                    Logger.Log($"Logging command: {result} from file: {path}");
+                    _ = Logger.Log($"Logging command: {result} from file: {path}");
                     output += ADB.RunAdbCommandToStringWOADB(result, path);
                     if (output.Error.Contains("mkdir"))
+                    {
                         output.Error = "";
+                    }
+
                     if (output.Output.Contains("reserved"))
+                    {
                         output.Output = "";
+                    }
                 }
             }
             output.Output += "Custom install successful!";
@@ -97,8 +97,9 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
                 foreach (string f in Directory.GetFiles(FolderPath))
                 {
                     if (Path.GetExtension(f) == ".apk")
-
+                    {
                         RecursiveOutput += ADB.Sideload(f);
+                    }
                 }
 
                 foreach (string d in Directory.GetDirectories(FolderPath))
@@ -106,7 +107,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
                     RecursiveSideload(d);
                 }
             }
-            catch (Exception ex) { Logger.Log(ex.Message); }
+            catch (Exception ex) { _ = Logger.Log(ex.Message); }
         }
 
         //Recursive copy any obb folder
@@ -124,7 +125,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
                     RecursiveCopyOBB(d);
                 }
             }
-            catch (Exception ex) { Logger.Log(ex.Message); }
+            catch (Exception ex) { _ = Logger.Log(ex.Message); }
         }
         public static string BackupFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"Rookie Backups");
         //uninstalls an app
@@ -132,16 +133,19 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
         {
             ADB.WakeDevice();
             Program.form.ChangeTitle("Attempting to backup any savedata to Documents\\Rookie Backups...");
-            ProcessOutput output = new ProcessOutput("", "");
+            _ = new ProcessOutput("", "");
             string date_str = DateTime.Today.ToString("yyyy.MM.dd");
             string CurrBackups = Path.Combine(BackupFolder, date_str);
             if (!Directory.Exists(CurrBackups))
-            Directory.CreateDirectory(CurrBackups);
-            ADB.RunAdbCommandToString($"pull \"/sdcard/Android/data/{packagename}\" \"{CurrBackups}\"");
-            output = ADB.UninstallPackage(packagename);
+            {
+                _ = Directory.CreateDirectory(CurrBackups);
+            }
+
+            _ = ADB.RunAdbCommandToString($"pull \"/sdcard/Android/data/{packagename}\" \"{CurrBackups}\"");
+            ProcessOutput output = ADB.UninstallPackage(packagename);
             Program.form.ChangeTitle("");
-            Sideloader.RemoveFolder("/sdcard/Android/obb/" + packagename);
-            Sideloader.RemoveFolder("/sdcard/Android/data/" + packagename);
+            _ = Sideloader.RemoveFolder("/sdcard/Android/obb/" + packagename);
+            _ = Sideloader.RemoveFolder("/sdcard/Android/data/" + packagename);
             return output;
         }
 
@@ -154,7 +158,9 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
 
             DialogResult dialogResult = FlexibleMessageBox.Show($"Are you sure you want to uninstall custom QU settings for {packageName}? this CANNOT be undone!", "WARNING!", MessageBoxButtons.YesNo);
             if (dialogResult != DialogResult.Yes)
+            {
                 return output;
+            }
 
             output = Sideloader.RemoveFile($"/sdcard/Android/data/{packageName}/private/Config.Json");
 
@@ -166,11 +172,11 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
         {
 
             ADB.WakeDevice();
-            ProcessOutput output = new ProcessOutput("", "");
+            _ = new ProcessOutput("", "");
 
             string packageName = Sideloader.gameNameToPackageName(GameName);
 
-            output = ADB.RunAdbCommandToString("shell pm path " + packageName);
+            ProcessOutput output = ADB.RunAdbCommandToString("shell pm path " + packageName);
 
             string apkPath = output.Output; //Get apk
 
@@ -178,15 +184,23 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             apkPath = apkPath.Remove(0, 8); //remove package:
             apkPath = apkPath.Remove(apkPath.Length - 1);
             if (File.Exists($"{Properties.Settings.Default.ADBFolder}\\base.apk"))
+            {
                 File.Delete($"{Properties.Settings.Default.ADBFolder}\\base.apk");
+            }
+
             if (File.Exists($"{Properties.Settings.Default.MainDir}\\{packageName}\\{packageName}.apk"))
+            {
                 File.Delete($"{Properties.Settings.Default.MainDir}\\{packageName}\\{packageName}.apk");
+            }
+
             output += ADB.RunAdbCommandToString("pull " + apkPath); //pull apk
 
             if (Directory.Exists($"{Properties.Settings.Default.MainDir}\\{packageName}"))
+            {
                 Directory.Delete($"{Properties.Settings.Default.MainDir}\\{packageName}", true);
+            }
 
-            Directory.CreateDirectory($"{Properties.Settings.Default.MainDir}\\{packageName}");
+            _ = Directory.CreateDirectory($"{Properties.Settings.Default.MainDir}\\{packageName}");
 
             File.Move($"{Properties.Settings.Default.ADBFolder}\\base.apk", $"{Properties.Settings.Default.MainDir}\\{packageName}\\{packageName}.apk");
             return output;
@@ -197,9 +211,14 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             foreach (string[] game in SideloaderRCLONE.games)
             {
                 if (gameName.Equals(game[SideloaderRCLONE.GameNameIndex]))
+                {
                     return game[SideloaderRCLONE.PackageNameIndex];
+                }
+
                 if (gameName.Equals(game[SideloaderRCLONE.ReleaseNameIndex]))
+                {
                     return game[SideloaderRCLONE.PackageNameIndex];
+                }
             }
             return gameName;
         }
@@ -209,7 +228,9 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             foreach (string[] game in SideloaderRCLONE.games)
             {
                 if (gameName.Equals(game[SideloaderRCLONE.PackageNameIndex]))
+                {
                     return game[SideloaderRCLONE.ReleaseNameIndex];
+                }
             }
             return gameName;
         }
@@ -219,9 +240,14 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             foreach (string[] game in SideloaderRCLONE.games)
             {
                 if (gameName.Equals(game[SideloaderRCLONE.GameNameIndex]))
+                {
                     return game[SideloaderRCLONE.GameNameIndex];
+                }
+
                 if (gameName.Equals(game[SideloaderRCLONE.ReleaseNameIndex]))
+                {
                     return game[SideloaderRCLONE.GameNameIndex];
+                }
             }
             return gameName;
         }
@@ -231,7 +257,9 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             foreach (string[] game in SideloaderRCLONE.games)
             {
                 if (gameName.Contains(game[SideloaderRCLONE.PackageNameIndex]))
+                {
                     return game[SideloaderRCLONE.GameNameIndex];
+                }
             }
             return gameName;
         }
@@ -240,25 +268,38 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
         //Downloads the required files
         public static void downloadFiles()
         {
-            var client = new WebClient();
+            WebClient client = new WebClient();
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             try
             {
                 if (!File.Exists("Sideloader Launcher.exe"))
+                {
                     client.DownloadFile("https://github.com/nerdunit/androidsideloader/raw/master/Sideloader%20Launcher.exe", "Sideloader Launcher.exe");
+                }
 
                 if (!File.Exists("Rookie Offline.cmd"))
+                {
                     client.DownloadFile("https://github.com/nerdunit/androidsideloader/raw/master/Rookie%20Offline.cmd", "Rookie Offline.cmd");
+                }
 
                 if (!File.Exists("C:\\RSL\\platform-tools\\aug2021.txt") || !File.Exists("C:\\RSL\\platform-tools\\adb.exe")) //if adb is not updated, download and auto extract
                 {
                     if (Directory.Exists($"C:\\RSL\\2.8.2"))
+                    {
                         Directory.Delete("C:\\RSL\\2.8.2", true);
+                    }
+
                     if (Directory.Exists($"{Properties.Settings.Default.MainDir}\\adb"))
+                    {
                         Directory.Delete($"{Properties.Settings.Default.MainDir}\\adb", true);
+                    }
+
                     if (!Directory.Exists("C:\\RSL\\platform-tools"))
-                    Directory.CreateDirectory("C:\\RSL\\platform-tools");
+                    {
+                        _ = Directory.CreateDirectory("C:\\RSL\\platform-tools");
+                    }
+
                     client.DownloadFile("https://github.com/nerdunit/androidsideloader/raw/master/adb2.zip", "Ad.7z");
                     Utilities.Zip.ExtractFile(Environment.CurrentDirectory + "\\Ad.7z", "C:\\RSL\\platform-tools");
                     File.Delete("Ad.7z");
@@ -266,11 +307,9 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
 
                 if (!Directory.Exists(Environment.CurrentDirectory + "\\rclone"))
                 {
-                    string url;
-                    if (Environment.Is64BitOperatingSystem)
-                        url = "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-amd64.zip";
-                    else
-                        url = "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-386.zip";
+                    string url = Environment.Is64BitOperatingSystem
+                        ? "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-amd64.zip"
+                        : "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-386.zip";
                     //Since sideloader is build for x86, it should work on both x86 and x64 so we download the according rclone version
 
                     client.DownloadFile(url, "rclone.zip");
@@ -293,7 +332,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             }
             catch
             {
-                FlexibleMessageBox.Show("Your internet is not working properly or rclone/github servers are down, some files may be missing (adb, rclone or launcher)");
+                _ = FlexibleMessageBox.Show("Your internet is not working properly or rclone/github servers are down, some files may be missing (adb, rclone or launcher)");
             }
         }
     }

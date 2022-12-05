@@ -1,18 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace AndroidSideloader.Utilities
+﻿namespace AndroidSideloader.Utilities
 {
-    class UpdateGameData
+    internal class UpdateGameData
     {
-        public UpdateGameData(String gameName, String packageName, ulong installedVersionInt)
+        public UpdateGameData(string gameName, string packageName, ulong installedVersionInt)
         {
-            this.GameName = gameName;
-            this.Packagename = packageName;
-            this.InstalledVersionInt = installedVersionInt;
+            GameName = gameName;
+            Packagename = packageName;
+            InstalledVersionInt = installedVersionInt;
         }
         public string GameName { get; set; }
         public string Packagename { get; set; }

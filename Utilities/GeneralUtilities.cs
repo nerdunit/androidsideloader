@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Text;
 using System.Diagnostics;
-using JR.Utils.GUI.Forms;
-using System.Windows.Forms;
-using System.Net.Http;
 using System.IO;
-using AndroidSideloader;
 using System.Linq;
+using System.Text;
+using System.Windows.Forms;
 
 namespace AndroidSideloader.Utilities
 {
-
-    class GeneralUtilities
+    internal class GeneralUtilities
     {
         public static long GetDirectorySize(string folderPath)
         {
@@ -28,13 +24,15 @@ namespace AndroidSideloader.Utilities
 
         public static void ExecuteCommand(string command)
         {
-            var processInfo = new ProcessStartInfo("cmd.exe", "/c " + command);
-            processInfo.CreateNoWindow = true;
-            processInfo.UseShellExecute = false;
-            processInfo.RedirectStandardError = true;
-            processInfo.RedirectStandardOutput = true;
+            ProcessStartInfo processInfo = new ProcessStartInfo("cmd.exe", "/c " + command)
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true
+            };
 
-            var process = Process.Start(processInfo);
+            Process process = Process.Start(processInfo);
 
             process.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
                 CommandOutput += e.Data;
@@ -51,7 +49,7 @@ namespace AndroidSideloader.Utilities
 
         public static void Melt()
         {
-            Process.Start(new ProcessStartInfo()
+            _ = Process.Start(new ProcessStartInfo()
             {
                 Arguments = "/C choice /C Y /N /D Y /T 5 & Del \"" + Application.ExecutablePath + "\"",
                 WindowStyle = ProcessWindowStyle.Hidden,
@@ -60,7 +58,8 @@ namespace AndroidSideloader.Utilities
             });
             Environment.Exit(0);
         }
-        static Random rand = new Random();
+
+        private static readonly Random rand = new Random();
         public static string randomString(int length)
         {
             string valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -69,7 +68,7 @@ namespace AndroidSideloader.Utilities
             int randomInteger = rand.Next(0, valid.Length);
             while (0 < length--)
             {
-                res.Append(valid[randomInteger]);
+                _ = res.Append(valid[randomInteger]);
                 randomInteger = rand.Next(0, valid.Length);
             }
             return res.ToString();
@@ -77,7 +76,7 @@ namespace AndroidSideloader.Utilities
 
         public static ProcessOutput startProcess(string process, string path, string command)
         {
-            Logger.Log($"Ran process {process} with command {command} in path {path}");
+            _ = Logger.Log($"Ran process {process} with command {command} in path {path}");
             Process cmd = new Process();
             cmd.StartInfo.FileName = "cmd.exe";
             cmd.StartInfo.RedirectStandardInput = true;
@@ -86,16 +85,16 @@ namespace AndroidSideloader.Utilities
             cmd.StartInfo.WorkingDirectory = path;
             cmd.StartInfo.CreateNoWindow = true;
             cmd.StartInfo.UseShellExecute = false;
-            cmd.Start();
+            _ = cmd.Start();
             cmd.StandardInput.WriteLine(command);
             cmd.StandardInput.Flush();
             cmd.StandardInput.Close();
             cmd.WaitForExit();
             string error = cmd.StandardError.ReadToEnd();
             string output = cmd.StandardOutput.ReadToEnd();
-            Logger.Log($"Output: {output}");
-            Logger.Log($"Error: {error}");
-            return new ProcessOutput(output,error);
+            _ = Logger.Log($"Output: {output}");
+            _ = Logger.Log($"Error: {error}");
+            return new ProcessOutput(output, error);
         }
 
     }

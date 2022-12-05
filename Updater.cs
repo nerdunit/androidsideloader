@@ -1,23 +1,17 @@
-﻿using System;
-using System.Text;
-using System.Diagnostics;
-using JR.Utils.GUI.Forms;
+﻿using System.Diagnostics;
 using System.Net;
-using System.Windows.Forms;
 using System.Net.Http;
-using System.IO;
-using AndroidSideloader;
 
 namespace AndroidSideloader
 {
-    class Updater
+    internal class Updater
     {
         public static string AppName { get; set; }
         public static string Repostory { get; set; }
         private static string RawGitHubUrl;
         private static string GitHubUrl;
 
-        static readonly public string LocalVersion = "2.17";
+        public static readonly string LocalVersion = "2.17";
         public static string currentVersion = string.Empty;
         public static string changelog = string.Empty;
 
@@ -44,7 +38,7 @@ namespace AndroidSideloader
             if (IsUpdateAvailable())
             {
                 UpdateForm upForm = new UpdateForm();
-                upForm.ShowDialog(); ;
+                _ = upForm.ShowDialog(); ;
             }
 
 
@@ -55,15 +49,15 @@ namespace AndroidSideloader
         {
             try
             {
-                ADB.RunAdbCommandToString("kill-server");
-                var fileClient = new WebClient();
+                _ = ADB.RunAdbCommandToString("kill-server");
+                WebClient fileClient = new WebClient();
                 ServicePointManager.Expect100Continue = true;
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                Logger.Log($"Downloading update from {GitHubUrl}/releases/download/v{currentVersion}/{AppName}.exe to {AppName} v{currentVersion}.exe");
+                _ = Logger.Log($"Downloading update from {GitHubUrl}/releases/download/v{currentVersion}/{AppName}.exe to {AppName} v{currentVersion}.exe");
                 fileClient.DownloadFile($"{GitHubUrl}/releases/download/v{currentVersion}/{AppName}.exe", $"{AppName} v{currentVersion}.exe");
                 fileClient.Dispose();
-                Logger.Log($"Starting {AppName} v{currentVersion}.exe");
-                Process.Start($"{AppName} v{currentVersion}.exe");
+                _ = Logger.Log($"Starting {AppName} v{currentVersion}.exe");
+                _ = Process.Start($"{AppName} v{currentVersion}.exe");
                 //Delete current version
                 AndroidSideloader.Utilities.GeneralUtilities.Melt();
             }

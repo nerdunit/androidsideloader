@@ -6,22 +6,30 @@ using System.Text;
 
 namespace AndroidSideloader
 {
-    class SideloaderUtilities
+    internal class SideloaderUtilities
     {
         public static bool CheckFolderIsObb(string path)
         {
             string[] files = Directory.GetFiles(path);
 
             foreach (string file in files)
-                if (file.EndsWith(".obb") || Path.GetDirectoryName(file).Contains(".") && !Path.GetDirectoryName(file).Contains("_data"))
+            {
+                if (file.EndsWith(".obb") || (Path.GetDirectoryName(file).Contains(".") && !Path.GetDirectoryName(file).Contains("_data")))
+                {
                     return true;
+                }
+            }
+
             return false;
         }
 
         private static string uuid = null;
         public static string UUID()
         {
-            if (uuid != null) return uuid;
+            if (uuid != null)
+            {
+                return uuid;
+            }
 
             StringBuilder sb = new StringBuilder();
 
@@ -30,10 +38,10 @@ namespace AndroidSideloader
 
             foreach (ManagementObject queryObj in searcher.Get())
             {
-                sb.Append(queryObj["NumberOfCores"]);
-                sb.Append(queryObj["ProcessorId"]);
-                sb.Append(queryObj["Name"]);
-                sb.Append(queryObj["SocketDesignation"]);
+                _ = sb.Append(queryObj["NumberOfCores"]);
+                _ = sb.Append(queryObj["ProcessorId"]);
+                _ = sb.Append(queryObj["Name"]);
+                _ = sb.Append(queryObj["SocketDesignation"]);
             }
 
             searcher = new ManagementObjectSearcher("root\\CIMV2",
@@ -41,9 +49,9 @@ namespace AndroidSideloader
 
             foreach (ManagementObject queryObj in searcher.Get())
             {
-                sb.Append(queryObj["Manufacturer"]);
-                sb.Append(queryObj["Name"]);
-                sb.Append(queryObj["Version"]);
+                _ = sb.Append(queryObj["Manufacturer"]);
+                _ = sb.Append(queryObj["Name"]);
+                _ = sb.Append(queryObj["Version"]);
 
             }
 
@@ -52,10 +60,10 @@ namespace AndroidSideloader
 
             foreach (ManagementObject queryObj in searcher.Get())
             {
-                sb.Append(queryObj["Product"]);
+                _ = sb.Append(queryObj["Product"]);
             }
 
-            var bytes = Encoding.ASCII.GetBytes(sb.ToString());
+            byte[] bytes = Encoding.ASCII.GetBytes(sb.ToString());
             SHA256Managed sha = new SHA256Managed();
 
             byte[] hash = sha.ComputeHash(bytes);

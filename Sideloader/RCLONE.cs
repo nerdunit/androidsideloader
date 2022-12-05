@@ -1,14 +1,14 @@
-﻿using System;
+﻿using AndroidSideloader.Utilities;
+using System;
 using System.Collections.Generic;
-using System.Net;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
-using AndroidSideloader.Utilities;
 
 namespace AndroidSideloader
 {
-    class rcloneFolder
+    internal class rcloneFolder
     {
         public string Path { get; set; }
         public string Name { get; set; }
@@ -16,7 +16,7 @@ namespace AndroidSideloader
         public string ModTime { get; set; }
     }
 
-    class SideloaderRCLONE
+    internal class SideloaderRCLONE
     {
         public static List<string> RemotesList = new List<string>();
 
@@ -47,50 +47,61 @@ namespace AndroidSideloader
 
         public static void UpdateNouns(string remote)
         {
-            Logger.Log($"Updating Nouns");
-            RCLONE.runRcloneCommand_DownloadConfig($"sync \"{remote}:{RcloneGamesFolder}/.meta/nouns\" \"{Nouns}\"");
+            _ = Logger.Log($"Updating Nouns");
+            _ = RCLONE.runRcloneCommand_DownloadConfig($"sync \"{remote}:{RcloneGamesFolder}/.meta/nouns\" \"{Nouns}\"");
         }
 
         public static void UpdateGamePhotos(string remote)
         {
-            Logger.Log($"Updating Thumbnails");
-            RCLONE.runRcloneCommand_DownloadConfig($"sync \"{remote}:{RcloneGamesFolder}/.meta/thumbnails\" \"{ThumbnailsFolder}\"");
+            _ = Logger.Log($"Updating Thumbnails");
+            _ = RCLONE.runRcloneCommand_DownloadConfig($"sync \"{remote}:{RcloneGamesFolder}/.meta/thumbnails\" \"{ThumbnailsFolder}\"");
         }
 
         public static void UpdateGameNotes(string remote)
         {
-            Logger.Log($"Updating Game Notes");
-            RCLONE.runRcloneCommand_DownloadConfig($"sync \"{remote}:{RcloneGamesFolder}/.meta/notes\" \"{NotesFolder}\"");
+            _ = Logger.Log($"Updating Game Notes");
+            _ = RCLONE.runRcloneCommand_DownloadConfig($"sync \"{remote}:{RcloneGamesFolder}/.meta/notes\" \"{NotesFolder}\"");
         }
 
         public static void UpdateMetadataFromPublic()
         {
-            Logger.Log($"Downloading Metadata");
-            var rclonecommand =
+            _ = Logger.Log($"Downloading Metadata");
+            string rclonecommand =
                 $"sync \":http:/meta.7z\" \"{Environment.CurrentDirectory}\"";
-            RCLONE.runRcloneCommand_PublicConfig(rclonecommand);
+            _ = RCLONE.runRcloneCommand_PublicConfig(rclonecommand);
         }
 
         public static void ProcessMetadataFromPublic()
         {
             try
             {
-                Logger.Log($"Extracting Metadata");
+                _ = Logger.Log($"Extracting Metadata");
                 Zip.ExtractFile($"{Environment.CurrentDirectory}\\meta.7z", $"{Environment.CurrentDirectory}\\meta",
                     MainForm.PublicConfigFile.Password);
 
-                Logger.Log($"Updating Metadata");
+                _ = Logger.Log($"Updating Metadata");
 
-                if (Directory.Exists(Nouns)) Directory.Delete(Nouns, true);
-                if (Directory.Exists(ThumbnailsFolder)) Directory.Delete(ThumbnailsFolder, true);
-                if (Directory.Exists(NotesFolder)) Directory.Delete(NotesFolder, true);
+                if (Directory.Exists(Nouns))
+                {
+                    Directory.Delete(Nouns, true);
+                }
+
+                if (Directory.Exists(ThumbnailsFolder))
+                {
+                    Directory.Delete(ThumbnailsFolder, true);
+                }
+
+                if (Directory.Exists(NotesFolder))
+                {
+                    Directory.Delete(NotesFolder, true);
+                }
 
                 Directory.Move($"{Environment.CurrentDirectory}\\meta\\.meta\\nouns", Nouns);
                 Directory.Move($"{Environment.CurrentDirectory}\\meta\\.meta\\thumbnails", ThumbnailsFolder);
                 Directory.Move($"{Environment.CurrentDirectory}\\meta\\.meta\\notes", NotesFolder);
 
-                Logger.Log($"Initializing Games List");
-                var gameList = File.ReadAllText($"{Environment.CurrentDirectory}\\meta\\VRP-GameList.txt");
+                _ = Logger.Log($"Initializing Games List");
+                string gameList = File.ReadAllText($"{Environment.CurrentDirectory}\\meta\\VRP-GameList.txt");
 
                 string[] splitList = gameList.Split('\n');
                 splitList = splitList.Skip(1).ToArray();
@@ -107,26 +118,26 @@ namespace AndroidSideloader
             }
             catch (Exception e)
             {
-                Logger.Log(e.Message);
-                Logger.Log(e.StackTrace);
+                _ = Logger.Log(e.Message);
+                _ = Logger.Log(e.StackTrace);
             }
         }
 
         public static void RefreshRemotes()
         {
-            Logger.Log($"Refresh / List Remotes");
+            _ = Logger.Log($"Refresh / List Remotes");
             RemotesList.Clear();
-            var remotes = RCLONE.runRcloneCommand_DownloadConfig("listremotes").Output.Split('\n');
+            string[] remotes = RCLONE.runRcloneCommand_DownloadConfig("listremotes").Output.Split('\n');
 
-            Logger.Log("Loaded following remotes: ");
+            _ = Logger.Log("Loaded following remotes: ");
             foreach (string r in remotes)
             {
                 if (r.Length > 1)
                 {
-                    var remote = r.Remove(r.Length - 1);
+                    string remote = r.Remove(r.Length - 1);
                     if (remote.Contains("mirror"))
                     {
-                        Logger.Log(remote);
+                        _ = Logger.Log(remote);
                         RemotesList.Add(remote);
                     }
                 }
@@ -135,8 +146,8 @@ namespace AndroidSideloader
 
         public static void initGames(string remote)
         {
-            Logger.Log($"Initializing Games List");
-            
+            _ = Logger.Log($"Initializing Games List");
+
             gameProperties.Clear();
             games.Clear();
             string tempGameList = RCLONE.runRcloneCommand_DownloadConfig($"cat \"{remote}:{RcloneGamesFolder}/VRP-GameList.txt\"").Output;
@@ -165,7 +176,7 @@ namespace AndroidSideloader
                                                  | SecurityProtocolType.Tls11
                                                  | SecurityProtocolType.Tls12
                                                  | SecurityProtocolType.Ssl3;
-            Logger.Log($"Attempting to Update Download Config");
+            _ = Logger.Log($"Attempting to Update Download Config");
             try
             {
                 string configUrl = "https://wiki.vrpirates.club/downloads/vrp.download.config";
@@ -175,40 +186,53 @@ namespace AndroidSideloader
                 {
                     string resultString = responseReader.ReadToEnd();
 
-                    Logger.Log($"Retrived updated config from: {configUrl}");
+                    _ = Logger.Log($"Retrived updated config from: {configUrl}");
 
                     if (File.Exists(Environment.CurrentDirectory + "\\rclone\\vrp.download.config_new"))
+                    {
                         File.Delete(Environment.CurrentDirectory + "\\rclone\\vrp.download.config_new");
+                    }
+
                     File.Create(Environment.CurrentDirectory + "\\rclone\\vrp.download.config_new").Close();
                     File.WriteAllText(Environment.CurrentDirectory + "\\rclone\\vrp.download.config_new", resultString);
 
                     if (!File.Exists(Environment.CurrentDirectory + "\\rclone\\hash.txt"))
+                    {
                         File.Create(Environment.CurrentDirectory + "\\rclone\\hash.txt").Close();
+                    }
 
                     string newConfig = CalculateMD5(Environment.CurrentDirectory + "\\rclone\\vrp.download.config_new");
                     string oldConfig = File.ReadAllText(Environment.CurrentDirectory + "\\rclone\\hash.txt");
 
                     if (!File.Exists(Environment.CurrentDirectory + "\\rclone\\vrp.download.config"))
+                    {
                         oldConfig = "Config Doesnt Exist!";
+                    }
 
-                    Logger.Log($"Online Config Hash: {newConfig}; Local Config Hash: {oldConfig}");
+                    _ = Logger.Log($"Online Config Hash: {newConfig}; Local Config Hash: {oldConfig}");
 
                     if (newConfig != oldConfig)
                     {
-                        Logger.Log($"Updated Config Hash is different than the current Config. Updating Configuration File.");
+                        _ = Logger.Log($"Updated Config Hash is different than the current Config. Updating Configuration File.");
 
                         if (File.Exists(Environment.CurrentDirectory + "\\rclone\\vrp.download.config"))
+                        {
                             File.Delete(Environment.CurrentDirectory + "\\rclone\\vrp.download.config");
+                        }
+
                         File.Move(Environment.CurrentDirectory + "\\rclone\\vrp.download.config_new", Environment.CurrentDirectory + "\\rclone\\vrp.download.config");
 
                         File.WriteAllText(Environment.CurrentDirectory + "\\rclone\\hash.txt", string.Empty);
                         File.WriteAllText(Environment.CurrentDirectory + "\\rclone\\hash.txt", newConfig);
-                    } else
+                    }
+                    else
                     {
-                        Logger.Log($"Updated Config Hash matches last download. Not updating.");
+                        _ = Logger.Log($"Updated Config Hash matches last download. Not updating.");
 
                         if (File.Exists(Environment.CurrentDirectory + "\\rclone\\vrp.download.config_new"))
+                        {
                             File.Delete(Environment.CurrentDirectory + "\\rclone\\vrp.download.config_new");
+                        }
                     }
                 }
             }
@@ -221,7 +245,7 @@ namespace AndroidSideloader
                                                  | SecurityProtocolType.Tls11
                                                  | SecurityProtocolType.Tls12
                                                  | SecurityProtocolType.Ssl3;
-            Logger.Log($"Attempting to Update Upload Config");
+            _ = Logger.Log($"Attempting to Update Upload Config");
             try
             {
                 string configUrl = "https://wiki.vrpirates.club/downloads/vrp.upload.config";
@@ -231,16 +255,16 @@ namespace AndroidSideloader
                 {
                     string resultString = responseReader.ReadToEnd();
 
-                    Logger.Log($"Retrived updated config from: {configUrl}");
+                    _ = Logger.Log($"Retrived updated config from: {configUrl}");
 
                     File.WriteAllText(Environment.CurrentDirectory + "\\rclone\\vrp.upload.config", resultString);
 
-                    Logger.Log("Upload config updated successfully.");
+                    _ = Logger.Log("Upload config updated successfully.");
                 }
             }
             catch (Exception e)
             {
-                Logger.Log($"Failed to update Upload config: {e.Message}");
+                _ = Logger.Log($"Failed to update Upload config: {e.Message}");
             }
         }
 
@@ -250,7 +274,7 @@ namespace AndroidSideloader
                                                  | SecurityProtocolType.Tls11
                                                  | SecurityProtocolType.Tls12
                                                  | SecurityProtocolType.Ssl3;
-            Logger.Log($"Attempting to Update Public Config");
+            _ = Logger.Log($"Attempting to Update Public Config");
             try
             {
                 string configUrl = "https://wiki.vrpirates.club/downloads/vrp-public.json";
@@ -260,27 +284,26 @@ namespace AndroidSideloader
                 {
                     string resultString = responseReader.ReadToEnd();
 
-                    Logger.Log($"Retrived updated config from: {configUrl}");
+                    _ = Logger.Log($"Retrived updated config from: {configUrl}");
 
                     File.WriteAllText(Environment.CurrentDirectory + "\\vrp-public.json", resultString);
 
-                    Logger.Log("Public config updated successfully.");
+                    _ = Logger.Log("Public config updated successfully.");
                 }
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
-                Logger.Log($"Failed to update Public config: {e.Message}");
+                _ = Logger.Log($"Failed to update Public config: {e.Message}");
             }
         }
 
-
-        static string CalculateMD5(string filename)
+        private static string CalculateMD5(string filename)
         {
-            using (var md5 = MD5.Create())
+            using (MD5 md5 = MD5.Create())
             {
-                using (var stream = File.OpenRead(filename))
+                using (FileStream stream = File.OpenRead(filename))
                 {
-                    var hash = md5.ComputeHash(stream);
+                    byte[] hash = md5.ComputeHash(stream);
                     return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
                 }
             }
