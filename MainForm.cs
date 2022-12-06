@@ -2805,6 +2805,10 @@ Things you can try:
                     e.Cancel = true;
                     return;
                 }
+                else
+                {
+                    RCLONE.killRclone();
+                }
             }
             else if (isuploading)
             {

@@ -30,7 +30,8 @@ namespace AndroidSideloader
         {
             Exception e = (Exception)args.ExceptionObject;
             string date_time = DateTime.Now.ToString("dddd, MMMM dd @ hh:mmtt (UTC)");
-            File.WriteAllText(Sideloader.CrashLogPath, $"Date/Time of crash: {date_time}\nMessage: {e.Message}\nData: {e.Data}\nSource: {e.Source}\nTargetSite: {e.TargetSite}");
+            File.WriteAllText(Sideloader.CrashLogPath, $"Date/Time of crash: {date_time}\nMessage: {e.Message}\nData: {e.Data}\nSource: {e.Source}\nTargetSite: {e.TargetSite}\n\n\nDebuglog: \n\n\n");
+            File.AppendAllText(Sideloader.CrashLogPath, File.ReadAllText($"{Environment.CurrentDirectory}\\debuglog.txt"));
         }
     }
 }
