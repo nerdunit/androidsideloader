@@ -28,7 +28,6 @@ namespace AndroidSideloader
 #if DEBUG
         public static bool debugMode = true;
         public bool DeviceConnected = false;
-        public bool obbMismatch;
         public bool keyheld;
         public bool keyheld2;
         public static string CurrAPK;
@@ -2309,6 +2308,7 @@ Things you can try:
         public async void downloadInstallGameButton_Click(object sender, EventArgs e)
         {
             {
+                bool obbsMismatch = false;
                 if (nodeviceonstart && !updatesnotified)
                 {
                     _ = await CheckForDevice();
@@ -2690,15 +2690,11 @@ Things you can try:
                                         {
                                             await Task.Delay(100);
                                         }
-                                        if (output.Output.Contains("offline"))
-                                        {
-
-                                        }
-                                        else
+                                        if (!output.Output.Contains("offline"))
                                         {
                                             try
                                             {
-                                                await compareOBBSizes(packagename, gameName, output);
+                                                obbsMismatch = await compareOBBSizes(packagename, gameName, output);
                                             }
                                             catch (Exception ex) { _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}"); }
                                         }
@@ -2726,7 +2722,7 @@ Things you can try:
                     isinstalling = false;
                     return;
                 }
-                if(!obbMismatch)
+                if (!obbsMismatch);
                 {
                     ChangeTitle("Refreshing games list, please wait...         \n");
                     showAvailableSpace();
@@ -2742,83 +2738,87 @@ Things you can try:
 
                     ChangeTitle(" \n\n");
                 }
-                obbMismatch = false;
             }
         }
 
-        private async Task compareOBBSizes(string packagename, string gameName, ProcessOutput output)
+        private async Task<bool> compareOBBSizes(string packagename, string gameName, ProcessOutput output)
         {
-            try
+            if (!Directory.Exists($"{Properties.Settings.Default.MainDir}\\{gameName}\\{packagename}")) {
+                return await Task.FromResult(false);
+            }
+            else
             {
-                ADB.WakeDevice();
-                DirectoryInfo localFolder = new DirectoryInfo($"{Properties.Settings.Default.MainDir}/{gameName}/{packagename}/");
-
-                long totalLocalFolderSize = localFolderSize(localFolder) / (1024 * 1024);
-                string totalRemoteFolderSize = ADB.RunAdbCommandToString($"shell du -m /sdcard/Android/obb/{packagename}").Output;
-                string firstreplacedtotalRemoteFolderSize = Regex.Replace(totalRemoteFolderSize, "[^c]*$", "");
-                string secondreplacedtotalRemoteFolderSize = Regex.Replace(firstreplacedtotalRemoteFolderSize, "[^0-9]", "");
-                int localOBB = (int)totalLocalFolderSize;
-                int remoteOBB = Convert.ToInt32(secondreplacedtotalRemoteFolderSize);
-
-                Console.WriteLine(localFolder.FullName);
-
-                Console.WriteLine("Total local folder size in bytes: " +
-                      totalLocalFolderSize + " Remote Size: " + secondreplacedtotalRemoteFolderSize);
-                if (remoteOBB < localOBB)
+                try
                 {
-                    obbMismatch = true;
-                    DialogResult om = MessageBox.Show("Warning! It seems like the OBB wasnt pushed correctly, this means that the game may not launch correctly.\n Do you want to retry the push?", "OBB Size Mismatch!", MessageBoxButtons.YesNo);
-                    if (om == DialogResult.Yes)
+                    ADB.WakeDevice();
+                    DirectoryInfo localFolder = new DirectoryInfo($"{Properties.Settings.Default.MainDir}/{gameName}/{packagename}/");
+
+                    long totalLocalFolderSize = localFolderSize(localFolder) / (1024 * 1024);
+                    string totalRemoteFolderSize = ADB.RunAdbCommandToString($"shell du -m /sdcard/Android/obb/{packagename}").Output;
+                    string firstreplacedtotalRemoteFolderSize = Regex.Replace(totalRemoteFolderSize, "[^c]*$", "");
+                    string secondreplacedtotalRemoteFolderSize = Regex.Replace(firstreplacedtotalRemoteFolderSize, "[^0-9]", "");
+                    int localOBB = (int)totalLocalFolderSize;
+                    int remoteOBB = Convert.ToInt32(secondreplacedtotalRemoteFolderSize);
+
+                    Console.WriteLine(localFolder.FullName);
+
+                    Console.WriteLine("Total local folder size in bytes: " + totalLocalFolderSize + " Remote Size: " + secondreplacedtotalRemoteFolderSize);
+                    if (remoteOBB < localOBB)
                     {
-                        ChangeTitle("Retrying push");
-                        if (Directory.Exists($"{Properties.Settings.Default.MainDir}\\{gameName}\\{packagename}"))
+                        return await Task.FromResult(true);
+                        DialogResult om = MessageBox.Show("Warning! It seems like the OBB wasnt pushed correctly, this means that the game may not launch correctly.\n Do you want to retry the push?", "OBB Size Mismatch!", MessageBoxButtons.YesNo);
+                        if (om == DialogResult.Yes)
                         {
-                            Thread obbThread = new Thread(() =>
+                            ChangeTitle("Retrying push");
+                            if (Directory.Exists($"{Properties.Settings.Default.MainDir}\\{gameName}\\{packagename}"))
                             {
+                                Thread obbThread = new Thread(() =>
+                                {
 
-                                ChangeTitle($"Copying {packagename} obb to device...");
-                                output += ADB.RunAdbCommandToString($"push \"{Properties.Settings.Default.MainDir}\\{gameName}\\{packagename}\" \"/sdcard/Android/obb\"");
-                                Program.form.ChangeTitle("");
-                            })
-                            {
-                                IsBackground = true
-                            };
-                            obbThread.Start();
+                                    ChangeTitle($"Copying {packagename} obb to device...");
+                                    output += ADB.RunAdbCommandToString($"push \"{Properties.Settings.Default.MainDir}\\{gameName}\\{packagename}\" \"/sdcard/Android/obb\"");
+                                    Program.form.ChangeTitle("");
+                                })
+                                {
+                                    IsBackground = true
+                                };
+                                obbThread.Start();
 
-                            while (obbThread.IsAlive)
-                            {
-                                await Task.Delay(100);
+                                while (obbThread.IsAlive)
+                                {
+                                    await Task.Delay(100);
+                                }
+                                var obbsMatch = await compareOBBSizes(packagename, gameName, output);
                             }
-                            await compareOBBSizes(packagename, gameName, output);
+                        }
+                        else
+                        {
+                            ChangeTitle("Refreshing games list, please wait...         \n");
+                            showAvailableSpace();
+                            listappsbtn();
+                            initListView();
+                            ShowPrcOutput(output);
+                            progressBar.Style = ProgressBarStyle.Continuous;
+                            etaLabel.Text = "ETA: Finished Queue";
+                            speedLabel.Text = "DLS: Finished Queue";
+                            ProgressText.Text = "";
+                            gamesAreDownloading = false;
+                            isinstalling = false;
+                            ChangeTitle(" \n\n");
                         }
                     }
                     else
                     {
-                        ChangeTitle("Refreshing games list, please wait...         \n");
-                        showAvailableSpace();
-                        listappsbtn();
-                        initListView();
-                        ShowPrcOutput(output);
-                        progressBar.Style = ProgressBarStyle.Continuous;
-                        etaLabel.Text = "ETA: Finished Queue";
-                        speedLabel.Text = "DLS: Finished Queue";
-                        ProgressText.Text = "";
-                        gamesAreDownloading = false;
-                        isinstalling = false;
-                        ChangeTitle(" \n\n");
-                        return;
+                        return await Task.FromResult(false);
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    obbMismatch = false;
+                    _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}");
+                    return await Task.FromResult(false);
                 }
             }
-            catch (Exception ex)
-            {
-                _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}");
-            }
-            }
+        }
 
         static long localFolderSize(DirectoryInfo localFolder)
         {
