@@ -2749,6 +2749,7 @@ Things you can try:
             }
             try
             {
+                ChangeTitle("Comparing obbs...");
                 ADB.WakeDevice();
                 DirectoryInfo localFolder = new DirectoryInfo($"{Properties.Settings.Default.MainDir}/{gameName}/{packagename}/");
 
