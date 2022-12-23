@@ -31,7 +31,6 @@ namespace AndroidSideloader
             nodevicemodeBox.Checked = Properties.Settings.Default.nodevicemode;
             bmbfBox.Checked = Properties.Settings.Default.BMBFchecked;
             AutoReinstBox.Checked = Properties.Settings.Default.AutoReinstall;
-            trailersOn.Checked = Properties.Settings.Default.TrailersOn;
 
             if (Properties.Settings.Default.BandwidthLimit.Length > 1)
             {
@@ -164,12 +163,6 @@ namespace AndroidSideloader
         private void AutoReinstBox_CheckedChanged(object sender, EventArgs e)
         {
             Properties.Settings.Default.AutoReinstall = AutoReinstBox.Checked;
-            Properties.Settings.Default.Save();
-        }
-
-        private void trailersOn_CheckedChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.TrailersOn = trailersOn.Checked;
             Properties.Settings.Default.Save();
         }
 
