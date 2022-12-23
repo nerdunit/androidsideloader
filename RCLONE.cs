@@ -12,7 +12,7 @@ namespace AndroidSideloader
         //Kill all rclone, using a static rclone variable doesn't work for some reason #tofix
         public static void killRclone()
         {
-            foreach (Process process in Process.GetProcessesByName("rclone"))
+            foreach (var process in Process.GetProcessesByName("rclone"))
             {
                 process.Kill();
             }

@@ -28,7 +28,6 @@ namespace AndroidSideloader
 #if DEBUG
         public static bool debugMode = true;
         public bool DeviceConnected = false;
-
         public bool keyheld;
         public bool keyheld2;
         public static string CurrAPK;
@@ -2309,6 +2308,7 @@ Things you can try:
         public async void downloadInstallGameButton_Click(object sender, EventArgs e)
         {
             {
+                bool obbsMismatch = false;
                 if (nodeviceonstart && !updatesnotified)
                 {
                     _ = await CheckForDevice();
@@ -2690,6 +2690,14 @@ Things you can try:
                                         {
                                             await Task.Delay(100);
                                         }
+                                        if (!output.Output.Contains("offline"))
+                                        {
+                                            try
+                                            {
+                                                obbsMismatch = await compareOBBSizes(packagename, gameName, output);
+                                            }
+                                            catch (Exception ex) { _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}"); }
+                                        }
                                     }
 
                                 }
@@ -2715,23 +2723,129 @@ Things you can try:
                     isinstalling = false;
                     return;
                 }
-                ChangeTitle("Refreshing games list, please wait...         \n");
-                showAvailableSpace();
-                listappsbtn();
-                initListView();
-                ShowPrcOutput(output);
-                progressBar.Style = ProgressBarStyle.Continuous;
-                etaLabel.Text = "ETA: Finished Queue";
-                speedLabel.Text = "DLS: Finished Queue";
-                ProgressText.Text = "";
-                gamesAreDownloading = false;
-                isinstalling = false;
+                if (!obbsMismatch) ;
+                {
+                    ChangeTitle("Refreshing games list, please wait...         \n");
+                    showAvailableSpace();
+                    listappsbtn();
+                    initListView();
+                    ShowPrcOutput(output);
+                    progressBar.Style = ProgressBarStyle.Continuous;
+                    etaLabel.Text = "ETA: Finished Queue";
+                    speedLabel.Text = "DLS: Finished Queue";
+                    ProgressText.Text = "";
+                    gamesAreDownloading = false;
+                    isinstalling = false;
 
-                ChangeTitle(" \n\n");
+                    ChangeTitle(" \n\n");
+                }
             }
         }
 
-        private void timer_Tick4(object sender, EventArgs e)
+        private async Task<bool> compareOBBSizes(string packagename, string gameName, ProcessOutput output)
+        {
+            if (!Directory.Exists($"{Properties.Settings.Default.MainDir}\\{gameName}\\{packagename}"))
+            {
+                return await Task.FromResult(false);
+            }
+            try
+            {
+                ChangeTitle("Comparing obbs...");
+                ADB.WakeDevice();
+                DirectoryInfo localFolder = new DirectoryInfo($"{Properties.Settings.Default.MainDir}/{gameName}/{packagename}/");
+                long totalLocalFolderSize = localFolderSize(localFolder) / (1024 * 1024);
+                string totalRemoteFolderSize = ADB.RunAdbCommandToString($"shell du -m /sdcard/Android/obb/{packagename}").Output;
+                string firstreplacedtotalRemoteFolderSize = Regex.Replace(totalRemoteFolderSize, "[^c]*$", "");
+                string secondreplacedtotalRemoteFolderSize = Regex.Replace(firstreplacedtotalRemoteFolderSize, "[^0-9]", "");
+                int localOBB = (int)totalLocalFolderSize;
+                int remoteOBB = Convert.ToInt32(secondreplacedtotalRemoteFolderSize);
+                Console.WriteLine(localFolder.FullName);
+                Console.WriteLine("Total local folder size in bytes: " + totalLocalFolderSize + " Remote Size: " + secondreplacedtotalRemoteFolderSize);
+                if (remoteOBB < localOBB)
+                {
+                    DialogResult om = MessageBox.Show("Warning! It seems like the OBB wasnt pushed correctly, this means that the game may not launch correctly.\n Do you want to retry the push?", "OBB Size Mismatch!", MessageBoxButtons.YesNo);
+                    if (om == DialogResult.Yes)
+                    {
+                        ChangeTitle("Retrying push");
+                        if (Directory.Exists($"{Properties.Settings.Default.MainDir}\\{gameName}\\{packagename}"))
+                        {
+                            Thread obbThread = new Thread(() =>
+                            {
+                                ChangeTitle($"Copying {packagename} obb to device...");
+                                output += ADB.RunAdbCommandToString($"push \"{Properties.Settings.Default.MainDir}\\{gameName}\\{packagename}\" \"/sdcard/Android/obb\"");
+                                Program.form.ChangeTitle("");
+                            })
+                            {
+                                IsBackground = true
+                            };
+                            obbThread.Start();
+
+                            while (obbThread.IsAlive)
+                            {
+                                await Task.Delay(100);
+                            }
+                            await compareOBBSizes(packagename, gameName, output);
+                            return await Task.FromResult(true);
+                        }
+                    }
+                    else
+                    {
+                        ChangeTitle("Refreshing games list, please wait...         \n");
+                        showAvailableSpace();
+                        listappsbtn();
+                        initListView();
+                        ShowPrcOutput(output);
+                        progressBar.Style = ProgressBarStyle.Continuous;
+                        etaLabel.Text = "ETA: Finished Queue";
+                        speedLabel.Text = "DLS: Finished Queue";
+                        ProgressText.Text = "";
+                        gamesAreDownloading = false;
+                        isinstalling = false;
+                        ChangeTitle(" \n\n");
+                        return await Task.FromResult(true);
+                    }
+                }
+                else
+                {
+                    return await Task.FromResult(false);
+                }
+                return await Task.FromResult(true);
+            }
+            catch (Exception ex)
+            {
+                _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}");
+                return await Task.FromResult(false);
+            }
+        }
+
+
+        static long localFolderSize(DirectoryInfo localFolder)
+        {
+            long totalLocalFolderSize = 0;
+
+            // Get all files into the directory
+            FileInfo[] allFiles = localFolder.GetFiles();
+
+            // Loop through every file and get size of it
+            foreach (FileInfo file in allFiles)
+            {
+                totalLocalFolderSize += file.Length;
+            }
+
+            // Find all subdirectories
+            DirectoryInfo[] subFolders = localFolder.GetDirectories();
+
+            // Loop through every subdirectory and get size of each
+            foreach (DirectoryInfo dir in subFolders)
+            {
+                totalLocalFolderSize += localFolderSize(dir);
+            }
+
+            // Return the total size of folder
+            return totalLocalFolderSize;
+        }
+
+            private void timer_Tick4(object sender, EventArgs e)
         {
             _ = new ProcessOutput("", "");
             if (!timerticked)
@@ -2804,6 +2918,10 @@ Things you can try:
                 {
                     e.Cancel = true;
                     return;
+                }
+                else
+                {
+                    RCLONE.killRclone();
                 }
             }
             else if (isuploading)
