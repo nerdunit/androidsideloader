@@ -1,4 +1,5 @@
 ﻿using AndroidSideloader.Models;
+using AndroidSideloader.Properties;
 using AndroidSideloader.Utilities;
 using JR.Utils.GUI.Forms;
 using Newtonsoft.Json;
@@ -9,6 +10,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
@@ -17,6 +19,13 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Web.WebView2.Core;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using Microsoft.Web.WebView2.Wpf;
+using Microsoft.Web.WebView2.WinForms;
+using System.ComponentModel;
+using System.DirectoryServices.ActiveDirectory;
+using System.Management.Instrumentation;
 
 namespace AndroidSideloader
 {
@@ -292,7 +301,6 @@ namespace AndroidSideloader
 
             splash.Close();
         }
-
 
         private async void Form1_Shown(object sender, EventArgs e)
         {
@@ -2722,7 +2730,7 @@ Things you can try:
                     isinstalling = false;
                     return;
                 }
-                if (!obbsMismatch);
+                if (!obbsMismatch) ;
                 {
                     ChangeTitle("Refreshing games list, please wait...         \n");
                     showAvailableSpace();
@@ -3262,10 +3270,58 @@ Things you can try:
         private void ADBcommandbox_Enter(object sender, EventArgs e)
         {
             _ = ADBcommandbox.Focus();
-
-
         }
 
+        private bool fullScreen = false;
+        [DefaultValue(false)]
+        public bool FullScreen
+        {
+            get { return fullScreen; }
+            set
+            {
+                fullScreen = value;
+                if (value)
+                {
+                    MainForm.ActiveForm.FormBorderStyle = FormBorderStyle.None;
+                    webView21.Location = new Point(0, 0);
+                    webView21.Size = MainForm.ActiveForm.Size;
+                }
+                else
+                {
+                    MainForm.ActiveForm.FormBorderStyle = FormBorderStyle.Sizable;
+                    webView21.Anchor = (AnchorStyles.Left | AnchorStyles.Bottom);
+                    webView21.Location = gamesPictureBox.Location;
+                    webView21.Size = new Size(374, 214);
+                }
+            }
+        }
+
+        static string ExtractVideoUrl(string html)
+        {
+            // Use the regular expression to find the first video URL in the search results page HTML
+            string pattern = @"url""\:\""/watch\?v\=(.*?(?=""))";
+            Match match = Regex.Match(html, pattern);
+            if (!match.Success)
+            {
+                return "";
+            }
+
+            // Extract the video URL from the match
+            string url = match.Groups[1].Value;
+            // Create the embed URL
+            return "https://www.youtube.com/embed/" + url + "?autoplay=1&mute=1&enablejsapi=1&modestbranding=1";
+        }
+
+        private async Task WebView_CoreWebView2ReadyAsync(string videoUrl)
+        {
+            await webView21.EnsureCoreWebView2Async(null);
+            // Load the video URL in the web browser control
+            webView21.CoreWebView2.Navigate(videoUrl);
+            webView21.CoreWebView2.ContainsFullScreenElementChanged += (obj, args) =>
+            {
+                this.FullScreen = webView21.CoreWebView2.ContainsFullScreenElement;
+            };
+        }
 
         public void gamesListView_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -3276,35 +3332,69 @@ Things you can try:
 
             string CurrentPackageName = gamesListView.SelectedItems[gamesListView.SelectedItems.Count - 1].SubItems[SideloaderRCLONE.PackageNameIndex].Text;
             string CurrentReleaseName = gamesListView.SelectedItems[gamesListView.SelectedItems.Count - 1].SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
-            if (!keyheld)
+            string CurrentGameName = gamesListView.SelectedItems[gamesListView.SelectedItems.Count - 1].SubItems[SideloaderRCLONE.GameNameIndex].Text;
+            Console.WriteLine(CurrentGameName);
+
+            if (!Properties.Settings.Default.TrailersOn)
             {
-                if (Properties.Settings.Default.PackageNameToCB)
+                if (!keyheld)
                 {
-                    Clipboard.SetText(CurrentPackageName);
+                    if (Properties.Settings.Default.PackageNameToCB)
+                    {
+                        Clipboard.SetText(CurrentPackageName);
+                    }
+
+                    keyheld = true;
+                }
+                webView21.Hide();
+                string ImagePath = "";
+                if (File.Exists($"{SideloaderRCLONE.ThumbnailsFolder}\\{CurrentPackageName}.jpg"))
+                {
+                    ImagePath = $"{SideloaderRCLONE.ThumbnailsFolder}\\{CurrentPackageName}.jpg";
+                }
+                else if (File.Exists($"{SideloaderRCLONE.ThumbnailsFolder}\\{CurrentPackageName}.png"))
+                {
+                    ImagePath = $"{SideloaderRCLONE.ThumbnailsFolder}\\{CurrentPackageName}.png";
                 }
 
-                keyheld = true;
-            }
+                if (gamesPictureBox.BackgroundImage != null)
+                {
+                    gamesPictureBox.BackgroundImage.Dispose();
+                }
 
-            string ImagePath = "";
-            if (File.Exists($"{SideloaderRCLONE.ThumbnailsFolder}\\{CurrentPackageName}.jpg"))
+                gamesPictureBox.BackgroundImage = File.Exists(ImagePath) ? Image.FromFile(ImagePath) : new Bitmap(367, 214);
+
+                string NotePath = $"{SideloaderRCLONE.NotesFolder}\\{CurrentReleaseName}.txt";
+                notesRichTextBox.Text = File.Exists(NotePath) ? File.ReadAllText(NotePath) : "";
+            }
+            else
             {
-                ImagePath = $"{SideloaderRCLONE.ThumbnailsFolder}\\{CurrentPackageName}.jpg";
-            }
-            else if (File.Exists($"{SideloaderRCLONE.ThumbnailsFolder}\\{CurrentPackageName}.png"))
-            {
-                ImagePath = $"{SideloaderRCLONE.ThumbnailsFolder}\\{CurrentPackageName}.png";
-            }
+                webView21.Show();
+                string query = CurrentGameName + " VR trailer";
 
-            if (gamesPictureBox.BackgroundImage != null)
-            {
-                gamesPictureBox.BackgroundImage.Dispose();
+                // Encode the search query for use in a URL
+                string encodedQuery = WebUtility.UrlEncode(query);
+
+                // Construct the YouTube search URL
+                string url = "https://www.youtube.com/results?search_query=" + encodedQuery;
+
+                // Download the search results page HTML
+                string html;
+                using (var client = new WebClient())
+                {
+                    html = client.DownloadString(url);
+                }
+
+                // Extract the first video URL from the HTML
+                string videoUrl = ExtractVideoUrl(html);
+                if (videoUrl == "")
+                {
+                    MessageBox.Show("No video URL found in search results.");
+                    return;
+                }
+
+                WebView_CoreWebView2ReadyAsync(videoUrl);
             }
-
-            gamesPictureBox.BackgroundImage = File.Exists(ImagePath) ? Image.FromFile(ImagePath) : new Bitmap(367, 214);
-
-            string NotePath = $"{SideloaderRCLONE.NotesFolder}\\{CurrentReleaseName}.txt";
-            notesRichTextBox.Text = File.Exists(NotePath) ? File.ReadAllText(NotePath) : "";
         }
 
         public void UpdateGamesButton_Click(object sender, EventArgs e)

@@ -46,6 +46,7 @@ namespace AndroidSideloader
             this.btnUploadDebug = new AndroidSideloader.RoundButton();
             this.btnOpenDebug = new AndroidSideloader.RoundButton();
             this.lblMibs = new System.Windows.Forms.Label();
+            this.trailersOn = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // checkForUpdatesCheckBox
@@ -126,7 +127,7 @@ namespace AndroidSideloader
             this.txtBandwidth.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "TextBoxColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.txtBandwidth.Font = global::AndroidSideloader.Properties.Settings.Default.FontStyle;
             this.txtBandwidth.ForeColor = global::AndroidSideloader.Properties.Settings.Default.FontColor;
-            this.txtBandwidth.Location = new System.Drawing.Point(49, 254);
+            this.txtBandwidth.Location = new System.Drawing.Point(47, 283);
             this.txtBandwidth.Name = "txtBandwidth";
             this.txtBandwidth.Size = new System.Drawing.Size(103, 24);
             this.txtBandwidth.TabIndex = 11;
@@ -137,7 +138,7 @@ namespace AndroidSideloader
             this.lblDownloadSpeedLimiter.BackColor = System.Drawing.Color.Transparent;
             this.lblDownloadSpeedLimiter.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.lblDownloadSpeedLimiter.Font = global::AndroidSideloader.Properties.Settings.Default.FontStyle;
-            this.lblDownloadSpeedLimiter.Location = new System.Drawing.Point(87, 230);
+            this.lblDownloadSpeedLimiter.Location = new System.Drawing.Point(85, 259);
             this.lblDownloadSpeedLimiter.Name = "lblDownloadSpeedLimiter";
             this.lblDownloadSpeedLimiter.Size = new System.Drawing.Size(169, 18);
             this.lblDownloadSpeedLimiter.TabIndex = 12;
@@ -208,7 +209,7 @@ namespace AndroidSideloader
             this.applyButton.ForeColor = global::AndroidSideloader.Properties.Settings.Default.FontColor;
             this.applyButton.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
             this.applyButton.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
-            this.applyButton.Location = new System.Drawing.Point(29, 301);
+            this.applyButton.Location = new System.Drawing.Point(27, 330);
             this.applyButton.Name = "applyButton";
             this.applyButton.Radius = 5;
             this.applyButton.Size = new System.Drawing.Size(133, 31);
@@ -229,7 +230,7 @@ namespace AndroidSideloader
             this.resetSettingsButton.ForeColor = System.Drawing.Color.White;
             this.resetSettingsButton.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
             this.resetSettingsButton.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
-            this.resetSettingsButton.Location = new System.Drawing.Point(181, 301);
+            this.resetSettingsButton.Location = new System.Drawing.Point(179, 330);
             this.resetSettingsButton.Name = "resetSettingsButton";
             this.resetSettingsButton.Radius = 5;
             this.resetSettingsButton.Size = new System.Drawing.Size(133, 31);
@@ -250,7 +251,7 @@ namespace AndroidSideloader
             this.btnResetDebug.ForeColor = System.Drawing.Color.White;
             this.btnResetDebug.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
             this.btnResetDebug.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
-            this.btnResetDebug.Location = new System.Drawing.Point(29, 385);
+            this.btnResetDebug.Location = new System.Drawing.Point(27, 414);
             this.btnResetDebug.Name = "btnResetDebug";
             this.btnResetDebug.Radius = 5;
             this.btnResetDebug.Size = new System.Drawing.Size(285, 31);
@@ -271,7 +272,7 @@ namespace AndroidSideloader
             this.btnUploadDebug.ForeColor = System.Drawing.Color.White;
             this.btnUploadDebug.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
             this.btnUploadDebug.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
-            this.btnUploadDebug.Location = new System.Drawing.Point(29, 422);
+            this.btnUploadDebug.Location = new System.Drawing.Point(27, 451);
             this.btnUploadDebug.Name = "btnUploadDebug";
             this.btnUploadDebug.Radius = 5;
             this.btnUploadDebug.Size = new System.Drawing.Size(285, 31);
@@ -292,7 +293,7 @@ namespace AndroidSideloader
             this.btnOpenDebug.ForeColor = System.Drawing.Color.White;
             this.btnOpenDebug.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
             this.btnOpenDebug.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
-            this.btnOpenDebug.Location = new System.Drawing.Point(29, 348);
+            this.btnOpenDebug.Location = new System.Drawing.Point(27, 377);
             this.btnOpenDebug.Name = "btnOpenDebug";
             this.btnOpenDebug.Radius = 5;
             this.btnOpenDebug.Size = new System.Drawing.Size(285, 31);
@@ -309,11 +310,25 @@ namespace AndroidSideloader
             this.lblMibs.BackColor = System.Drawing.Color.Transparent;
             this.lblMibs.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.lblMibs.Font = global::AndroidSideloader.Properties.Settings.Default.FontStyle;
-            this.lblMibs.Location = new System.Drawing.Point(159, 257);
+            this.lblMibs.Location = new System.Drawing.Point(157, 286);
             this.lblMibs.Name = "lblMibs";
             this.lblMibs.Size = new System.Drawing.Size(135, 18);
             this.lblMibs.TabIndex = 22;
             this.lblMibs.Text = "MiB/s (0 to disable)";
+            // 
+            // trailersOn
+            // 
+            this.trailersOn.AutoSize = true;
+            this.trailersOn.BackColor = System.Drawing.Color.Transparent;
+            this.trailersOn.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.trailersOn.Font = global::AndroidSideloader.Properties.Settings.Default.FontStyle;
+            this.trailersOn.Location = new System.Drawing.Point(12, 222);
+            this.trailersOn.Name = "trailersOn";
+            this.trailersOn.Size = new System.Drawing.Size(255, 22);
+            this.trailersOn.TabIndex = 23;
+            this.trailersOn.Text = "Use Trailers instead of Thumbnails";
+            this.trailersOn.UseVisualStyleBackColor = false;
+            this.trailersOn.CheckedChanged += new System.EventHandler(this.trailersOn_CheckedChanged);
             // 
             // SettingsForm
             // 
@@ -321,7 +336,8 @@ namespace AndroidSideloader
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = global::AndroidSideloader.Properties.Settings.Default.BackColor;
             this.BackgroundImage = global::AndroidSideloader.Properties.Resources.pattern_cubes_1_1_1_0_0_0_1__000000_212121;
-            this.ClientSize = new System.Drawing.Size(342, 469);
+            this.ClientSize = new System.Drawing.Size(342, 518);
+            this.Controls.Add(this.trailersOn);
             this.Controls.Add(this.lblMibs);
             this.Controls.Add(this.btnOpenDebug);
             this.Controls.Add(this.btnResetDebug);
@@ -374,5 +390,6 @@ namespace AndroidSideloader
         private RoundButton btnUploadDebug;
         private RoundButton btnOpenDebug;
         private System.Windows.Forms.Label lblMibs;
+        private System.Windows.Forms.CheckBox trailersOn;
     }
 }
