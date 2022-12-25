@@ -382,7 +382,7 @@ namespace AndroidSideloader
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Margin = new System.Windows.Forms.Padding(2);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(221, 721);
+            this.panel1.Size = new System.Drawing.Size(221, 729);
             this.panel1.TabIndex = 73;
             // 
             // verLabel
@@ -971,7 +971,7 @@ namespace AndroidSideloader
             this.gamesQueueLabel.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.gamesQueueLabel.Font = global::AndroidSideloader.Properties.Settings.Default.FontStyle;
             this.gamesQueueLabel.ForeColor = global::AndroidSideloader.Properties.Settings.Default.FontColor;
-            this.gamesQueueLabel.Location = new System.Drawing.Point(599, 586);
+            this.gamesQueueLabel.Location = new System.Drawing.Point(601, 586);
             this.gamesQueueLabel.Name = "gamesQueueLabel";
             this.gamesQueueLabel.Size = new System.Drawing.Size(52, 18);
             this.gamesQueueLabel.TabIndex = 86;
@@ -1005,7 +1005,8 @@ namespace AndroidSideloader
             this.notesRichTextBox.ShowSelectionMargin = true;
             this.notesRichTextBox.Size = new System.Drawing.Size(421, 66);
             this.notesRichTextBox.TabIndex = 10;
-            this.notesRichTextBox.Text = "\n\n\n                                     TIP: PRESS F1 TO SEE A LIST OF SHORTCUTS";
+            this.notesRichTextBox.Text = "\n\n\n                                                       TIP: PRESS F1 TO SEE A " +
+    "LIST OF SHORTCUTS";
             // 
             // DragDropLbl
             // 
@@ -1031,7 +1032,7 @@ namespace AndroidSideloader
             this.lblNotes.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.lblNotes.Font = global::AndroidSideloader.Properties.Settings.Default.FontStyle;
             this.lblNotes.ForeColor = global::AndroidSideloader.Properties.Settings.Default.FontColor;
-            this.lblNotes.Location = new System.Drawing.Point(597, 674);
+            this.lblNotes.Location = new System.Drawing.Point(601, 674);
             this.lblNotes.Name = "lblNotes";
             this.lblNotes.Size = new System.Drawing.Size(48, 18);
             this.lblNotes.TabIndex = 86;
@@ -1365,7 +1366,7 @@ namespace AndroidSideloader
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = global::AndroidSideloader.Properties.Settings.Default.BackColor;
             this.BackgroundImage = global::AndroidSideloader.Properties.Resources.pattern_cubes_1_1_1_0_0_0_1__000000_212121;
-            this.ClientSize = new System.Drawing.Size(1032, 721);
+            this.ClientSize = new System.Drawing.Size(1040, 729);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.MountButton);
             this.Controls.Add(this.lblShortcutsF2);
