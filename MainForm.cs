@@ -2779,7 +2779,7 @@ Things you can try:
                                 IsBackground = true
                             };
                             obbThread.Start();
-
+                            
                             while (obbThread.IsAlive)
                             {
                                 await Task.Delay(100);
@@ -3631,7 +3631,8 @@ Things you can try:
                     File.Delete($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{GameName} v{VersionInt} {packageName}.zip");
                 }
 
-                Directory.Move($"{Properties.Settings.Default.MainDir}\\{GameName} v{VersionInt} {packageName}.zip", $"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{GameName} v{VersionInt} {packageName}.zip");
+                File.Copy($"{Properties.Settings.Default.MainDir}\\{GameName} v{VersionInt} {packageName}.zip", $"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\{GameName} v{VersionInt} {packageName}.zip");
+                File.Delete($"{Properties.Settings.Default.MainDir}\\{GameName} v{VersionInt} {packageName}.zip");
                 Directory.Delete($"{Properties.Settings.Default.MainDir}\\{packageName}", true);
                 isworking = false;
                 Program.form.ChangeTitle("                                   \n\n");
