@@ -104,29 +104,7 @@ namespace AndroidSideloader
             _ = Logger.Log($"\n------\n------\nProgram Launched at: {launchtime}\n------\n------");
             if (string.IsNullOrEmpty(Properties.Settings.Default.CurrentLogPath))
             {
-                if (File.Exists($"{Environment.CurrentDirectory}\\nouns\\nouns.txt"))
-                {
-                    string[] lines = File.ReadAllLines($"{Environment.CurrentDirectory}\\nouns\\nouns.txt");
-                    Random r = new Random();
-                    int x = r.Next(6806);
-                    int y = r.Next(6806);
-                    string randomnoun = lines[new Random(x).Next(lines.Length)];
-                    string randomnoun2 = lines[new Random(y).Next(lines.Length)];
-                    string combined = randomnoun + "-" + randomnoun2;
-                    Properties.Settings.Default.CurrentLogPath = Environment.CurrentDirectory + "\\" + combined + ".txt";
-                    Properties.Settings.Default.CurrentLogName = combined;
-                    if (File.Exists($"{Environment.CurrentDirectory}\\debuglog.txt"))
-                    {
-                        System.IO.File.Move("debuglog.txt", combined + ".txt");
-                    }
-
-                    Properties.Settings.Default.Save();
-                }
-                else
-                {
-                    Properties.Settings.Default.CurrentLogPath = $"{Environment.CurrentDirectory}\\debuglog.txt";
-                }
-
+                Properties.Settings.Default.CurrentLogPath = $"{Environment.CurrentDirectory}\\debuglog.txt";
             }
             System.Windows.Forms.Timer t = new System.Windows.Forms.Timer
             {
@@ -259,7 +237,7 @@ namespace AndroidSideloader
                 DialogResult dialogResult = FlexibleMessageBox.Show($"Sideloader crashed during your last use.\nPress OK if you'd like to send us your crash log.\n\n NOTE: THIS CAN TAKE UP TO 30 SECONDS.", "Crash Detected", MessageBoxButtons.OKCancel);
                 if (dialogResult == DialogResult.OK)
                 {
-                    if (File.Exists($"{Environment.CurrentDirectory}\\crashlog.txt") && File.Exists($"{Environment.CurrentDirectory}\\nouns\\nouns.txt"))
+                    if (File.Exists($"{Environment.CurrentDirectory}\\crashlog.txt"))
                     {
                         string UUID = SideloaderUtilities.UUID();
                         System.IO.File.Move("crashlog.txt", $"{Environment.CurrentDirectory}\\{UUID}.log");
@@ -3480,6 +3458,21 @@ Things you can try:
         private void updateAvailable_Click(object sender, EventArgs e)
         {
             // do filtering!
+            for (int i = 0; i < line.Length; i++)
+            {
+                if (line[i].Length > 9)
+                {
+                    line[i] = line[i].Remove(0, 8);
+                    line[i] = line[i].Remove(line[i].Length - 1);
+                    foreach (string[] game in SideloaderRCLONE.games)
+                    {
+                        if (line[i].Length > 0 && game[2].Contains(line[i]))
+                        {
+                            line[i] = game[0];
+                        }
+                    }
+                }
+            }
         }
 
         private void EnterInstallBox_CheckedChanged(object sender, EventArgs e)
