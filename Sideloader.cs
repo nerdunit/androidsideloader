@@ -271,6 +271,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             WebClient client = new WebClient();
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            var currentAccessedWebsite = "";
             try
             {
                 if (!File.Exists("Sideloader Launcher.exe"))
