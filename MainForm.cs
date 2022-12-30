@@ -3458,21 +3458,6 @@ Things you can try:
         private void updateAvailable_Click(object sender, EventArgs e)
         {
             // do filtering!
-            for (int i = 0; i < line.Length; i++)
-            {
-                if (line[i].Length > 9)
-                {
-                    line[i] = line[i].Remove(0, 8);
-                    line[i] = line[i].Remove(line[i].Length - 1);
-                    foreach (string[] game in SideloaderRCLONE.games)
-                    {
-                        if (line[i].Length > 0 && game[2].Contains(line[i]))
-                        {
-                            line[i] = game[0];
-                        }
-                    }
-                }
-            }
         }
 
         private void EnterInstallBox_CheckedChanged(object sender, EventArgs e)
