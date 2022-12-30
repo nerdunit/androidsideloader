@@ -276,11 +276,13 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             {
                 if (!File.Exists("Sideloader Launcher.exe"))
                 {
+                    currentAccessedWebsite = "github";
                     client.DownloadFile("https://github.com/nerdunit/androidsideloader/raw/master/Sideloader%20Launcher.exe", "Sideloader Launcher.exe");
                 }
 
                 if (!File.Exists("Rookie Offline.cmd"))
                 {
+                    currentAccessedWebsite = "github";
                     client.DownloadFile("https://github.com/nerdunit/androidsideloader/raw/master/Rookie%20Offline.cmd", "Rookie Offline.cmd");
                 }
 
@@ -301,6 +303,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
                         _ = Directory.CreateDirectory("C:\\RSL\\platform-tools");
                     }
 
+                    currentAccessedWebsite = "github";
                     client.DownloadFile("https://github.com/nerdunit/androidsideloader/raw/master/adb2.zip", "Ad.7z");
                     Utilities.Zip.ExtractFile(Environment.CurrentDirectory + "\\Ad.7z", "C:\\RSL\\platform-tools");
                     File.Delete("Ad.7z");
@@ -308,6 +311,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
 
                 if (!Directory.Exists(Environment.CurrentDirectory + "\\rclone"))
                 {
+                    currentAccessedWebsite = "rclone";
                     string url = Environment.Is64BitOperatingSystem
                         ? "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-amd64.zip"
                         : "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-386.zip";
@@ -331,9 +335,16 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
                 }
 
             }
-            catch
+            catch (Exception ex)
             {
-                _ = FlexibleMessageBox.Show("Your internet is not working properly or rclone/github servers are down, some files may be missing (adb, rclone or launcher)");
+                if (currentAccessedWebsite == "github")
+                {
+                    _ = FlexibleMessageBox.Show($"You are unable to access the github page with the Exception: \n{ex.Message}, some files may be missing (ADB, Offline Script, Launcher)");
+                }
+                if (currentAccessedWebsite == "rclone")
+                {
+                    _ = FlexibleMessageBox.Show($"You are unable to access the rclone page with the Exception: \n{ex.Message}, some files may be missing (RCLONE)");
+                }
             }
         }
     }
