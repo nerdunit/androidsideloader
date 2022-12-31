@@ -3457,7 +3457,21 @@ Things you can try:
 
         private void updateAvailable_Click(object sender, EventArgs e)
         {
-            // do filtering!
+            List<ListViewItem> GameList = new List<ListViewItem>();
+
+            List<string> rookieList = new List<string>();
+            List<string> installedGames = packageList.ToList();
+            List<string> blacklistItems = blacklist.ToList();
+            List<string> whitelistItems = whitelist.ToList();
+            foreach (string packagename in packageList)
+            {
+                string InstalledVersionCode;
+                InstalledVersionCode = ADB.RunAdbCommandToString($"shell \"dumpsys package {packagename} | grep versionCode -F\"").Output;
+                InstalledVersionCode = Utilities.StringUtilities.RemoveEverythingBeforeFirst(InstalledVersionCode, "versionCode=");
+                InstalledVersionCode = Utilities.StringUtilities.RemoveEverythingAfterFirst(InstalledVersionCode, " ");
+                ulong installedVersionInt = ulong.Parse(Utilities.StringUtilities.KeepOnlyNumbers(InstalledVersionCode));
+                ulong cloudVersionInt = ulong.Parse(Utilities.StringUtilities.KeepOnlyNumbers(release[SideloaderRCLONE.VersionCodeIndex]));
+            }
         }
 
         private void EnterInstallBox_CheckedChanged(object sender, EventArgs e)

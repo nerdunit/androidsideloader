@@ -127,6 +127,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             }
             catch (Exception ex) { _ = Logger.Log(ex.Message); }
         }
+
         public static string BackupFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"Rookie Backups");
         //uninstalls an app
         public static ProcessOutput UninstallGame(string packagename)
