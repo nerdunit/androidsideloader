@@ -128,9 +128,18 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             catch (Exception ex) { _ = Logger.Log(ex.Message); }
         }
 
-        public static string BackupFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"Rookie Backups");
         //uninstalls an app
         public static ProcessOutput UninstallGame(string packagename)
+        {
+            ProcessOutput output = ADB.UninstallPackage(packagename);
+            Program.form.ChangeTitle("");
+            _ = Sideloader.RemoveFolder("/sdcard/Android/obb/" + packagename);
+            _ = Sideloader.RemoveFolder("/sdcard/Android/data/" + packagename);
+            return output;
+        }
+
+        public static string BackupFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"Rookie Backups");
+        public static void BackupGame(string packagename)
         {
             ADB.WakeDevice();
             Program.form.ChangeTitle("Attempting to backup any savedata to Documents\\Rookie Backups...");
@@ -141,13 +150,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             {
                 _ = Directory.CreateDirectory(CurrBackups);
             }
-
             _ = ADB.RunAdbCommandToString($"pull \"/sdcard/Android/data/{packagename}\" \"{CurrBackups}\"");
-            ProcessOutput output = ADB.UninstallPackage(packagename);
-            Program.form.ChangeTitle("");
-            _ = Sideloader.RemoveFolder("/sdcard/Android/obb/" + packagename);
-            _ = Sideloader.RemoveFolder("/sdcard/Android/data/" + packagename);
-            return output;
         }
 
         public static ProcessOutput DeleteFile(string GameName)

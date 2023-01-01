@@ -1106,12 +1106,17 @@ namespace AndroidSideloader
                 return;
             }
             string GameName = m_combo.SelectedItem.ToString();
-            DialogResult dialogresult = FlexibleMessageBox.Show($"Are you sure you want to unintsall {GameName}? Rookie will attempt to automatically backup any saves to Documents\\Rookie Backups\\(TodaysDate)", "Proceed with uninstall?", MessageBoxButtons.YesNo);
+            DialogResult dialogresult = FlexibleMessageBox.Show($"Are you sure you want to uninstall {GameName}?", "Proceed with uninstall?", MessageBoxButtons.YesNo);
             if (dialogresult == DialogResult.No)
             {
                 return;
             }
+            DialogResult dialogresult2 = FlexibleMessageBox.Show($"Do you want to attempt to automatically backup any saves to Documents/Rookie Backups/(TodaysDate)", "Attempt Game Backup?", MessageBoxButtons.YesNo);
             packagename = !GameName.Contains(".") ? Sideloader.gameNameToPackageName(GameName) : GameName;
+            if (dialogresult2 == DialogResult.Yes)
+            {
+                Sideloader.BackupGame(packagename);
+            }
             ProcessOutput output = new ProcessOutput("", "");
             progressBar.Style = ProgressBarStyle.Marquee;
             Thread t1 = new Thread(() =>
