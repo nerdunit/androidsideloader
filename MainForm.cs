@@ -2744,7 +2744,7 @@ Things you can try:
                 int remoteOBB = Convert.ToInt32(secondreplacedtotalRemoteFolderSize);
                 Console.WriteLine(localFolder.FullName);
                 Console.WriteLine("Total local folder size in bytes: " + totalLocalFolderSize + " Remote Size: " + secondreplacedtotalRemoteFolderSize);
-                if (remoteOBB > localOBB)
+                if (remoteOBB < localOBB)
                 {
                     DialogResult om = MessageBox.Show("Warning! It seems like the OBB wasnt pushed correctly, this means that the game may not launch correctly.\n Do you want to retry the push?", "OBB Size Mismatch!", MessageBoxButtons.YesNo);
                     if (om == DialogResult.Yes)
