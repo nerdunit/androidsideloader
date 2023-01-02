@@ -190,6 +190,15 @@ namespace AndroidSideloader
                 _ = Process.Start($"{Environment.CurrentDirectory}\\debuglog.txt");
             }
         }
+
+        private void setDownloadDirectory_Click(object sender, EventArgs e)
+        {
+            if (downloadDirectorySetter.ShowDialog() == DialogResult.OK)
+            {
+                Properties.Settings.Default.downloadDir = downloadDirectorySetter.SelectedPath;
+                Properties.Settings.Default.Save();
+            }
+        }
     }
 }
 

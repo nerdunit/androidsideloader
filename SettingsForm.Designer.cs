@@ -46,6 +46,8 @@ namespace AndroidSideloader
             this.btnUploadDebug = new AndroidSideloader.RoundButton();
             this.btnOpenDebug = new AndroidSideloader.RoundButton();
             this.lblMibs = new System.Windows.Forms.Label();
+            this.setDownloadDirectory = new AndroidSideloader.RoundButton();
+            this.downloadDirectorySetter = new System.Windows.Forms.FolderBrowserDialog();
             this.SuspendLayout();
             // 
             // checkForUpdatesCheckBox
@@ -315,13 +317,39 @@ namespace AndroidSideloader
             this.lblMibs.TabIndex = 22;
             this.lblMibs.Text = "MiB/s (0 to disable)";
             // 
+            // setDownloadDirectory
+            // 
+            this.setDownloadDirectory.Active1 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.setDownloadDirectory.Active2 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.setDownloadDirectory.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
+            this.setDownloadDirectory.DialogResult = System.Windows.Forms.DialogResult.OK;
+            this.setDownloadDirectory.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
+            this.setDownloadDirectory.ForeColor = System.Drawing.Color.White;
+            this.setDownloadDirectory.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
+            this.setDownloadDirectory.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
+            this.setDownloadDirectory.Location = new System.Drawing.Point(29, 482);
+            this.setDownloadDirectory.Name = "setDownloadDirectory";
+            this.setDownloadDirectory.Radius = 5;
+            this.setDownloadDirectory.Size = new System.Drawing.Size(285, 31);
+            this.setDownloadDirectory.Stroke = true;
+            this.setDownloadDirectory.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
+            this.setDownloadDirectory.TabIndex = 23;
+            this.setDownloadDirectory.Text = "Set Download Directory";
+            this.setDownloadDirectory.Transparency = false;
+            this.setDownloadDirectory.Click += new System.EventHandler(this.setDownloadDirectory_Click);
+            // 
+            // downloadDirectorySetter
+            // 
+            this.downloadDirectorySetter.RootFolder = System.Environment.SpecialFolder.MyComputer;
+            // 
             // SettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = global::AndroidSideloader.Properties.Settings.Default.BackColor;
             this.BackgroundImage = global::AndroidSideloader.Properties.Resources.pattern_cubes_1_1_1_0_0_0_1__000000_212121;
-            this.ClientSize = new System.Drawing.Size(342, 469);
+            this.ClientSize = new System.Drawing.Size(342, 547);
+            this.Controls.Add(this.setDownloadDirectory);
             this.Controls.Add(this.lblMibs);
             this.Controls.Add(this.btnOpenDebug);
             this.Controls.Add(this.btnResetDebug);
@@ -374,5 +402,7 @@ namespace AndroidSideloader
         private RoundButton btnUploadDebug;
         private RoundButton btnOpenDebug;
         private System.Windows.Forms.Label lblMibs;
+        private RoundButton setDownloadDirectory;
+        private System.Windows.Forms.FolderBrowserDialog downloadDirectorySetter;
     }
 }

@@ -741,5 +741,17 @@ namespace AndroidSideloader.Properties {
                 this["BackColor"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Enviroment.CurrentDirectory")]
+        public string downloadDir {
+            get {
+                return ((string)(this["downloadDir"]));
+            }
+            set {
+                this["downloadDir"] = value;
+            }
+        }
     }
 }
