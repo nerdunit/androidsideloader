@@ -43,7 +43,6 @@ namespace AndroidSideloader
             this.getApkButton = new System.Windows.Forms.Button();
             this.uninstallAppButton = new System.Windows.Forms.Button();
             this.pullAppToDesktopBtn = new System.Windows.Forms.Button();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.copyBulkObbButton = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.verLabel = new System.Windows.Forms.Label();
@@ -125,6 +124,7 @@ namespace AndroidSideloader
             this.etaLabel_Tooltip = new System.Windows.Forms.ToolTip(this.components);
             this.EnterInstallBox_Tooltip = new System.Windows.Forms.ToolTip(this.components);
             this.panel2 = new System.Windows.Forms.Panel();
+            this.progressBar = new AndroidSideloader.TextProgressBar();
             this.downloadInstallGameButton = new AndroidSideloader.RoundButton();
             this.MountButton = new AndroidSideloader.RoundButton();
             this.panel1.SuspendLayout();
@@ -324,18 +324,6 @@ namespace AndroidSideloader
             this.pullAppToDesktopBtn_Tooltip.SetToolTip(this.pullAppToDesktopBtn, "Extracts APK and OBB to your Desktop (Select within the Dropdown)");
             this.pullAppToDesktopBtn.UseVisualStyleBackColor = false;
             this.pullAppToDesktopBtn.Click += new System.EventHandler(this.pullAppToDesktopBtn_Click);
-            // 
-            // progressBar
-            // 
-            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.progressBar.ForeColor = System.Drawing.Color.Purple;
-            this.progressBar.Location = new System.Drawing.Point(2, 0);
-            this.progressBar.MinimumSize = new System.Drawing.Size(200, 13);
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(418, 13);
-            this.progressBar.TabIndex = 7;
             // 
             // copyBulkObbButton
             // 
@@ -1294,8 +1282,8 @@ namespace AndroidSideloader
             | System.Windows.Forms.AnchorStyles.Right)));
             this.panel2.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.panel2.BackColor = System.Drawing.Color.Transparent;
-            this.panel2.Controls.Add(this.downloadInstallGameButton);
             this.panel2.Controls.Add(this.progressBar);
+            this.panel2.Controls.Add(this.downloadInstallGameButton);
             this.panel2.Controls.Add(this.etaLabel);
             this.panel2.Controls.Add(this.speedLabel);
             this.panel2.Location = new System.Drawing.Point(224, 436);
@@ -1303,6 +1291,22 @@ namespace AndroidSideloader
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(798, 34);
             this.panel2.TabIndex = 96;
+            // 
+            // progressBar
+            // 
+            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressBar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.progressBar.CustomText = "RESTARTS PER PART";
+            this.progressBar.Location = new System.Drawing.Point(2, 0);
+            this.progressBar.MinimumSize = new System.Drawing.Size(200, 13);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.ProgressColor = System.Drawing.Color.LimeGreen;
+            this.progressBar.Size = new System.Drawing.Size(418, 13);
+            this.progressBar.TabIndex = 7;
+            this.progressBar.TextColor = System.Drawing.Color.Black;
+            this.progressBar.TextFont = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.progressBar.VisualMode = AndroidSideloader.ProgressBarDisplayMode.CustomText;
             // 
             // downloadInstallGameButton
             // 
@@ -1440,7 +1444,6 @@ namespace AndroidSideloader
         private SergeUtils.EasyCompletionComboBox m_combo;
         private System.Windows.Forms.Button uninstallAppButton;
         private System.Windows.Forms.Button pullAppToDesktopBtn;
-        private System.Windows.Forms.ProgressBar progressBar;
         private System.Windows.Forms.Button copyBulkObbButton;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Panel backupContainer;
@@ -1524,5 +1527,6 @@ namespace AndroidSideloader
         private ToolTip etaLabel_Tooltip;
         private ToolTip EnterInstallBox_Tooltip;
         private Panel panel2;
+        private TextProgressBar progressBar;
     }
 }
