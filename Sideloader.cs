@@ -317,7 +317,6 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
                 if (!Directory.Exists(Environment.CurrentDirectory + "\\rclone"))
                 {
                     currentAccessedWebsite = "rclone";
-                    throw new Exception("fart");
                     string url = Environment.Is64BitOperatingSystem
                         ? "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-amd64.zip"
                         : "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-386.zip";
