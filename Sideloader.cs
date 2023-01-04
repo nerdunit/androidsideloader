@@ -1,5 +1,6 @@
 ﻿using JR.Utils.GUI.Forms;
 using System;
+using System.CodeDom;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -316,6 +317,7 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
                 if (!Directory.Exists(Environment.CurrentDirectory + "\\rclone"))
                 {
                     currentAccessedWebsite = "rclone";
+                    throw new Exception("fart");
                     string url = Environment.Is64BitOperatingSystem
                         ? "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-amd64.zip"
                         : "https://downloads.rclone.org/v1.55.1/rclone-v1.55.1-windows-386.zip";
@@ -343,11 +345,15 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
             {
                 if (currentAccessedWebsite == "github")
                 {
-                    _ = FlexibleMessageBox.Show($"You are unable to access the github page with the Exception: \n{ex.Message}, some files may be missing (ADB, Offline Script, Launcher)");
+                    _ = FlexibleMessageBox.Show($"You are unable to access the github page with the Exception: {ex.Message}\n Some files may be missing (ADB, Offline Script, Launcher)");
+                    _ = FlexibleMessageBox.Show("These required files were unable to be downloaded\nRookie will now close, please use Offline Mode for manual sideloading if needed");
+                    Application.Exit();
                 }
                 if (currentAccessedWebsite == "rclone")
                 {
-                    _ = FlexibleMessageBox.Show($"You are unable to access the rclone page with the Exception: \n{ex.Message}, some files may be missing (RCLONE)");
+                    _ = FlexibleMessageBox.Show($"You are unable to access the rclone page with the Exception: {ex.Message}\n Some files may be missing (RCLONE)");
+                    _ = FlexibleMessageBox.Show("Rclone was unable to be downloaded\nRookie will now close, please use Offline Mode for manual sideloading if needed");
+                    Application.Exit();
                 }
             }
         }
