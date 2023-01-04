@@ -3241,7 +3241,7 @@ Things you can try:
 
             if (!Properties.Settings.Default.TrailersOn)
             {
-
+                webView21.Hide();
                 if (!keyheld)
                 {
                     if (Properties.Settings.Default.PackageNameToCB)
