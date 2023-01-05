@@ -100,6 +100,7 @@ namespace AndroidSideloader
         private void resetSettingsButton_Click(object sender, EventArgs e)
         {
             Properties.Settings.Default.Reset();
+            Properties.Settings.Default.downloadDir = Environment.CurrentDirectory;
             intSettings();
         }
 
