@@ -2639,7 +2639,7 @@ Things you can try:
                                 }
                                 if (!isinstalltxt)
                                 {
-                                    if (!Properties.Settings.Default.nodevicemode | !nodeviceonstart | DeviceConnected)
+                                    if (!Properties.Settings.Default.nodevicemode | !nodeviceonstart & DeviceConnected)
                                     {
                                         if (extension == ".apk")
                                         {
