@@ -186,7 +186,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="downloadDir" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Enviroment.CurrentDirectory</Value>
+      <Value Profile="(Default)">Environment.CurrentDirectory</Value>
     </Setting>
   </Settings>
 </SettingsFile>

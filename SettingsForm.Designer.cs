@@ -342,7 +342,7 @@ namespace AndroidSideloader
             this.setDownloadDirectory.ForeColor = System.Drawing.Color.White;
             this.setDownloadDirectory.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
             this.setDownloadDirectory.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
-            this.setDownloadDirectory.Location = new System.Drawing.Point(29, 482);
+            this.setDownloadDirectory.Location = new System.Drawing.Point(29, 493);
             this.setDownloadDirectory.Name = "setDownloadDirectory";
             this.setDownloadDirectory.Radius = 5;
             this.setDownloadDirectory.Size = new System.Drawing.Size(285, 31);
@@ -363,7 +363,7 @@ namespace AndroidSideloader
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = global::AndroidSideloader.Properties.Settings.Default.BackColor;
             this.BackgroundImage = global::AndroidSideloader.Properties.Resources.pattern_cubes_1_1_1_0_0_0_1__000000_212121;
-            this.ClientSize = new System.Drawing.Size(342, 524);
+            this.ClientSize = new System.Drawing.Size(342, 555);
             this.Controls.Add(this.trailersOn);
             this.Controls.Add(this.setDownloadDirectory);
             this.Controls.Add(this.lblMibs);

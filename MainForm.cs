@@ -2405,7 +2405,7 @@ Things you can try:
                         bool doDownload = true;
                         if (Directory.Exists(gameDirectory))
                         {
-                            DialogResult res = FlexibleMessageBox.Show(Program.form,
+                            DialogResult res = FlexibleMessageBox.Show(
                                 $"{gameName} exists in destination directory.\r\nWould you like to overwrite it?",
                                 "Download again?", MessageBoxButtons.YesNo);
 
@@ -2533,7 +2533,7 @@ Things you can try:
                         }
                         catch (Exception ex)
                         {
-                            _ = FlexibleMessageBox.Show(Program.form, $"Error deleting game files: {ex.Message}");
+                            _ = FlexibleMessageBox.Show($"Error deleting game files: {ex.Message}");
                         }
                         ChangeTitle("");
                         break;
@@ -2566,7 +2566,7 @@ Things you can try:
                                 gamesQueListBox.DataSource = null;
                                 gamesQueListBox.DataSource = gamesQueueList;
 
-                                _ = FlexibleMessageBox.Show(Program.form, $"Rclone error: {gameDownloadOutput.Error}");
+                                _ = FlexibleMessageBox.Show($"Rclone error: {gameDownloadOutput.Error}");
                                 output += new ProcessOutput("", "Download Failed");
                             }
                         }
@@ -2585,7 +2585,7 @@ Things you can try:
                             catch (Exception ex)
                             {
                                 otherError = true;
-                                _ = FlexibleMessageBox.Show(Program.form, $"7zip error: {ex.Message}");
+                                _ = FlexibleMessageBox.Show($"7zip error: {ex.Message}");
                                 output += new ProcessOutput("", "Extract Failed");
                             }
                         }
