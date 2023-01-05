@@ -2673,13 +2673,16 @@ Things you can try:
                                         {
                                             await Task.Delay(100);
                                         }
-                                        if (!output.Output.Contains("offline"))
+                                        if (!nodeviceonstart | DeviceConnected)
                                         {
-                                            try
+                                            if (!output.Output.Contains("offline"))
                                             {
-                                                obbsMismatch = await compareOBBSizes(packagename, gameName, output);
+                                                try
+                                                {
+                                                    obbsMismatch = await compareOBBSizes(packagename, gameName, output);
+                                                }
+                                                catch (Exception ex) { _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}"); }
                                             }
-                                            catch (Exception ex) { _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}"); }
                                         }
                                     }
 
