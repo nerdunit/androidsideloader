@@ -2701,6 +2701,10 @@ Things you can try:
                                         }
 
                                     }
+                                    else
+                                    {
+                                        output.Output += "All tasks finished.";
+                                    }
                                 }
                                 ChangeTitle($"Installation of {gameName} completed.");
                             }
