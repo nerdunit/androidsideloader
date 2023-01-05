@@ -2637,67 +2637,70 @@ Things you can try:
                                         }
                                     }
                                 }
-                                else if (!isinstalltxt)
+                                if (!isinstalltxt)
                                 {
-                                    if (extension == ".apk")
+                                    if (Properties.Settings.Default.nodevicemode | nodeviceonstart | !DeviceConnected)
                                     {
-                                        CurrAPK = file;
-                                        CurrPCKG = packagename;
-                                        System.Windows.Forms.Timer t = new System.Windows.Forms.Timer
+                                        if (extension == ".apk")
                                         {
-                                            Interval = 150000 // 150 seconds to fail
-                                        };
-                                        t.Tick += new EventHandler(timer_Tick4);
-                                        t.Start();
-                                        Thread apkThread = new Thread(() =>
-                                        {
-                                            Program.form.ChangeTitle($"Sideloading apk...");
-                                            output += ADB.Sideload(file, packagename);
-                                        })
-                                        {
-                                            IsBackground = true
-                                        };
-                                        apkThread.Start();
-                                        while (apkThread.IsAlive)
-                                        {
-                                            await Task.Delay(100);
-                                        }
-
-                                        t.Stop();
-                                    }
-
-                                    Debug.WriteLine(wrDelimiter);
-                                    if (Directory.Exists($"{Properties.Settings.Default.downloadDir}\\{gameName}\\{packagename}"))
-                                    {
-                                        Thread obbThread = new Thread(() =>
-                                        {
-
-                                            ChangeTitle($"Copying {packagename} obb to device...");
-                                            output += ADB.RunAdbCommandToString($"push \"{Properties.Settings.Default.downloadDir}\\{gameName}\\{packagename}\" \"/sdcard/Android/obb\"");
-                                            Program.form.ChangeTitle("");
-                                        })
-                                        {
-                                            IsBackground = true
-                                        };
-                                        obbThread.Start();
-
-                                        while (obbThread.IsAlive)
-                                        {
-                                            await Task.Delay(100);
-                                        }
-                                        if (!nodeviceonstart | DeviceConnected)
-                                        {
-                                            if (!output.Output.Contains("offline"))
+                                            CurrAPK = file;
+                                            CurrPCKG = packagename;
+                                            System.Windows.Forms.Timer t = new System.Windows.Forms.Timer
                                             {
-                                                try
+                                                Interval = 150000 // 150 seconds to fail
+                                            };
+                                            t.Tick += new EventHandler(timer_Tick4);
+                                            t.Start();
+                                            Thread apkThread = new Thread(() =>
+                                            {
+                                                Program.form.ChangeTitle($"Sideloading apk...");
+                                                output += ADB.Sideload(file, packagename);
+                                            })
+                                            {
+                                                IsBackground = true
+                                            };
+                                            apkThread.Start();
+                                            while (apkThread.IsAlive)
+                                            {
+                                                await Task.Delay(100);
+                                            }
+
+                                            t.Stop();
+                                        }
+
+                                        Debug.WriteLine(wrDelimiter);
+                                        if (Directory.Exists($"{Properties.Settings.Default.downloadDir}\\{gameName}\\{packagename}"))
+                                        {
+                                            Thread obbThread = new Thread(() =>
+                                            {
+
+                                                ChangeTitle($"Copying {packagename} obb to device...");
+                                                output += ADB.RunAdbCommandToString($"push \"{Properties.Settings.Default.downloadDir}\\{gameName}\\{packagename}\" \"/sdcard/Android/obb\"");
+                                                Program.form.ChangeTitle("");
+                                            })
+                                            {
+                                                IsBackground = true
+                                            };
+                                            obbThread.Start();
+
+                                            while (obbThread.IsAlive)
+                                            {
+                                                await Task.Delay(100);
+                                            }
+                                            if (!nodeviceonstart | DeviceConnected)
+                                            {
+                                                if (!output.Output.Contains("offline"))
                                                 {
-                                                    obbsMismatch = await compareOBBSizes(packagename, gameName, output);
+                                                    try
+                                                    {
+                                                        obbsMismatch = await compareOBBSizes(packagename, gameName, output);
+                                                    }
+                                                    catch (Exception ex) { _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}"); }
                                                 }
-                                                catch (Exception ex) { _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}"); }
                                             }
                                         }
-                                    }
 
+                                    }
                                 }
                                 ChangeTitle($"Installation of {gameName} completed.");
                             }
