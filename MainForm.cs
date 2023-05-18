@@ -2465,7 +2465,7 @@ Things you can try:
                             _ = Logger.Log($"rclone copy \"Public:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\"");
                             t1 = new Thread(() =>
                             {
-                                string rclonecommand = 
+                                string rclonecommand =
                                 $"copy \":http:/{gameNameHash}/\" \"{Properties.Settings.Default.downloadDir}\\{gameNameHash}\" {extraArgs} --progress --rc";
                                 gameDownloadOutput = RCLONE.runRcloneCommand_PublicConfig(rclonecommand);
                             });
@@ -2481,7 +2481,7 @@ Things you can try:
                         _ = Logger.Log($"rclone copy \"{currentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\"");
                         t1 = new Thread(() =>
                         {
-                            gameDownloadOutput = RCLONE.runRcloneCommand_DownloadConfig($"copy \"{currentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\" \"{Properties.Settings.Default.downloadDir}\\{gameName}\" {extraArgs} --progress --rc");
+                            gameDownloadOutput = RCLONE.runRcloneCommand_DownloadConfig($"copy \"{currentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\" \"{Properties.Settings.Default.downloadDir}\\{gameName}\" {extraArgs} --progress --rc --retries 1 --low-level-retries 1");
                         });
                     }
 
@@ -3821,18 +3821,18 @@ Things you can try:
                     string IPcmnd = "connect " + IPaddr + ":5555";
                     Thread.Sleep(1000);
                     string errorChecker = ADB.RunAdbCommandToString(IPcmnd).Output;
-                    if (errorChecker.Contains("cannot resolve host") | errorChecker.Contains("cannot connect to")) 
+                    if (errorChecker.Contains("cannot resolve host") | errorChecker.Contains("cannot connect to"))
                     {
-                    ChangeTitle("");
-                    _ = FlexibleMessageBox.Show("Manual ADB over WiFi Connection failed\nExiting...", "Manual IP Connection Failed!", MessageBoxButtons.OK); 
-                    manualIP = false;
-                    ADBcommandbox.Visible = false;
-                    lblAdbCommand.Visible = false;
-                    lblShortcutCtrlR.Visible = false;
-                    label2.Visible = false;
-                    lblAdbCommand.Text = "Type command without\r\n\"adb\" prefix.\r\n\r\n\r\n";
-                    lblAdbCommand.Location = new System.Drawing.Point(514, 206);
-                    _ = gamesListView.Focus();
+                        ChangeTitle("");
+                        _ = FlexibleMessageBox.Show("Manual ADB over WiFi Connection failed\nExiting...", "Manual IP Connection Failed!", MessageBoxButtons.OK);
+                        manualIP = false;
+                        ADBcommandbox.Visible = false;
+                        lblAdbCommand.Visible = false;
+                        lblShortcutCtrlR.Visible = false;
+                        label2.Visible = false;
+                        lblAdbCommand.Text = "Type command without\r\n\"adb\" prefix.\r\n\r\n\r\n";
+                        lblAdbCommand.Location = new System.Drawing.Point(514, 206);
+                        _ = gamesListView.Focus();
                     }
                     else
                     {
