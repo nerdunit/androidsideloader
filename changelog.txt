@@ -1,19 +1,15 @@
-RSL 2.19
+RSL 2.20
 
-- Feature: Added streaming Game Trailers (enable in Settings)
-- Feature: Added custom Download Directories
-- Feature: Added custom Backup Directories
-- Feature: Added Game Filtering (click on the Colored-Labels in the Top-Right)
-- Feature: When uninstalling games, Rookie will now ask if you want to back up save data
-- Feature: "No Device Mode" now automatically disables "Delete after Download and Install"
-- Feature:  Offline Mode now has the ability to donate new games/updates
-- Fix:  OBBs will no longer be attempted to push in "No Device Mode"
-- Fix:  Comparing OBB sizes will no longer error during "No Device Mode"
-- Fix:  Comparing OBB Sizes will no longer state "Input string was not in a correct format", it will now properly tell the user what is wrong
-- Fix:  The GitHub Error when starting up will now show the actual URL it tries to access
-- Fix:  Added a check to make Rookie not attempt to get available space when no devices are connected
-- Removed Bandwidth Limit settings
+- Feature: Added manual IP on Wireless ADB
+- Feature: Loglevels added to Debuglog
+- Feature: Delete old OBB Folders before pushing new.
+- Feature: Add Single-Thread mode in settings.
+- Fix: Storage display is no longer broken on devices at v51 or above.
+- Fix: Games that come with install.txt will now check for a device to avoid freezes.
+- Fix: "No Device Mode" checkbox can't have "Delete after Download and Install" enabled at the same time anymore.
+- Fix: Removing Queue Items should no longer ever crash Rookie.
+- Fix: Settings Dialog Display Adjustments
+- Update RCLONE.
+- Remove redundant Internet Check.
 
-- Thank you to Chax for the new features!
-- Thank you to JP for the Trailers framework!
-~ fenopy
+~ Chax & Fenopy
