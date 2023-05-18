@@ -2595,7 +2595,7 @@ Things you can try:
 
                                 cleanupActiveDownloadStatus();
                             }
-                            else if (!gameDownloadOutput.Error.Contains("Serving remote control on http://127.0.0.1:5572/"))
+                            else if (!gameDownloadOutput.Error.Contains("Serving remote control"))
                             {
                                 otherError = true;
 
