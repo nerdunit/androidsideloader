@@ -2677,7 +2677,7 @@ Things you can try:
                                     }
                                     else
                                     {
-                                        output.Output += "All tasks finished. ";
+                                        output.Output += "All tasks finished. \n";
                                     }
                                 }
                                 if (!isinstalltxt)
@@ -2749,7 +2749,7 @@ Things you can try:
                                     }
                                     else
                                     {
-                                        output.Output += "All tasks finished. ";
+                                        output.Output += "All tasks finished. \n";
                                     }
                                 }
                                 ChangeTitle($"Installation of {gameName} completed.");
