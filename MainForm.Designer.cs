@@ -1117,6 +1117,7 @@ namespace AndroidSideloader
             this.lblUpdateAvailable.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblUpdateAvailable.AutoSize = true;
             this.lblUpdateAvailable.BackColor = System.Drawing.Color.Transparent;
+            this.lblUpdateAvailable.Cursor = System.Windows.Forms.Cursors.Hand;
             this.lblUpdateAvailable.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblUpdateAvailable.ForeColor = System.Drawing.SystemColors.ControlLightLight;
             this.lblUpdateAvailable.Location = new System.Drawing.Point(878, 24);
@@ -1132,6 +1133,7 @@ namespace AndroidSideloader
             this.lblUpToDate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblUpToDate.AutoSize = true;
             this.lblUpToDate.BackColor = System.Drawing.Color.Transparent;
+            this.lblUpToDate.Cursor = System.Windows.Forms.Cursors.Hand;
             this.lblUpToDate.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblUpToDate.ForeColor = System.Drawing.SystemColors.ControlLightLight;
             this.lblUpToDate.Location = new System.Drawing.Point(878, 6);
@@ -1254,6 +1256,7 @@ namespace AndroidSideloader
             this.lblNeedsDonate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblNeedsDonate.AutoSize = true;
             this.lblNeedsDonate.BackColor = System.Drawing.Color.Transparent;
+            this.lblNeedsDonate.Cursor = System.Windows.Forms.Cursors.Hand;
             this.lblNeedsDonate.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblNeedsDonate.ForeColor = System.Drawing.SystemColors.ControlLightLight;
             this.lblNeedsDonate.Location = new System.Drawing.Point(878, 43);
