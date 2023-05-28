@@ -3297,25 +3297,33 @@ Things you can try:
             gamesListView.SelectedItems.Clear();
             searchTextBox.KeyPress += new
             System.Windows.Forms.KeyPressEventHandler(CheckEnter);
+            // Modified code to filter and select matching items
             if (gamesListView.Items.Count > 0)
             {
-                ListViewItem foundItem = gamesListView.Items.Cast<ListViewItem>()
-                .FirstOrDefault(i => i.Text.IndexOf(searchTextBox.Text, StringComparison.CurrentCultureIgnoreCase) >= 0);
-                if (foundItem != null)
+                string searchTerm = searchTextBox.Text;
+
+                // Get all items that contain the search term
+                var matchingItems = gamesListView.Items.Cast<ListViewItem>()
+                    .Where(i => i.Text.IndexOf(searchTerm, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                    .ToList();
+
+                if (matchingItems.Count > 0)
                 {
+                    // Select the first matching item
+                    ListViewItem foundItem = matchingItems[0];
                     foundItem.Selected = true;
                     gamesListView.TopItem = foundItem;
-                    if (foundItem == gamesListView.TopItem)
-                    {
-                        gamesListView.TopItem.Selected = true;
 
-                    }
-                    else
-                    {
-                        foundItem.Selected = true;
-                    }
+                    // Clear the list and add only the matching items
+                    gamesListView.Items.Clear();
+                    gamesListView.Items.AddRange(matchingItems.ToArray());
 
                     _ = searchTextBox.Focus();
+                }
+                else
+                {
+                    // No matching items found, restore the original list
+                    initListView();
                 }
             }
         }
@@ -4267,6 +4275,14 @@ Things you can try:
             lblUpToDate.Click += lblUpToDate_Click;
             lblUpdateAvailable.Click += updateAvailable_Click;
             lblNeedsDonate.Click += lblNeedsDonate_Click;
+        }
+
+        private void label2_VisibleChanged(object sender, EventArgs e)
+        {
+            if (label2.Visible)
+            {
+                initListView();
+            }
         }
     }
 
