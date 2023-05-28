@@ -36,6 +36,10 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
         public static ProcessOutput RemoveFolder(string path)
         {
             ADB.WakeDevice();
+            if (path == "/sdcard/Android/obb/" || path == "sdcard/Android/data/")
+            {
+                return null;
+            }
             return ADB.RunAdbCommandToString($"shell rm -r {path}");
         }
         public static ProcessOutput RemoveFile(string path)
