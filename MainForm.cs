@@ -2865,20 +2865,18 @@ Things you can try:
                 }
                 return true;
             }
+            catch (FormatException ex)
+            {
+                _ = FlexibleMessageBox.Show("The OBB Folder on the Quest seems to not exist or be empty\nPlease redownload the game or sideload the obb manually.", "OBB Size Undetectable!", MessageBoxButtons.OK);
+                _ = Logger.Log("Unable to compare obbs with the exception" + ex.Message, "ERROR");
+                _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}");
+                return false;
+            }
             catch (Exception ex)
             {
-                string inputstringerror = "Input string";
-                if (ex.Message.Contains(inputstringerror))
-                {
-                    _ = FlexibleMessageBox.Show("The OBB Folder on the Quest seems to not exist or be empty\nPlease redownload the game or sideload the obb manually.", "OBB Size Undetectable!", MessageBoxButtons.OK);
-                    return false;
-                }
-                else
-                {
-                    _ = Logger.Log("Unable to compare obbs with the exception" + ex.Message, "ERROR");
-                    _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}");
-                    return false;
-                }
+                _ = Logger.Log("Unable to compare obbs with the exception" + ex.Message, "ERROR");
+                _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}");
+                return false;
             }
         }
 
