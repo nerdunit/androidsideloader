@@ -3009,11 +3009,6 @@ Things you can try:
 
         }
 
-        private void disPosed(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
         private void ADBWirelessDisable_Click(object sender, EventArgs e)
         {
             DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "Are you sure you want to delete your saved Quest IP address/command?", "Remove saved IP address?", MessageBoxButtons.YesNo);
@@ -3044,27 +3039,6 @@ Things you can try:
                     File.Delete("C:\\RSL\\platform-tools\\StoredIP.txt");
                 }
             }
-        }
-        private void EnablePassthroughAPI_Click(object sender, EventArgs e)
-        {
-            ADB.WakeDevice();
-            _ = ADB.RunAdbCommandToString("shell setprop debug.oculus.experimentalEnabled 1");
-            _ = FlexibleMessageBox.Show(Program.form, "Passthrough API enabled.");
-
-        }
-
-        private async void killRcloneButton_Click(object sender, EventArgs e)
-        {
-            if (isLoading)
-            {
-                return;
-            }
-
-            RCLONE.killRclone();
-            ADBWirelessDisable.Text = "Start Movie Stream";
-            ChangeTitle("Killed Rclone");
-            _ = await CheckForDevice();
-            ChangeTitlebarToDevice();
         }
 
         private void otherDrop_Click(object sender, EventArgs e)
@@ -3105,12 +3079,6 @@ Things you can try:
         {
             QuestForm Form = new QuestForm();
             Form.Show(Program.form);
-        }
-
-        private void SpoofFormButton_Click(object sender, EventArgs e)
-        {
-            SpoofForm Form = new SpoofForm();
-            Form.Show();
         }
 
         private void listView1_ColumnClick(object sender, ColumnClickEventArgs e)
@@ -3626,10 +3594,7 @@ Things you can try:
             lblShortcutsF2.Visible = true;
             _ = searchTextBox.Focus();
         }
-        private void EnterInstallBox1_CheckedChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.EnterKeyInstall = EnterInstallBox.Checked;
-        }
+
         private void searchTextBox_Leave(object sender, EventArgs e)
         {
             if (searchTextBox.Visible)
