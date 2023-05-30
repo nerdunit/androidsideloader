@@ -64,16 +64,7 @@ namespace AndroidSideloader
 
             if (error.Contains("ADB_VENDOR_KEYS") && !Properties.Settings.Default.adbdebugwarned)
             {
-                DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "Please check inside your headset for ADB DEBUGGING prompt, check box to \"Always allow from this computer.\" and hit OK.\nPlease note that even if you have done this\nbefore it will reset itself from time to time.\n\nPress CANCEL if you want to disable this prompt (FOR DEBUGGING ONLY, NOT RECOMMENDED).", "ADB Debugging not enabled.", MessageBoxButtons.OKCancel);
-                if (dialogResult == DialogResult.Cancel)
-                {
-                    Properties.Settings.Default.adbdebugwarned = true;
-                    Properties.Settings.Default.Save();
-                }
-                else
-                {
-                    ADB.WakeDevice();
-                }
+                ADBDebugWarning();
             }
             if (error.Contains("not enough storage space"))
             {
@@ -141,16 +132,7 @@ namespace AndroidSideloader
             }
             if (error.Contains("ADB_VENDOR_KEYS") && Properties.Settings.Default.adbdebugwarned)
             {
-                DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "Please check inside your headset for ADB DEBUGGING prompt, check box to \"Always allow from this computer.\" and hit OK.\nPlease note that even if you have done this\nbefore it will reset itself from time to time.\n\nPress CANCEL if you want to disable this prompt (FOR DEBUGGING ONLY, NOT RECOMMENDED).", "ADB Debugging not enabled.", MessageBoxButtons.OKCancel);
-                if (dialogResult == DialogResult.Cancel)
-                {
-                    Properties.Settings.Default.adbdebugwarned = true;
-                    Properties.Settings.Default.Save();
-                }
-                else
-                {
-                    ADB.WakeDevice();
-                }
+                ADBDebugWarning();
             }
             _ = Logger.Log(output);
             _ = Logger.Log(error, "ERROR");
@@ -201,22 +183,26 @@ namespace AndroidSideloader
 
             if (error.Contains("ADB_VENDOR_KEYS") && Properties.Settings.Default.adbdebugwarned)
             {
-                DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "Please check inside your headset for ADB DEBUGGING prompt, check box to \"Always allow from this computer.\" and hit OK.\nPlease note that even if you have done this\nbefore it will reset itself from time to time.\n\nPress CANCEL if you want to disable this prompt (FOR DEBUGGING ONLY, NOT RECOMMENDED).", "ADB Debugging not enabled.", MessageBoxButtons.OKCancel);
-                if (dialogResult == DialogResult.Cancel)
-                {
-                    Properties.Settings.Default.adbdebugwarned = true;
-                    Properties.Settings.Default.Save();
-                }
-                else
-                {
-                    ADB.WakeDevice();
-                }
+                ADBDebugWarning();
             }
             _ = Logger.Log(output);
             _ = Logger.Log(error, "ERROR");
             return new ProcessOutput(output, error);
         }
 
+        public static void ADBDebugWarning()
+        {
+            DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "Please check inside your headset for ADB DEBUGGING prompt, check box to \"Always allow from this computer.\" and hit OK.\nPlease note that even if you have done this\nbefore it will reset itself from time to time.\n\nPress CANCEL if you want to disable this prompt (FOR DEBUGGING ONLY, NOT RECOMMENDED).", "ADB Debugging not enabled.", MessageBoxButtons.OKCancel);
+            if (dialogResult == DialogResult.Cancel)
+            {
+                Properties.Settings.Default.adbdebugwarned = true;
+                Properties.Settings.Default.Save();
+            }
+            else
+            {
+                ADB.WakeDevice();
+            }
+        }
 
         public static ProcessOutput UninstallPackage(string package)
         {
