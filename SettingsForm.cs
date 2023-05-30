@@ -193,7 +193,7 @@ namespace AndroidSideloader
             {
                 DialogResult dialogResult = FlexibleMessageBox.Show(this, "WARNING: This box enables automatic reinstall when installs fail,\ndue to some games not allowing " +
                     "access to their save data (less than 5%) this\noption can lead to losing your progress." +
-                    " However with this option\nchecked when installs fail you won't have to agree to a prompt to preform\nthe reinstall. " +
+                    " However with this option\nchecked when installs fail you won't have to agree to a prompt to perform\nthe reinstall. " +
                     "(ideal when installing from a queue).\n\nNOTE: If your usb/wireless adb connection is extremely slow this option can\ncause larger" +
                     "apk file installations to fail. Enable anyway?", "WARNING", MessageBoxButtons.OKCancel);
                 if (dialogResult == DialogResult.Cancel)

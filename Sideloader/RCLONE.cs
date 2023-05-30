@@ -186,7 +186,7 @@ namespace AndroidSideloader
                 {
                     string resultString = responseReader.ReadToEnd();
 
-                    _ = Logger.Log($"Retrived updated config from: {configUrl}");
+                    _ = Logger.Log($"Retrieved updated config from: {configUrl}");
 
                     if (File.Exists(Environment.CurrentDirectory + "\\rclone\\vrp.download.config_new"))
                     {
