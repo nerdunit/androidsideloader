@@ -230,60 +230,41 @@ And all of them added to PATH, without ANY of them, the spoofer won't work!";
         {
             foreach (string[] game in SideloaderRCLONE.games)
             {
-                if (gameName.Equals(game[SideloaderRCLONE.GameNameIndex]))
-                {
+                if (gameName.Equals(game[SideloaderRCLONE.GameNameIndex]) || gameName.Equals(game[SideloaderRCLONE.ReleaseNameIndex]))
                     return game[SideloaderRCLONE.PackageNameIndex];
-                }
-
-                if (gameName.Equals(game[SideloaderRCLONE.ReleaseNameIndex]))
-                {
-                    return game[SideloaderRCLONE.PackageNameIndex];
-                }
             }
             return gameName;
         }
 
-        public static string PackageNametoGameName(string gameName)
+        public static string PackageNametoGameName(string packageName)
         {
             foreach (string[] game in SideloaderRCLONE.games)
             {
-                if (gameName.Equals(game[SideloaderRCLONE.PackageNameIndex]))
-                {
+                if (packageName.Equals(game[SideloaderRCLONE.PackageNameIndex]))
                     return game[SideloaderRCLONE.ReleaseNameIndex];
-                }
             }
-            return gameName;
+            return packageName;
         }
 
         public static string gameNameToSimpleName(string gameName)
         {
             foreach (string[] game in SideloaderRCLONE.games)
             {
-                if (gameName.Equals(game[SideloaderRCLONE.GameNameIndex]))
-                {
+                if (gameName.Equals(game[SideloaderRCLONE.GameNameIndex]) || gameName.Equals(game[SideloaderRCLONE.ReleaseNameIndex]))
                     return game[SideloaderRCLONE.GameNameIndex];
-                }
-
-                if (gameName.Equals(game[SideloaderRCLONE.ReleaseNameIndex]))
-                {
-                    return game[SideloaderRCLONE.GameNameIndex];
-                }
             }
             return gameName;
         }
 
-        public static string PackageNameToSimpleName(string gameName)
+        public static string PackageNameToSimpleName(string packageName)
         {
             foreach (string[] game in SideloaderRCLONE.games)
             {
-                if (gameName.Contains(game[SideloaderRCLONE.PackageNameIndex]))
-                {
+                if (packageName.Contains(game[SideloaderRCLONE.PackageNameIndex]))
                     return game[SideloaderRCLONE.GameNameIndex];
-                }
             }
-            return gameName;
+            return packageName;
         }
-
 
         //Downloads the required files
         public static void downloadFiles()
