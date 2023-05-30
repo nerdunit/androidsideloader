@@ -54,15 +54,12 @@ namespace AndroidSideloader
 
             if (command.Contains("connect"))
             {
-                bool graceful = adb.WaitForExit(3000);  // Wait 3 secs.
+                bool graceful = adb.WaitForExit(3000);
                 if (!graceful)
                 {
                     adb.Kill();
+                    adb.WaitForExit();
                 }
-            }
-            else
-            {
-                adb.WaitForExit();
             }
 
             if (error.Contains("ADB_VENDOR_KEYS") && !Properties.Settings.Default.adbdebugwarned)
@@ -130,25 +127,18 @@ namespace AndroidSideloader
                 if (!graceful)
                 {
                     adb.Kill();
-                }
-                else
-                {
-                    adb.WaitForExit();
+                    adb.WaitForExit(); 
                 }
             }
-            else if (command.Contains("install"))
+            else if (command.Contains("connect"))
             {
-                bool graceful = adb.WaitForExit(120000);
+                bool graceful = adb.WaitForExit(3000); 
                 if (!graceful)
                 {
-                    adb.Kill();
-                }
-                else
-                {
+                    adb.Kill(); 
                     adb.WaitForExit();
                 }
             }
-
             if (error.Contains("ADB_VENDOR_KEYS") && Properties.Settings.Default.adbdebugwarned)
             {
                 DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "Please check inside your headset for ADB DEBUGGING prompt, check box to \"Always allow from this computer.\" and hit OK.\nPlease note that even if you have done this\nbefore it will reset itself from time to time.\n\nPress CANCEL if you want to disable this prompt (FOR DEBUGGING ONLY, NOT RECOMMENDED).", "ADB Debugging not enabled.", MessageBoxButtons.OKCancel);
@@ -205,11 +195,8 @@ namespace AndroidSideloader
                 if (!graceful)
                 {
                     adb.Kill();
+                    adb.WaitForExit();
                 }
-            }
-            else
-            {
-                adb.WaitForExit();
             }
 
             if (error.Contains("ADB_VENDOR_KEYS") && Properties.Settings.Default.adbdebugwarned)
