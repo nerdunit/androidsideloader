@@ -52,13 +52,13 @@ namespace AndroidSideloader
             }
             catch { }
 
-            if (command.Contains("connect"))
+                        if (command.Contains("connect"))
             {
                 bool graceful = adb.WaitForExit(3000);
                 if (!graceful)
                 {
                     adb.Kill();
-                    adb.WaitForExit();
+                    adb.WaitForExit(); 
                 }
             }
 
@@ -229,10 +229,9 @@ namespace AndroidSideloader
         public static string GetAvailableSpace()
         {
             long totalSize = 0;
-
             long usedSize = 0;
-
             long freeSize = 0;
+
             WakeDevice();
             string[] output = RunAdbCommandToString("shell df").Output.Split('\n');
 
@@ -240,30 +239,13 @@ namespace AndroidSideloader
             {
                 if (currLine.StartsWith("/dev/fuse") || currLine.StartsWith("/data/media"))
                 {
-                    string[] foo = currLine.Split(' ');
-                    int i = 0;
-                    foreach (string curr in foo)
+                    string[] foo = currLine.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (foo.Length >= 4)
                     {
-                        if (curr.Length > 1)
-                        {
-                            switch (i)
-                            {
-                                case 0:
-                                    break;
-                                case 1:
-                                    totalSize = long.Parse(curr) / 1000;
-                                    break;
-                                case 2:
-                                    usedSize = long.Parse(curr) / 1000;
-                                    break;
-                                case 3:
-                                    freeSize = long.Parse(curr) / 1000;
-                                    break;
-                                default:
-                                    break;
-                            }
-                            i++;
-                        }
+                        totalSize = long.Parse(foo[1]) / 1000;
+                        usedSize = long.Parse(foo[2]) / 1000;
+                        freeSize = long.Parse(foo[3]) / 1000;
+                        break; // Assuming we only need the first matching line
                     }
                 }
             }
