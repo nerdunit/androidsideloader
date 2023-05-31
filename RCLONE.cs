@@ -299,7 +299,12 @@ namespace AndroidSideloader
                 return new ProcessOutput("Download failed.", "");
             }
 
-            if (error.Contains("400 Bad Request")
+            if (error.Contains("Only one usage of each socket address (protocol/network address/port) is normally permitted")) {
+                _ = Logger.Log(error, "ERROR");
+                return new ProcessOutput("Failed to fetch from public mirror.", "Failed to fetch from public mirror.\nYou may have a running RCLONE Task!\nCheck your Task Manager, Sort by Network Usage, and kill the process Rsync for Cloud Storage/Rclone");
+            }
+
+            else if (error.Contains("400 Bad Request")
                 || error.Contains("cannot fetch token")
                 || error.Contains("authError")
                 || error.Contains("quota")
