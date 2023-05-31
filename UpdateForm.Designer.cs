@@ -29,13 +29,14 @@ namespace AndroidSideloader
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(UpdateForm));
             this.panel1 = new System.Windows.Forms.Panel();
+            this.YesUpdate = new AndroidSideloader.RoundButton();
             this.panel3 = new System.Windows.Forms.Panel();
             this.UpdateTextBox = new System.Windows.Forms.RichTextBox();
             this.UpdateVerLabel = new System.Windows.Forms.Label();
             this.CurVerLabel = new System.Windows.Forms.Label();
             this.SkipUpdate = new System.Windows.Forms.Label();
-            this.YesUpdate = new AndroidSideloader.RoundButton();
             this.panel1.SuspendLayout();
             this.panel3.SuspendLayout();
             this.SuspendLayout();
@@ -57,6 +58,27 @@ namespace AndroidSideloader
             this.panel1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.UpdateForm_MouseDown);
             this.panel1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.UpdateForm_MouseMove);
             this.panel1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.UpdateForm_MouseUp);
+            // 
+            // YesUpdate
+            // 
+            this.YesUpdate.Active1 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.YesUpdate.Active2 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.YesUpdate.BackColor = System.Drawing.Color.Transparent;
+            this.YesUpdate.DialogResult = System.Windows.Forms.DialogResult.OK;
+            this.YesUpdate.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
+            this.YesUpdate.ForeColor = System.Drawing.Color.White;
+            this.YesUpdate.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
+            this.YesUpdate.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
+            this.YesUpdate.Location = new System.Drawing.Point(339, 245);
+            this.YesUpdate.Name = "YesUpdate";
+            this.YesUpdate.Radius = 5;
+            this.YesUpdate.Size = new System.Drawing.Size(111, 31);
+            this.YesUpdate.Stroke = true;
+            this.YesUpdate.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
+            this.YesUpdate.TabIndex = 2;
+            this.YesUpdate.Text = "Update Now";
+            this.YesUpdate.Transparency = false;
+            this.YesUpdate.Click += new System.EventHandler(this.YesUpdate_Click);
             // 
             // panel3
             // 
@@ -126,27 +148,6 @@ namespace AndroidSideloader
             this.SkipUpdate.Text = "𝖲𝖪𝖨𝖯 𝖥𝖮𝖱 𝖭𝖮𝖶";
             this.SkipUpdate.Click += new System.EventHandler(this.SkipUpdate_Click);
             // 
-            // YesUpdate
-            // 
-            this.YesUpdate.Active1 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
-            this.YesUpdate.Active2 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
-            this.YesUpdate.BackColor = System.Drawing.Color.Transparent;
-            this.YesUpdate.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.YesUpdate.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
-            this.YesUpdate.ForeColor = System.Drawing.Color.White;
-            this.YesUpdate.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
-            this.YesUpdate.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
-            this.YesUpdate.Location = new System.Drawing.Point(339, 245);
-            this.YesUpdate.Name = "YesUpdate";
-            this.YesUpdate.Radius = 5;
-            this.YesUpdate.Size = new System.Drawing.Size(111, 31);
-            this.YesUpdate.Stroke = true;
-            this.YesUpdate.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
-            this.YesUpdate.TabIndex = 2;
-            this.YesUpdate.Text = "Update Now";
-            this.YesUpdate.Transparency = false;
-            this.YesUpdate.Click += new System.EventHandler(this.YesUpdate_Click);
-            // 
             // UpdateForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -157,6 +158,7 @@ namespace AndroidSideloader
             this.ControlBox = false;
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "UpdateForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.UpdateForm_MouseDown);

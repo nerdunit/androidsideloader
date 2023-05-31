@@ -30,21 +30,22 @@ namespace AndroidSideloader
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DonorsListViewForm));
             this.DonorsListView = new System.Windows.Forms.ListView();
             this.GameNameIndex = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.PackageNameIndex = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.VersionCodeIndex = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.UpdateOrNew = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.panel1 = new System.Windows.Forms.Panel();
-            this.panel2 = new System.Windows.Forms.Panel();
+            this.SkipButton = new AndroidSideloader.RoundButton();
             this.DonateButton = new AndroidSideloader.RoundButton();
+            this.panel2 = new System.Windows.Forms.Panel();
             this.bothdet = new System.Windows.Forms.Label();
             this.newdet = new System.Windows.Forms.Label();
             this.upddet = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.TimerDesc = new System.Windows.Forms.Label();
             this.DonationTimer = new System.Windows.Forms.Timer(this.components);
-            this.SkipButton = new AndroidSideloader.RoundButton();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             this.SuspendLayout();
@@ -128,15 +129,31 @@ namespace AndroidSideloader
             this.panel1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseMove);
             this.panel1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseUp);
             // 
-            // panel2
+            // SkipButton
             // 
-            this.panel2.BackColor = global::AndroidSideloader.Properties.Settings.Default.SubButtonColor;
-            this.panel2.Controls.Add(this.DonorsListView);
-            this.panel2.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "SubButtonColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.panel2.Location = new System.Drawing.Point(16, 43);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(430, 230);
-            this.panel2.TabIndex = 2;
+            this.SkipButton.Active1 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.SkipButton.Active2 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.SkipButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.SkipButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "SubButtonColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("ForeColor", global::AndroidSideloader.Properties.Settings.Default, "FontColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.SkipButton.DialogResult = System.Windows.Forms.DialogResult.OK;
+            this.SkipButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
+            this.SkipButton.ForeColor = global::AndroidSideloader.Properties.Settings.Default.FontColor;
+            this.SkipButton.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.SkipButton.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.SkipButton.Location = new System.Drawing.Point(22, 277);
+            this.SkipButton.Margin = new System.Windows.Forms.Padding(0);
+            this.SkipButton.Name = "SkipButton";
+            this.SkipButton.Radius = 5;
+            this.SkipButton.Size = new System.Drawing.Size(102, 36);
+            this.SkipButton.Stroke = true;
+            this.SkipButton.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
+            this.SkipButton.TabIndex = 96;
+            this.SkipButton.Text = "Skip";
+            this.SkipButton.Transparency = false;
+            this.SkipButton.Click += new System.EventHandler(this.SkipButton_Click);
             // 
             // DonateButton
             // 
@@ -163,6 +180,16 @@ namespace AndroidSideloader
             this.DonateButton.Text = "Automatically share selected apps";
             this.DonateButton.Transparency = false;
             this.DonateButton.Click += new System.EventHandler(this.DonateButton_Click);
+            // 
+            // panel2
+            // 
+            this.panel2.BackColor = global::AndroidSideloader.Properties.Settings.Default.SubButtonColor;
+            this.panel2.Controls.Add(this.DonorsListView);
+            this.panel2.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "SubButtonColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.panel2.Location = new System.Drawing.Point(16, 43);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(430, 230);
+            this.panel2.TabIndex = 2;
             // 
             // bothdet
             // 
@@ -242,32 +269,6 @@ namespace AndroidSideloader
             this.TimerDesc.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseMove);
             this.TimerDesc.MouseUp += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseUp);
             // 
-            // SkipButton
-            // 
-            this.SkipButton.Active1 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
-            this.SkipButton.Active2 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
-            this.SkipButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.SkipButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
-            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "SubButtonColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("ForeColor", global::AndroidSideloader.Properties.Settings.Default, "FontColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.SkipButton.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.SkipButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
-            this.SkipButton.ForeColor = global::AndroidSideloader.Properties.Settings.Default.FontColor;
-            this.SkipButton.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
-            this.SkipButton.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
-            this.SkipButton.Location = new System.Drawing.Point(22, 277);
-            this.SkipButton.Margin = new System.Windows.Forms.Padding(0);
-            this.SkipButton.Name = "SkipButton";
-            this.SkipButton.Radius = 5;
-            this.SkipButton.Size = new System.Drawing.Size(102, 36);
-            this.SkipButton.Stroke = true;
-            this.SkipButton.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
-            this.SkipButton.TabIndex = 96;
-            this.SkipButton.Text = "Skip";
-            this.SkipButton.Transparency = false;
-            this.SkipButton.Click += new System.EventHandler(this.SkipButton_Click);
-            // 
             // DonorsListViewForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -278,6 +279,7 @@ namespace AndroidSideloader
             this.Controls.Add(this.panel1);
             this.ForeColor = System.Drawing.Color.White;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "DonorsListViewForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Load += new System.EventHandler(this.DonorsListViewForm_Load);

@@ -32,6 +32,7 @@ namespace AndroidSideloader
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(QuestForm));
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
@@ -742,6 +743,7 @@ namespace AndroidSideloader
             this.Controls.Add(this.QURfrRt);
             this.Controls.Add(this.RefreshRateComboBox);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximumSize = new System.Drawing.Size(386, 776);
             this.MinimumSize = new System.Drawing.Size(386, 776);
             this.Name = "QuestForm";
