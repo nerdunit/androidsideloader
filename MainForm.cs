@@ -218,7 +218,6 @@ namespace AndroidSideloader
             {
                 RCLONE.Init();
             }
-            try { Spoofer.spoofer.Init(); } catch { }
 
             if (Properties.Settings.Default.CallUpgrade)
             {
