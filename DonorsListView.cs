@@ -113,18 +113,9 @@ namespace AndroidSideloader
 
         private void DonorsListView_ItemChecked(object sender, ItemCheckedEventArgs e)
         {
-            if (DonorsListView.CheckedItems.Count == 0)
-            {
-                SkipButton.Enabled = true;
-                DonateButton.Enabled = false;
-            }
-            else
-            {
-                DonateButton.Enabled = true;
-                SkipButton.Enabled = false;
-            }
+            SkipButton.Enabled = DonorsListView.CheckedItems.Count == 0;
+            DonateButton.Enabled = !SkipButton.Enabled;
         }
-
 
         private void SkipButton_Click(object sender, EventArgs e)
         {
