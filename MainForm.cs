@@ -39,7 +39,7 @@ namespace AndroidSideloader
         List<UploadGame> gamesToUpload = new List<UploadGame>();
 
 
-        public static string currremotesimple = "";
+        public static string currremotesimple = String.Empty;
 #else
         public bool keyheld;
         public static string CurrAPK;
@@ -95,15 +95,15 @@ namespace AndroidSideloader
             if (comparison > newDayReference)
             {
                 Properties.Settings.Default.ListUpped = false;
-                Properties.Settings.Default.NonAppPackages = "";
-                Properties.Settings.Default.AppPackages = "";
+                Properties.Settings.Default.NonAppPackages = String.Empty;
+                Properties.Settings.Default.AppPackages = String.Empty;
                 Properties.Settings.Default.LastLaunch = DateTime.Now;
                 Properties.Settings.Default.Save();
             }
             if (comparison2 > newDayReference2)
             {
                 Properties.Settings.Default.LastLaunch2 = DateTime.Now;
-                Properties.Settings.Default.SubmittedUpdates = "";
+                Properties.Settings.Default.SubmittedUpdates = String.Empty;
                 Properties.Settings.Default.Save();
             }
             //Time for debuglog
@@ -134,8 +134,8 @@ namespace AndroidSideloader
             }
         }
 
-        public static string DonorApps = "";
-        private string oldTitle = "";
+        public static string DonorApps = String.Empty;
+        private string oldTitle = String.Empty;
         public static bool updatesnotified = false;
         public static string BackupFolder;
 
@@ -229,9 +229,9 @@ namespace AndroidSideloader
             gamesListView.View = View.Details;
             gamesListView.FullRowSelect = true;
             gamesListView.GridLines = false;
-            etaLabel.Text = "";
-            speedLabel.Text = "";
-            diskLabel.Text = "";
+            etaLabel.Text = String.Empty;
+            speedLabel.Text = String.Empty;
+            diskLabel.Text = String.Empty;
             verLabel.Text = Updater.LocalVersion;
             if (File.Exists("crashlog.txt"))
             {
@@ -694,7 +694,7 @@ namespace AndroidSideloader
 
         private async void obbcopybutton_Click(object sender, EventArgs e)
         {
-            ProcessOutput output = new ProcessOutput("", "");
+            ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
             FolderSelectDialog dialog = new FolderSelectDialog
             {
                 Title = "Select OBB folder (must be direct OBB folder, E.G: com.Company.AppName)"
@@ -723,7 +723,7 @@ namespace AndroidSideloader
                 showAvailableSpace();
 
                 ShowPrcOutput(output);
-                Program.form.ChangeTitle("");
+                Program.form.ChangeTitle(String.Empty);
             }
         }
 
@@ -752,7 +752,7 @@ namespace AndroidSideloader
                 }
                 else if (Devices[0].Length > 1)
                 {
-                    this.Invoke(() => { Text = "Device Connected with ID | " + Devices[0].Replace("device", ""); });
+                    this.Invoke(() => { Text = "Device Connected with ID | " + Devices[0].Replace("device", String.Empty); });
                     DeviceConnected = true;
                 }
                 else
@@ -823,7 +823,7 @@ namespace AndroidSideloader
             return deviceId;
         }
 
-        public static string taa = "";
+        public static string taa = String.Empty;
         private async void backupbutton_Click(object sender, EventArgs e)
         {
             if (!Properties.Settings.Default.customBackupDir)
@@ -838,7 +838,7 @@ namespace AndroidSideloader
             {
                 _ = Directory.CreateDirectory(BackupFolder);
             }
-            ProcessOutput output = new ProcessOutput("", "");
+            ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
             Thread t1 = new Thread(() =>
             {
                 ADB.WakeDevice();
@@ -923,7 +923,7 @@ namespace AndroidSideloader
 
             string[] line = listapps().Split('\n');
 
-            string forsettings = string.Join("", line);
+            string forsettings = string.Join(String.Empty, line);
             Properties.Settings.Default.InstalledApps = forsettings;
             Properties.Settings.Default.Save();
 
@@ -1168,7 +1168,7 @@ namespace AndroidSideloader
             {
                 Thread t1 = new Thread(() =>
                 {
-                    Sideloader.RecursiveOutput = new ProcessOutput("", "");
+                    Sideloader.RecursiveOutput = new ProcessOutput(String.Empty, String.Empty);
                     Sideloader.RecursiveCopyOBB(dialog.FileName);
                 })
                 {
@@ -1202,11 +1202,11 @@ namespace AndroidSideloader
             Program.form.ChangeTitle($"Processing dropped file. If Rookie freezes, please wait. Do not close Rookie!");
 
             DragDropLbl.Visible = false;
-            ProcessOutput output = new ProcessOutput("", "");
+            ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
             ADB.WakeDevice();
             ADB.DeviceID = GetDeviceID();
             progressBar.Style = ProgressBarStyle.Marquee;
-            CurrPCKG = "";
+            CurrPCKG = String.Empty;
             string[] datas = (string[])e.Data.GetData(DataFormats.FileDrop);
             foreach (string data in datas)
             {
@@ -1236,11 +1236,11 @@ namespace AndroidSideloader
                             await Task.Delay(100);
                         }
 
-                        Program.form.ChangeTitle("");
+                        Program.form.ChangeTitle(String.Empty);
                         Properties.Settings.Default.CurrPckg = dir;
                         Properties.Settings.Default.Save();
                     }
-                    Program.form.ChangeTitle($"");
+                    Program.form.ChangeTitle(String.Empty);
                     string extension = Path.GetExtension(data);
                     string[] files = Directory.GetFiles(data);
                     foreach (string file2 in files)
@@ -1250,15 +1250,15 @@ namespace AndroidSideloader
                             if (file2.EndsWith(".apk"))
                             {
                                 string pathname = Path.GetDirectoryName(file2);
-                                string filename = file2.Replace($"{pathname}\\", "");
+                                string filename = file2.Replace($"{pathname}\\", String.Empty);
 
                                 string cmd = $"C:\\RSL\\platform-tools\\aapt.exe\" dump badging \"{file2}\" | findstr -i \"package: name\"";
                                 _ = Logger.Log($"Running adb command-{cmd}");
                                 string cmdout = ADB.RunCommandToString(cmd, file2).Output;
                                 cmdout = Utilities.StringUtilities.RemoveEverythingBeforeFirst(cmdout, "=");
                                 cmdout = Utilities.StringUtilities.RemoveEverythingAfterFirst(cmdout, " ");
-                                cmdout = cmdout.Replace("'", "");
-                                cmdout = cmdout.Replace("=", "");
+                                cmdout = cmdout.Replace("'", String.Empty);
+                                cmdout = cmdout.Replace("=", String.Empty);
                                 CurrPCKG = cmdout;
                                 CurrAPK = file2;
                                 System.Windows.Forms.Timer t3 = new System.Windows.Forms.Timer
@@ -1563,7 +1563,7 @@ namespace AndroidSideloader
         private void Form1_DragLeave(object sender, EventArgs e)
         {
             DragDropLbl.Visible = false;
-            DragDropLbl.Text = "";
+            DragDropLbl.Text = String.Empty;
 
             ChangeTitle(" \n\n");
         }
@@ -1585,11 +1585,11 @@ namespace AndroidSideloader
 
         private async void initListView()
         {
-            rookienamelist = "";
+            rookienamelist = String.Empty;
             loaded = false;
             string lines = Properties.Settings.Default.InstalledApps;
             string pattern = "package:";
-            string replacement = "";
+            string replacement = String.Empty;
             Regex rgx = new Regex(pattern);
             string result = rgx.Replace(lines, replacement);
             char[] delims = new[] { '\r', '\n' };
@@ -2168,7 +2168,7 @@ without him none of this would be possible
 
                 Properties.Settings.Default.WirelessADB = true;
                 Properties.Settings.Default.Save();
-                _ = new string[] { "" };
+                _ = new string[] { String.Empty };
                 string[] strArrayOne = input.Split(' ');
                 if (strArrayOne[0].Length > 7)
                 {
@@ -2311,8 +2311,8 @@ Things you can try:
 
         public async void cleanupActiveDownloadStatus()
         {
-            speedLabel.Text = "";
-            etaLabel.Text = "";
+            speedLabel.Text = String.Empty;
+            etaLabel.Text = String.Empty;
             progressBar.Value = 0;
             gamesQueueList.RemoveAt(0);
         }
@@ -2388,9 +2388,9 @@ Things you can try:
 
                 }
 
-                ProcessOutput output = new ProcessOutput("", "");
+                ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
 
-                string gameName = "";
+                string gameName = String.Empty;
                 while (gamesQueueList.Count > 0)
                 {
                     gameName = gamesQueueList.ToArray()[0];
@@ -2550,7 +2550,7 @@ Things you can try:
                         {
                             _ = FlexibleMessageBox.Show($"Error deleting game files: {ex.Message}");
                         }
-                        ChangeTitle("");
+                        ChangeTitle(String.Empty);
                         break;
                     }
                     {
@@ -2774,7 +2774,7 @@ Things you can try:
                     progressBar.Style = ProgressBarStyle.Continuous;
                     etaLabel.Text = "ETA: Finished Queue";
                     speedLabel.Text = "DLS: Finished Queue";
-                    ProgressText.Text = "";
+                    ProgressText.Text = String.Empty;
                     gamesAreDownloading = false;
                     isinstalling = false;
 
@@ -2851,7 +2851,7 @@ Things you can try:
                         progressBar.Style = ProgressBarStyle.Continuous;
                         etaLabel.Text = "ETA: Finished Queue";
                         speedLabel.Text = "DLS: Finished Queue";
-                        ProgressText.Text = "";
+                        ProgressText.Text = String.Empty;
                         gamesAreDownloading = false;
                         isinstalling = false;
                         ChangeTitle(" \n\n");
@@ -3028,7 +3028,7 @@ Things you can try:
                 _ = ADB.RunAdbCommandToString("kill-server");
                 Thread.Sleep(2000);
                 _ = ADB.RunAdbCommandToString("start-server");
-                Properties.Settings.Default.IPAddress = "";
+                Properties.Settings.Default.IPAddress = String.Empty;
                 Properties.Settings.Default.Save();
                 _ = Program.form.GetDeviceID();
                 Program.form.ChangeTitlebarToDevice();
@@ -3330,7 +3330,7 @@ Things you can try:
             Match match = Regex.Match(html, @"url""\:\""/watch\?v\=(.*?(?=""))");
             if (!match.Success)
             {
-                return "";
+                return String.Empty;
             }
 
             string url = match.Groups[1].Value;
@@ -3387,7 +3387,7 @@ Things you can try:
                 }
 
                 string[] imageExtensions = { ".jpg", ".png" };
-                string ImagePath = "";
+                string ImagePath = String.Empty;
 
                 foreach (string extension in imageExtensions)
                 {
@@ -3445,7 +3445,7 @@ Things you can try:
                 {
                     videoUrl = ExtractVideoUrl(client.DownloadString(url)); // Download the HTML and extract the first video URL
                 }
-                if (videoUrl == "")
+                if (videoUrl == String.Empty)
                 {
                     MessageBox.Show("No video URL found in search results.");
                     return;
@@ -3504,7 +3504,7 @@ Things you can try:
                 return;
             }
             ADB.WakeDevice();
-            ProcessOutput output = new ProcessOutput("", "");
+            ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
             progressBar.Style = ProgressBarStyle.Marquee;
 
             string GameName = m_combo.SelectedItem.ToString();
@@ -3538,7 +3538,7 @@ Things you can try:
                 return;
             }
             ADB.WakeDevice();
-            ProcessOutput output = new ProcessOutput("", "");
+            ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
             progressBar.Style = ProgressBarStyle.Marquee;
 
             string GameName = m_combo.SelectedItem.ToString();
@@ -3561,7 +3561,7 @@ Things you can try:
 
                 Properties.Settings.Default.QUStringF = $"{{\"user_id\":{sum},\"app_id\":\"{sum2}\",";
                 Properties.Settings.Default.Save();
-                File.WriteAllText("delete_settings", "");
+                File.WriteAllText("delete_settings", String.Empty);
                 string boff = Properties.Settings.Default.QUStringF + Properties.Settings.Default.QUString;
                 File.WriteAllText("config.json", boff);
                 output += ADB.RunAdbCommandToString($"push \"{Properties.Settings.Default.MainDir}\\delete_settings\" /sdcard/android/data/{pckg}/private/delete_settings");
@@ -3639,11 +3639,11 @@ Things you can try:
             if (!updateAvailableClicked)
             {
                 updateAvailableClicked = true;
-                rookienamelist = "";
+                rookienamelist = String.Empty;
                 loaded = false;
                 string lines = Properties.Settings.Default.InstalledApps;
                 string pattern = "package:";
-                string replacement = "";
+                string replacement = String.Empty;
                 Regex rgx = new Regex(pattern);
                 string result = rgx.Replace(lines, replacement);
                 char[] delims = new[] { '\r', '\n' };
@@ -3779,7 +3779,7 @@ Things you can try:
                     string errorChecker = ADB.RunAdbCommandToString(IPcmnd).Output;
                     if (errorChecker.Contains("cannot resolve host") | errorChecker.Contains("cannot connect to"))
                     {
-                        ChangeTitle("");
+                        ChangeTitle(String.Empty);
                         _ = FlexibleMessageBox.Show("Manual ADB over WiFi Connection failed\nExiting...", "Manual IP Connection Failed!", MessageBoxButtons.OK);
                         manualIP = false;
                         ADBcommandbox.Visible = false;
@@ -3822,7 +3822,7 @@ Things you can try:
                     lblShortcutCtrlR.Visible = false;
                     label2.Visible = false;
                     _ = gamesListView.Focus();
-                    Program.form.ChangeTitle("");
+                    Program.form.ChangeTitle(String.Empty);
                 }
             }
             if (e.KeyChar == (char)Keys.Escape)
@@ -3976,11 +3976,11 @@ Things you can try:
             if (!upToDate_Clicked)
             {
                 upToDate_Clicked = true;
-                rookienamelist = "";
+                rookienamelist = String.Empty;
                 loaded = false;
                 string lines = Properties.Settings.Default.InstalledApps;
                 string pattern = "package:";
-                string replacement = "";
+                string replacement = String.Empty;
                 Regex rgx = new Regex(pattern);
                 string result = rgx.Replace(lines, replacement);
                 char[] delims = new[] { '\r', '\n' };
@@ -4111,11 +4111,11 @@ Things you can try:
             if (!NeedsDonation_Clicked)
             {
                 NeedsDonation_Clicked = true;
-                rookienamelist = "";
+                rookienamelist = String.Empty;
                 loaded = false;
                 string lines = Properties.Settings.Default.InstalledApps;
                 string pattern = "package:";
-                string replacement = "";
+                string replacement = String.Empty;
                 Regex rgx = new Regex(pattern);
                 string result = rgx.Replace(lines, replacement);
                 char[] delims = new[] { '\r', '\n' };
