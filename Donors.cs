@@ -22,38 +22,33 @@ namespace AndroidSideloader
         {
             donorGameProperties.Clear();
             donorGames.Clear();
-            if (!MainForm.DonorApps.Equals(""))
+            if (!string.IsNullOrEmpty(MainForm.DonorApps))
             {
-                string[] gameListSplited = MainForm.DonorApps.Split(new[] { '\n' });
+                string[] gameListSplited = MainForm.DonorApps.Split('\n');
                 foreach (string game in gameListSplited)
                 {
                     if (game.Length > 1)
                     {
-                        string[] splitGame = game.Split(';');
-                        donorGames.Add(splitGame);
+                        donorGames.Add(game.Split(';'));
                     }
                 }
             }
-
-
         }
+
         public static void initNewApps()
         {
             newApps.Clear();
-            if (!DonorsListViewForm.newAppsForList.Equals(""))
+            if (!string.IsNullOrEmpty(DonorsListViewForm.newAppsForList))
             {
-                string[] newListSplited = DonorsListViewForm.newAppsForList.Split(new[] { '\n' });
+                string[] newListSplited = DonorsListViewForm.newAppsForList.Split('\n');
                 foreach (string game in newListSplited)
                 {
                     if (game.Length > 1)
                     {
-                        string[] splitGame = game.Split(';');
-                        newApps.Add(splitGame);
+                        newApps.Add(game.Split(';'));
                     }
                 }
             }
-
-
         }
     }
 }
