@@ -36,15 +36,15 @@ namespace AndroidSideloader
             this.VersionCodeIndex = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.UpdateOrNew = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.panel1 = new System.Windows.Forms.Panel();
-            this.SkipButton = new System.Windows.Forms.Button();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.DonateButton = new AndroidSideloader.RoundButton();
             this.bothdet = new System.Windows.Forms.Label();
             this.newdet = new System.Windows.Forms.Label();
             this.upddet = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.TimerDesc = new System.Windows.Forms.Label();
-            this.DonateButton = new System.Windows.Forms.Button();
             this.DonationTimer = new System.Windows.Forms.Timer(this.components);
+            this.SkipButton = new AndroidSideloader.RoundButton();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             this.SuspendLayout();
@@ -112,13 +112,13 @@ namespace AndroidSideloader
             this.panel1.BackColor = global::AndroidSideloader.Properties.Settings.Default.BackColor;
             this.panel1.BackgroundImage = global::AndroidSideloader.Properties.Resources.pattern_cubes_1_1_1_0_0_0_1__000000_212121;
             this.panel1.Controls.Add(this.SkipButton);
+            this.panel1.Controls.Add(this.DonateButton);
             this.panel1.Controls.Add(this.panel2);
             this.panel1.Controls.Add(this.bothdet);
             this.panel1.Controls.Add(this.newdet);
             this.panel1.Controls.Add(this.upddet);
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.TimerDesc);
-            this.panel1.Controls.Add(this.DonateButton);
             this.panel1.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "BackColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.panel1.Location = new System.Drawing.Point(-7, -7);
             this.panel1.Name = "panel1";
@@ -127,23 +127,6 @@ namespace AndroidSideloader
             this.panel1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseDown);
             this.panel1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseMove);
             this.panel1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseUp);
-            // 
-            // SkipButton
-            // 
-            this.SkipButton.BackColor = global::AndroidSideloader.Properties.Settings.Default.SubButtonColor;
-            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "SubButtonColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("ForeColor", global::AndroidSideloader.Properties.Settings.Default, "FontColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.SkipButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.SkipButton.Font = global::AndroidSideloader.Properties.Settings.Default.FontStyle;
-            this.SkipButton.ForeColor = global::AndroidSideloader.Properties.Settings.Default.FontColor;
-            this.SkipButton.Location = new System.Drawing.Point(22, 277);
-            this.SkipButton.Name = "SkipButton";
-            this.SkipButton.Size = new System.Drawing.Size(102, 36);
-            this.SkipButton.TabIndex = 1;
-            this.SkipButton.Text = "Skip";
-            this.SkipButton.UseVisualStyleBackColor = true;
-            this.SkipButton.Click += new System.EventHandler(this.SkipButton_Click);
             // 
             // panel2
             // 
@@ -154,6 +137,32 @@ namespace AndroidSideloader
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(430, 230);
             this.panel2.TabIndex = 2;
+            // 
+            // DonateButton
+            // 
+            this.DonateButton.Active1 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.DonateButton.Active2 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.DonateButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.DonateButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.DonateButton.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "SubButtonColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.DonateButton.DataBindings.Add(new System.Windows.Forms.Binding("ForeColor", global::AndroidSideloader.Properties.Settings.Default, "FontColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.DonateButton.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.DonateButton.DialogResult = System.Windows.Forms.DialogResult.OK;
+            this.DonateButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
+            this.DonateButton.ForeColor = global::AndroidSideloader.Properties.Settings.Default.FontColor;
+            this.DonateButton.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.DonateButton.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.DonateButton.Location = new System.Drawing.Point(130, 277);
+            this.DonateButton.Margin = new System.Windows.Forms.Padding(0);
+            this.DonateButton.Name = "DonateButton";
+            this.DonateButton.Radius = 5;
+            this.DonateButton.Size = new System.Drawing.Size(311, 36);
+            this.DonateButton.Stroke = true;
+            this.DonateButton.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
+            this.DonateButton.TabIndex = 95;
+            this.DonateButton.Text = "Automatically share selected apps";
+            this.DonateButton.Transparency = false;
+            this.DonateButton.Click += new System.EventHandler(this.DonateButton_Click);
             // 
             // bothdet
             // 
@@ -233,21 +242,31 @@ namespace AndroidSideloader
             this.TimerDesc.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseMove);
             this.TimerDesc.MouseUp += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseUp);
             // 
-            // DonateButton
+            // SkipButton
             // 
-            this.DonateButton.BackColor = global::AndroidSideloader.Properties.Settings.Default.SubButtonColor;
-            this.DonateButton.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "SubButtonColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.DonateButton.Enabled = false;
-            this.DonateButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.DonateButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
-            this.DonateButton.ForeColor = System.Drawing.Color.White;
-            this.DonateButton.Location = new System.Drawing.Point(130, 277);
-            this.DonateButton.Name = "DonateButton";
-            this.DonateButton.Size = new System.Drawing.Size(311, 36);
-            this.DonateButton.TabIndex = 1;
-            this.DonateButton.Text = "Automatically share selected apps";
-            this.DonateButton.UseVisualStyleBackColor = true;
-            this.DonateButton.Click += new System.EventHandler(this.DonateButton_Click);
+            this.SkipButton.Active1 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.SkipButton.Active2 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.SkipButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.SkipButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("BackColor", global::AndroidSideloader.Properties.Settings.Default, "SubButtonColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("ForeColor", global::AndroidSideloader.Properties.Settings.Default, "FontColor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.SkipButton.DataBindings.Add(new System.Windows.Forms.Binding("Font", global::AndroidSideloader.Properties.Settings.Default, "FontStyle", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.SkipButton.DialogResult = System.Windows.Forms.DialogResult.OK;
+            this.SkipButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
+            this.SkipButton.ForeColor = global::AndroidSideloader.Properties.Settings.Default.FontColor;
+            this.SkipButton.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.SkipButton.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.SkipButton.Location = new System.Drawing.Point(22, 277);
+            this.SkipButton.Margin = new System.Windows.Forms.Padding(0);
+            this.SkipButton.Name = "SkipButton";
+            this.SkipButton.Radius = 5;
+            this.SkipButton.Size = new System.Drawing.Size(102, 36);
+            this.SkipButton.Stroke = true;
+            this.SkipButton.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
+            this.SkipButton.TabIndex = 96;
+            this.SkipButton.Text = "Skip";
+            this.SkipButton.Transparency = false;
+            this.SkipButton.Click += new System.EventHandler(this.SkipButton_Click);
             // 
             // DonorsListViewForm
             // 
@@ -276,18 +295,18 @@ namespace AndroidSideloader
 
         private System.Windows.Forms.ListView DonorsListView;
         private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.Button DonateButton;
         private System.Windows.Forms.Label TimerDesc;
         private System.Windows.Forms.ColumnHeader GameNameIndex;
         private System.Windows.Forms.ColumnHeader PackageNameIndex;
         private System.Windows.Forms.ColumnHeader VersionCodeIndex;
         private System.Windows.Forms.ColumnHeader UpdateOrNew;
         public System.Windows.Forms.Timer DonationTimer;
-        private System.Windows.Forms.Button SkipButton;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label bothdet;
         private System.Windows.Forms.Label newdet;
         private System.Windows.Forms.Label upddet;
         private System.Windows.Forms.Panel panel2;
+        private RoundButton DonateButton;
+        private RoundButton SkipButton;
     }
 }
