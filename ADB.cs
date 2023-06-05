@@ -9,7 +9,7 @@ namespace AndroidSideloader
     internal class ADB
     {
         private static readonly Process adb = new Process();
-        public static string adbFolderPath = "C:\\RSL\\platform-tools";
+        public static string adbFolderPath = "%SystemDrive%\\RSL\\platform-tools";
         public static string adbFilePath = adbFolderPath + "\\adb.exe";
         public static string DeviceID = "";
         public static string package = "";
