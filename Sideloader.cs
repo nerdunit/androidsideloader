@@ -13,12 +13,6 @@ namespace AndroidSideloader
         public static string TempFolder = Path.Combine(Environment.CurrentDirectory, "temp");
         public static string CrashLogPath = "crashlog.txt";
 
-        public static string SpooferWarning = @"Please make sure you have installed:
-- APKTool
-- Java JDK
-- aapt
-And all of them added to PATH, without ANY of them, the spoofer won't work!";
-
         //push user.json to device (required for some devices like oculus quest)
         public static void PushUserJsons()
         {
