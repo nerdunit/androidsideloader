@@ -2666,7 +2666,7 @@ Things you can try:
                                     }
                                     else
                                     {
-                                        output.Output = "All tasks finished. \n";
+                                        output.Output = "\n--- NO DEVICE MODE ---\nAll tasks finished.\n--- NO DEVICE MODE ---";
                                     }
                                 }
                                 if (!isinstalltxt)
@@ -2738,7 +2738,7 @@ Things you can try:
                                     }
                                     else
                                     {
-                                        output.Output = "All tasks finished. \n";
+                                        output.Output = "\n--- NO DEVICE MODE ---\nAll tasks finished. \n--- NO DEVICE MODE ---";
                                     }
                                 }
                                 ChangeTitle($"Installation of {gameName} completed.");
