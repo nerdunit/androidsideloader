@@ -3375,6 +3375,7 @@ Things you can try:
 
             if (!Properties.Settings.Default.TrailersOn)
             {
+                webView21.Enabled = false;
                 webView21.Hide();
                 if (!keyheld)
                 {
@@ -3435,6 +3436,7 @@ Things you can try:
                     await CreateEnviroment();
                     enviromentCreated = true;
                 }
+                webView21.Enabled = true;
                 webView21.Show();
                 string query = $"{CurrentGameName} VR trailer"; // Create the search query by appending " VR trailer" to the current game name
                 string encodedQuery = WebUtility.UrlEncode(query);
