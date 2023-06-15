@@ -33,50 +33,54 @@ namespace AndroidSideloader
 
                 _ = Logger.Log($"Running command: {logcmd}");
             }
-            adb.StartInfo.FileName = adbFilePath;
-            adb.StartInfo.Arguments = command;
-            adb.StartInfo.RedirectStandardError = true;
-            adb.StartInfo.RedirectStandardOutput = true;
-            adb.StartInfo.CreateNoWindow = true;
-            adb.StartInfo.UseShellExecute = false;
-            adb.StartInfo.WorkingDirectory = adbFolderPath;
-            _ = adb.Start();
 
-            string output = "";
-            string error = "";
-
-            try
+            using (Process adb = new Process())
             {
-                output = adb.StandardOutput.ReadToEnd();
-                error = adb.StandardError.ReadToEnd();
-            }
-            catch { }
+                adb.StartInfo.FileName = adbFilePath;
+                adb.StartInfo.Arguments = command;
+                adb.StartInfo.RedirectStandardError = true;
+                adb.StartInfo.RedirectStandardOutput = true;
+                adb.StartInfo.CreateNoWindow = true;
+                adb.StartInfo.UseShellExecute = false;
+                adb.StartInfo.WorkingDirectory = adbFolderPath;
+                _ = adb.Start();
 
-                        if (command.Contains("connect"))
-            {
-                bool graceful = adb.WaitForExit(3000);
-                if (!graceful)
+                string output = "";
+                string error = "";
+
+                try
                 {
-                    adb.Kill();
-                    adb.WaitForExit(); 
+                    output = adb.StandardOutput.ReadToEnd();
+                    error = adb.StandardError.ReadToEnd();
                 }
-            }
+                catch { }
 
-            if (error.Contains("ADB_VENDOR_KEYS") && !Properties.Settings.Default.adbdebugwarned)
-            {
-                ADBDebugWarning();
-            }
-            if (error.Contains("not enough storage space"))
-            {
-                _ = FlexibleMessageBox.Show(Program.form, "There is not enough room on your device to install this package. Please clear AT LEAST 2x the amount of the app you are trying to install.");
-            }
-            if (!output.Contains("version") && !output.Contains("KEYCODE_WAKEUP") && !output.Contains("Filesystem") && !output.Contains("package:") && !output.Equals(null))
-            {
-                _ = Logger.Log(output);
-            }
+                if (command.Contains("connect"))
+                {
+                    bool graceful = adb.WaitForExit(3000);
+                    if (!graceful)
+                    {
+                        adb.Kill();
+                        adb.WaitForExit();
+                    }
+                }
 
-            _ = Logger.Log(error, "ERROR");
-            return new ProcessOutput(output, error);
+                if (error.Contains("ADB_VENDOR_KEYS") && !Properties.Settings.Default.adbdebugwarned)
+                {
+                    ADBDebugWarning();
+                }
+                if (error.Contains("not enough storage space"))
+                {
+                    _ = FlexibleMessageBox.Show(Program.form, "There is not enough room on your device to install this package. Please clear AT LEAST 2x the amount of the app you are trying to install.");
+                }
+                if (!output.Contains("version") && !output.Contains("KEYCODE_WAKEUP") && !output.Contains("Filesystem") && !output.Contains("package:") && !output.Equals(null))
+                {
+                    _ = Logger.Log(output);
+                }
+
+                _ = Logger.Log(error, "ERROR");
+                return new ProcessOutput(output, error);
+            }
         }
 
         public static ProcessOutput RunAdbCommandToStringWOADB(string result, string path)
