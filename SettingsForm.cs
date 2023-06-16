@@ -33,6 +33,7 @@ namespace AndroidSideloader
             AutoReinstBox.Checked = Properties.Settings.Default.AutoReinstall;
             trailersOn.Checked = Properties.Settings.Default.TrailersOn;
             singleThread.Checked = Properties.Settings.Default.singleThreadMode;
+            virtualFilesystemCompatibilityCheckbox.Checked = Properties.Settings.Default.virtualFilesystemCompatibility;
             if (nodevicemodeBox.Checked)
             {
                 deleteAfterInstallCheckBox.Checked = false;
@@ -236,6 +237,12 @@ namespace AndroidSideloader
         private void singleThread_CheckedChanged(object sender, EventArgs e)
         {
             Properties.Settings.Default.singleThreadMode = singleThread.Checked;
+            Properties.Settings.Default.Save();
+        }
+
+        private void virtualFilesystemCompatibilityCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.virtualFilesystemCompatibility = virtualFilesystemCompatibilityCheckbox.Checked;
             Properties.Settings.Default.Save();
         }
     }

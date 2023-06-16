@@ -2419,9 +2419,14 @@ Things you can try:
 
                     Thread t1;
                     string extraArgs = string.Empty;
+                    string virtualFilesystemCompatibilityArg = string.Empty;
                     if (Properties.Settings.Default.singleThreadMode)
                     {
                         extraArgs = "--transfers 1 --multi-thread-streams 0";
+                    }
+                    if (Properties.Settings.Default.virtualFilesystemCompatibility)
+                    {
+                        virtualFilesystemCompatibilityArg = "--local-no-preallocate";
                     }
                     if (hasPublicConfig)
                     {
@@ -2450,7 +2455,7 @@ Things you can try:
                             t1 = new Thread(() =>
                             {
                                 string rclonecommand =
-                                $"copy \":http:/{gameNameHash}/\" \"{Properties.Settings.Default.downloadDir}\\{gameNameHash}\" {extraArgs} --progress --rc";
+                                $"copy \":http:/{gameNameHash}/\" \"{Properties.Settings.Default.downloadDir}\\{gameNameHash}\" {extraArgs} {virtualFilesystemCompatibilityArg} --progress --rc";
                                 gameDownloadOutput = RCLONE.runRcloneCommand_PublicConfig(rclonecommand);
                             });
                         }
@@ -2465,7 +2470,7 @@ Things you can try:
                         _ = Logger.Log($"rclone copy \"{currentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\"");
                         t1 = new Thread(() =>
                         {
-                            gameDownloadOutput = RCLONE.runRcloneCommand_DownloadConfig($"copy \"{currentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\" \"{Properties.Settings.Default.downloadDir}\\{gameName}\" {extraArgs} --progress --rc --retries 1 --low-level-retries 1");
+                            gameDownloadOutput = RCLONE.runRcloneCommand_DownloadConfig($"copy \"{currentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\" \"{Properties.Settings.Default.downloadDir}\\{gameName}\" {extraArgs} {virtualFilesystemCompatibilityArg} --progress --rc --retries 1 --low-level-retries 1");
                         });
                     }
 
