@@ -298,7 +298,7 @@ namespace AndroidSideloader
                 if (!debugMode && Properties.Settings.Default.checkForUpdates)
                 {
                     Updater.AppName = "AndroidSideloader";
-                    Updater.Repostory = "nerdunit/androidsideloader";
+                    Updater.Repository = "nerdunit/androidsideloader";
                     Updater.Update();
                 }
                 progressBar.Invoke(() => { progressBar.Style = ProgressBarStyle.Marquee; });
