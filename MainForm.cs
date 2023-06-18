@@ -55,6 +55,7 @@ namespace AndroidSideloader
 
         private bool isLoading = true;
         public static bool isOffline = false;
+        public static bool noRcloneUpdating = false;
         public static bool hasPublicConfig = false;
         public static bool enviromentCreated = false;
         public static PublicConfig PublicConfigFile;
@@ -69,6 +70,10 @@ namespace AndroidSideloader
                 if (arg == "--offline")
                 {
                     isOffline = true;
+                }
+                if ( arg =="--no-rclone-update")
+                {
+                    noRcloneUpdating = true;
                 }
             }
             if (isOffline)
