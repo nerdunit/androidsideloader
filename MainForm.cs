@@ -2306,9 +2306,10 @@ without him none of this would be possible
 First time launching Rookie? Please relaunch and try again.
 
 Things you can try:
-1) Use a third party config from the wiki (https://wiki.vrpirates.club/general_information/third-party-rclone-configs)
-2) Use Resilio for p2p downloads (https://wiki.vrpirates.club/en/Howto/Resilio-Sync-setup-guide)
-3) Sponsor a private server (https://wiki.vrpirates.club/en/Howto/sponsored-mirrors)
+1) Move the Rookie directory (Folder containing AndroidSideloader.exe) imto C:/RSL
+2) Try changing your systems DNS to either Cloudflare/Google/OpenDNS
+3) Try using a systemwide VPN like ProtonVPN
+4) Sponsor a private server (https://wiki.vrpirates.club/en/Howto/sponsored-mirrors)
 ";
 
             _ = FlexibleMessageBox.Show(Program.form, errorMessage, "Unable to connect to Remote Server");
