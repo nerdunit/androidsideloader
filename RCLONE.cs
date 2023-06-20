@@ -296,7 +296,7 @@ namespace AndroidSideloader
                                         "NOT ENOUGH SPACE",
                                         MessageBoxButtons.OK,
                                         MessageBoxIcon.Error);
-                return new ProcessOutput("Download failed.", "");
+                return new ProcessOutput("Download failed.", string.Empty);
             }
 
             if (error.Contains("Only one usage of each socket address (protocol/network address/port) is normally permitted")) {
