@@ -102,11 +102,10 @@ namespace AndroidSideloader
             rclone.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\rclone";
             rclone.StartInfo.CreateNoWindow = true;
             //On debug we want to see when rclone is open
-            if (MainForm.debugMode == true)
+            if (MainForm.debugMode)
             {
                 rclone.StartInfo.CreateNoWindow = false;
             }
-
             rclone.StartInfo.UseShellExecute = false;
             _ = rclone.Start();
             rclone.StandardInput.WriteLine(command);
@@ -197,11 +196,10 @@ namespace AndroidSideloader
             rclone.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\rclone";
             rclone.StartInfo.CreateNoWindow = true;
             //On debug we want to see when rclone is open
-            if (MainForm.debugMode == true)
+            if (MainForm.debugMode)
             {
                 rclone.StartInfo.CreateNoWindow = false;
             }
-
             rclone.StartInfo.UseShellExecute = false;
             _ = rclone.Start();
             rclone.StandardInput.WriteLine(command);
@@ -273,13 +271,11 @@ namespace AndroidSideloader
             rclone.StartInfo.RedirectStandardOutput = true;
             rclone.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\rclone";
             rclone.StartInfo.CreateNoWindow = true;
-
             //On debug we want to see when rclone is open
-            if (MainForm.debugMode == true)
+            if (MainForm.debugMode)
             {
                 rclone.StartInfo.CreateNoWindow = false;
             }
-
             rclone.StartInfo.UseShellExecute = false;
             _ = rclone.Start();
             rclone.StandardInput.WriteLine(command);
