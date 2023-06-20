@@ -35,7 +35,7 @@ namespace AndroidSideloader
 
         private void DonorsListViewForm_Load(object sender, EventArgs e)
         {
-            MainForm.updatesnotified = true;
+            MainForm.updatesNotified = true;
             if (MainForm.updates && MainForm.newapps)
             {
                 bothdet.Visible = true;
