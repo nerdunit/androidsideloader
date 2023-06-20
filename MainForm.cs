@@ -31,7 +31,7 @@ namespace AndroidSideloader
 
 #if DEBUG
         public static bool debugMode = true;
-        public bool DeviceConnected = false;
+        public bool DeviceConnected;
         public bool keyheld;
         public bool keyheld2;
         public static string CurrAPK;
@@ -54,12 +54,12 @@ namespace AndroidSideloader
 #endif
 
         private bool isLoading = true;
-        public static bool isOffline = false;
-        public static bool noRcloneUpdating = false;
-        public static bool hasPublicConfig = false;
-        public static bool enviromentCreated = false;
+        public static bool isOffline;
+        public static bool noRcloneUpdating;
+        public static bool hasPublicConfig;
+        public static bool environmentCreated;
         public static PublicConfig PublicConfigFile;
-        public static string PublicMirrorExtraArgs = " --tpslimit 1.0 --tpslimit-burst 3";
+        public static readonly string PublicMirrorExtraArgs = " --tpslimit 1.0 --tpslimit-burst 3";
         private bool manualIP;
         public MainForm()
         {
@@ -141,7 +141,7 @@ namespace AndroidSideloader
 
         public static string DonorApps = String.Empty;
         private string oldTitle = String.Empty;
-        public static bool updatesnotified = false;
+        public static bool updatesNotified = false;
         public static string BackupFolder;
 
         private async void Form1_Load(object sender, EventArgs e)
@@ -1071,7 +1071,7 @@ namespace AndroidSideloader
                 isuploading = true;
                 Thread t3 = new Thread(() =>
                 {
-                    string currentlyuploading = GameName;
+                    string currentlyUploading = GameName;
                     ChangeTitle("Uploading to server, you can continue to use Rookie while it uploads in the background.");
 
                     // get size of pending zip upload and write to text file
@@ -1086,7 +1086,7 @@ namespace AndroidSideloader
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameName}.txt");
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameZipName}");
 
-                    this.Invoke(() => FlexibleMessageBox.Show(Program.form, $"Upload of {currentlyuploading} is complete! Thank you for your contribution!"));
+                    this.Invoke(() => FlexibleMessageBox.Show(Program.form, $"Upload of {currentlyUploading} is complete! Thank you for your contribution!"));
                     Directory.Delete($"{Properties.Settings.Default.MainDir}\\{packageName}", true);
                 })
                 {
@@ -1194,7 +1194,7 @@ namespace AndroidSideloader
 
         private async void Form1_DragDrop(object sender, DragEventArgs e)
         {
-            if (nodeviceonstart && !updatesnotified)
+            if (nodeviceonstart && !updatesNotified)
             {
                 _ = await CheckForDevice();
                 ChangeTitlebarToDevice();
@@ -1681,7 +1681,7 @@ namespace AndroidSideloader
                                         string RlsName = Sideloader.PackageNametoGameName(packagename);
                                         string GameName = Sideloader.gameNameToSimpleName(RlsName);
 
-                                        if (!dontget && !updatesnotified && !isworking && updint < 6 && !Properties.Settings.Default.SubmittedUpdates.Contains(packagename))
+                                        if (!dontget && !updatesNotified && !isworking && updint < 6 && !Properties.Settings.Default.SubmittedUpdates.Contains(packagename))
                                         {
                                             either = true;
                                             updates = true;
@@ -1761,7 +1761,7 @@ namespace AndroidSideloader
                     {
                         foreach (UpdateGameData gameData in gamesToAskForUpdate)
                         {
-                            if (!updatesnotified && !Properties.Settings.Default.SubmittedUpdates.Contains(gameData.Packagename))
+                            if (!updatesNotified && !Properties.Settings.Default.SubmittedUpdates.Contains(gameData.Packagename))
                             {
                                 either = true;
                                 updates = true;
@@ -1827,7 +1827,7 @@ namespace AndroidSideloader
 
                             string RlsName = Sideloader.PackageNametoGameName(newGamesToUpload);
 
-                            if (!updatesnotified && !onapplist && newint < 6)
+                            if (!updatesNotified && !onapplist && newint < 6)
                             {
                                 either = true;
                                 newapps = true;
@@ -1877,7 +1877,7 @@ namespace AndroidSideloader
             }
             progressBar.Style = ProgressBarStyle.Continuous;
 
-            if (either && !updatesnotified)
+            if (either && !updatesNotified)
             {
                 ChangeTitle("                                                \n\n");
                 DonorsListViewForm DonorForm = new DonorsListViewForm();
@@ -2332,7 +2332,7 @@ Things you can try:
                     Properties.Settings.Default.downloadDir = Environment.CurrentDirectory.ToString();
                 }
                 bool obbsMismatch = false;
-                if (nodeviceonstart && !updatesnotified)
+                if (nodeviceonstart && !updatesNotified)
                 {
                     _ = await CheckForDevice();
                     ChangeTitlebarToDevice();
@@ -2824,7 +2824,7 @@ Things you can try:
                 long totalLocalFolderSize = localFolderSize(localFolder) / (1024 * 1024);
 
                 string remoteFolderSizeResult = ADB.RunAdbCommandToString($"shell du -m {OBBFolderPath}{packageName}").Output;
-                string cleanedRemoteFolderSize = CleanRemoteFolderSize(remoteFolderSizeResult);
+                string cleanedRemoteFolderSize = cleanRemoteFolderSize(remoteFolderSizeResult);
 
                 int localObbSize = (int)totalLocalFolderSize;
                 int remoteObbSize = Convert.ToInt32(cleanedRemoteFolderSize);
@@ -2833,7 +2833,7 @@ Things you can try:
 
                 if (remoteObbSize < localObbSize)
                 {
-                    return await HandleObbSizeMismatchAsync(packageName, gameName, output);
+                    return await handleObbSizeMismatchAsync(packageName, gameName, output);
                 }
 
                 return false;
@@ -2853,19 +2853,19 @@ Things you can try:
             }
         }
 
-        private string CleanRemoteFolderSize(string rawSize)
+        private string cleanRemoteFolderSize(string rawSize)
         {
             string replaced = Regex.Replace(rawSize, "[^c]*$", "");
             return Regex.Replace(replaced, "[^0-9]", "");
         }
 
-        private async Task<bool> HandleObbSizeMismatchAsync(string packageName, string gameName, ProcessOutput output)
+        private async Task<bool> handleObbSizeMismatchAsync(string packageName, string gameName, ProcessOutput output)
         {
             var dialogResult = MessageBox.Show("Warning! It seems like the OBB wasn't pushed correctly, this means that the game may not launch correctly.\n Do you want to retry the push?", "OBB Size Mismatch!", MessageBoxButtons.YesNo);
 
             if (dialogResult != DialogResult.Yes)
             {
-                await RefreshGamesListAsync(output);
+                await refreshGamesListAsync(output);
                 return true;
             }
 
@@ -2888,7 +2888,7 @@ Things you can try:
             return await compareOBBSizes(packageName, gameName, output);
         }
 
-        private async Task RefreshGamesListAsync(ProcessOutput output)
+        private async Task refreshGamesListAsync(ProcessOutput output)
         {
             ChangeTitle("Refreshing games list, please wait...");
 
@@ -3266,8 +3266,8 @@ Things you can try:
                 listappsbtn();
                 initListView();
             }
-            bool dialogisup = false;
-            if (keyData == Keys.F1 && !dialogisup)
+            bool dialogIsUp = false;
+            if (keyData == Keys.F1 && !dialogIsUp)
             {
                 _ = FlexibleMessageBox.Show(Program.form, "Shortcuts:\nF1 -------- Shortcuts List\nF2 --OR-- CTRL+F: QuickSearch\nF3 -------- Quest Options\nF4 -------- Rookie Settings\nF5 -------- Refresh Gameslist\n\nCTRL+R - Run custom ADB command.\nCTRL+L - Copy entire list of Game Names to clipboard seperated by new lines.\nALT+L - Copy entire list of Game Names to clipboard seperated by commas(in a paragraph).CTRL+P - Copy packagename to clipboard on game select.\nCTRL + F4 - Instantly relaunch Rookie Sideloader.");
             }
@@ -3368,7 +3368,7 @@ Things you can try:
             return $"https://www.youtube.com/embed/{url}?autoplay=1&mute=1&enablejsapi=1&modestbranding=1";
         }
 
-        private async Task CreateEnviroment()
+        private async Task CreateEnvironment()
         {
             string appDataLocation = @"C:\RSL\";
             var webView2Environment = await CoreWebView2Environment.CreateAsync(userDataFolder: appDataLocation);
@@ -3458,14 +3458,14 @@ Things you can try:
                     {
                         _ = FlexibleMessageBox.Show($"You are unable to access the wiki page with the Exception: {ex.Message}\n");
                         _ = FlexibleMessageBox.Show("Required files for the Trailers were unable to be downloaded, please use Thumbnails instead");
-                        enviromentCreated = true;
+                        environmentCreated = true;
                         webView21.Hide();
                     }
                 }
-                if (!enviromentCreated)
+                if (!environmentCreated)
                 {
-                    await CreateEnviroment();
-                    enviromentCreated = true;
+                    await CreateEnvironment();
+                    environmentCreated = true;
                 }
                 webView21.Enabled = true;
                 webView21.Show();
