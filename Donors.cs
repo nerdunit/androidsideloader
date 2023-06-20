@@ -22,9 +22,9 @@ namespace AndroidSideloader
         {
             donorGameProperties.Clear();
             donorGames.Clear();
-            if (!string.IsNullOrEmpty(MainForm.DonorApps))
+            if (!string.IsNullOrEmpty(MainForm.donorApps))
             {
-                string[] gameListSplited = MainForm.DonorApps.Split('\n');
+                string[] gameListSplited = MainForm.donorApps.Split('\n');
                 foreach (string game in gameListSplited)
                 {
                     if (game.Length > 1)

@@ -65,7 +65,7 @@ namespace AndroidSideloader
                         : $"{Properties.Settings.Default.ADBPath}";
                     Regex rgx = new Regex(pattern);
                     string result = rgx.Replace(cmd, replacement);
-                    Program.form.ChangeTitle($"Running {result}");
+                    Program.form.changeTitle($"Running {result}");
                     _ = Logger.Log($"Logging command: {result} from file: {path}");
                     output += ADB.RunAdbCommandToStringWOADB(result, path);
                     if (output.Error.Contains("mkdir"))
@@ -131,7 +131,7 @@ namespace AndroidSideloader
         public static ProcessOutput UninstallGame(string packagename)
         {
             ProcessOutput output = ADB.UninstallPackage(packagename);
-            Program.form.ChangeTitle("");
+            Program.form.changeTitle("");
             _ = Sideloader.RemoveFolder("/sdcard/Android/obb/" + packagename);
             _ = Sideloader.RemoveFolder("/sdcard/Android/data/" + packagename);
             return output;
@@ -141,21 +141,21 @@ namespace AndroidSideloader
         {
             if (!Properties.Settings.Default.customBackupDir)
             {
-                MainForm.BackupFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"Rookie Backups");
+                MainForm.backupFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"Rookie Backups");
             }
             else
             {
-                MainForm.BackupFolder = Path.Combine((Properties.Settings.Default.backupDir), $"Rookie Backups");
+                MainForm.backupFolder = Path.Combine((Properties.Settings.Default.backupDir), $"Rookie Backups");
             }
             ADB.WakeDevice();
-            if (!Directory.Exists(MainForm.BackupFolder))
+            if (!Directory.Exists(MainForm.backupFolder))
             {
-                _ = Directory.CreateDirectory(MainForm.BackupFolder);
+                _ = Directory.CreateDirectory(MainForm.backupFolder);
             }
-            Program.form.ChangeTitle($"Attempting to backup any savedata to {MainForm.BackupFolder}\\Rookie Backups...");
+            Program.form.changeTitle($"Attempting to backup any savedata to {MainForm.backupFolder}\\Rookie Backups...");
             _ = new ProcessOutput("", "");
             string date_str = DateTime.Today.ToString("yyyy.MM.dd");
-            string CurrBackups = Path.Combine(MainForm.BackupFolder, date_str);
+            string CurrBackups = Path.Combine(MainForm.backupFolder, date_str);
             if (!Directory.Exists(CurrBackups))
             {
                 _ = Directory.CreateDirectory(CurrBackups);

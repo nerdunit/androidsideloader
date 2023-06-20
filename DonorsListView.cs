@@ -28,7 +28,7 @@ namespace AndroidSideloader
             DonorsListView.EndUpdate();
         }
 
-        public static string DonorsLocal = MainForm.DonorApps;
+        public static string DonorsLocal = MainForm.donorApps;
         public static bool ifuploads = false;
         public static string newAppsForList = "";
 
@@ -106,7 +106,7 @@ namespace AndroidSideloader
 
             if (ifuploads)
             {
-                MainForm.DoUpload();
+                MainForm.doUpload();
             }
             Close();
         }

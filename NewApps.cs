@@ -53,7 +53,7 @@ namespace AndroidSideloader
                     Properties.Settings.Default.Save();
                 }
             }
-            MainForm.newpackageupload();
+            MainForm.newPackageUpload();
             Close();
         }
 

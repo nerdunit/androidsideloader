@@ -297,13 +297,13 @@ namespace AndroidSideloader
                             return ret;
                     }
 
-                    Program.form.ChangeTitle("Performing reinstall, please wait...");
+                    Program.form.changeTitle("Performing reinstall, please wait...");
                     _ = ADB.RunAdbCommandToString("kill-server");
                     _ = ADB.RunAdbCommandToString("devices");
                     _ = ADB.RunAdbCommandToString($"pull /sdcard/Android/data/{MainForm.CurrPCKG} \"{Environment.CurrentDirectory}\"");
-                    Program.form.ChangeTitle("Uninstalling game...");
+                    Program.form.changeTitle("Uninstalling game...");
                     _ = Sideloader.UninstallGame(MainForm.CurrPCKG);
-                    Program.form.ChangeTitle("Reinstalling Game");
+                    Program.form.changeTitle("Reinstalling Game");
                     ret += ADB.RunAdbCommandToString($"install -g \"{path}\"");
                     _ = ADB.RunAdbCommandToString($"push \"{Environment.CurrentDirectory}\\{MainForm.CurrPCKG}\" /sdcard/Android/data/");
                     if (Directory.Exists($"{Environment.CurrentDirectory}\\{MainForm.CurrPCKG}"))
@@ -311,7 +311,7 @@ namespace AndroidSideloader
                         Directory.Delete($"{Environment.CurrentDirectory}\\{MainForm.CurrPCKG}", true);
                     }
 
-                    Program.form.ChangeTitle(" \n\n");
+                    Program.form.changeTitle(" \n\n");
                     return ret;
                 }
             }
@@ -323,7 +323,7 @@ namespace AndroidSideloader
                     string gameName = packagename;
                     packagename = Sideloader.gameNameToPackageName(gameName);
 
-                    Program.form.ChangeTitle("Pushing Custom QU S3 Config.JSON.");
+                    Program.form.changeTitle("Pushing Custom QU S3 Config.JSON.");
                     if (!Directory.Exists($"/sdcard/android/data/{packagename}"))
                     {
                         _ = RunAdbCommandToString($"shell mkdir /sdcard/android/data/{packagename}");
@@ -357,7 +357,7 @@ namespace AndroidSideloader
             }
 
 
-            Program.form.ChangeTitle("");
+            Program.form.changeTitle(string.Empty);
             return ret;
         }
 
