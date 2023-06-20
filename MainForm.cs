@@ -2306,7 +2306,7 @@ without him none of this would be possible
 First time launching Rookie? Please relaunch and try again.
 
 Things you can try:
-1) Move the Rookie directory (Folder containing AndroidSideloader.exe) imto C:/RSL
+1) Move the Rookie directory (Folder containing AndroidSideloader.exe) into C:/RSL
 2) Try changing your systems DNS to either Cloudflare/Google/OpenDNS
 3) Try using a systemwide VPN like ProtonVPN
 4) Sponsor a private server (https://wiki.vrpirates.club/en/Howto/sponsored-mirrors)
