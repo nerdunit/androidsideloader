@@ -10,7 +10,7 @@ namespace AndroidSideloader
 {
     internal class RCLONE
     {
-        //Kill all rclone, using a static rclone variable doesn't work for some reason #tofix
+        // Kill RCLONE Processes that were started from Rookie by looking for child processes.
         public static void killRclone()
         {
             var parentProcessId = Process.GetCurrentProcess().Id;
@@ -38,7 +38,7 @@ namespace AndroidSideloader
             }
         }
 
-        //For custom configs that use a password
+        // For custom configs that use a password
         public static void Init()
         {
             string PwTxtPath = Path.Combine(Environment.CurrentDirectory, "rclone\\pw.txt");
@@ -48,7 +48,7 @@ namespace AndroidSideloader
             }
         }
 
-        //Change if you want to use a config
+        // Change if you want to use a config
         public static string downloadConfigPath = "vrp.download.config";
         public static string uploadConfigPath = "vrp.upload.config";
         public static string rclonepw = "";
@@ -56,7 +56,7 @@ namespace AndroidSideloader
 
         private static readonly Process rclone = new Process();
 
-        //Run rclone command
+        // Run an RCLONE Command that accesses the Download Config.
         public static ProcessOutput runRcloneCommand_DownloadConfig(string command)
         {
             if (MainForm.isOffline)
@@ -65,17 +65,17 @@ namespace AndroidSideloader
             }
 
             ProcessOutput prcoutput = new ProcessOutput();
-            //Rclone output is unicode, else it will show garbage instead of unicode characters
+            // Rclone output is unicode, else it will show garbage instead of unicode characters
             rclone.StartInfo.StandardOutputEncoding = Encoding.UTF8;
             string originalCommand = command;
 
-            //set configpath if there is any
+            // set configpath if there is any
             if (downloadConfigPath.Length > 0)
             {
                 command += $" --config {downloadConfigPath}";
             }
 
-            //set rclonepw
+            // set rclonepw
             if (rclonepw.Length > 0)
             {
                 command += " --ask-password=false";
@@ -101,7 +101,7 @@ namespace AndroidSideloader
             rclone.StartInfo.RedirectStandardOutput = true;
             rclone.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\rclone";
             rclone.StartInfo.CreateNoWindow = true;
-            //On debug we want to see when rclone is open
+            // Display RCLONE Window if the binary is being run in Debug Mode.
             if (MainForm.debugMode)
             {
                 rclone.StartInfo.CreateNoWindow = false;
@@ -125,7 +125,7 @@ namespace AndroidSideloader
                 return new ProcessOutput("Download failed.", "");
             }
 
-            //if there is one of these errors, we switch the mirrors
+            // Switch mirror upon matching error output.
             if (error.Contains("400 Bad Request") || error.Contains("cannot fetch token") || error.Contains("authError") || error.Contains("quota") || error.Contains("exceeded") || error.Contains("directory not found") || error.Contains("Failed to"))
             {
                 string oldRemote = MainForm.currentRemote;
@@ -164,10 +164,10 @@ namespace AndroidSideloader
         public static ProcessOutput runRcloneCommand_UploadConfig(string command)
         {
             ProcessOutput prcoutput = new ProcessOutput();
-            //Rclone output is unicode, else it will show garbage instead of unicode characters
+            // Rclone output is unicode, else it will show garbage instead of unicode characters
             rclone.StartInfo.StandardOutputEncoding = Encoding.UTF8;
 
-            //set configpath if there is any
+            // set configpath if there is any
             if (uploadConfigPath.Length > 0)
             {
                 command += $" --config {uploadConfigPath}";
@@ -195,7 +195,7 @@ namespace AndroidSideloader
             rclone.StartInfo.RedirectStandardOutput = true;
             rclone.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\rclone";
             rclone.StartInfo.CreateNoWindow = true;
-            //On debug we want to see when rclone is open
+            // Display RCLONE Window if the binary is being run in Debug Mode.
             if (MainForm.debugMode)
             {
                 rclone.StartInfo.CreateNoWindow = false;
@@ -210,7 +210,7 @@ namespace AndroidSideloader
             string error = rclone.StandardError.ReadToEnd();
             rclone.WaitForExit();
 
-            //if there is one of these errors, we switch the mirrors
+            // if there is one of these errors, we switch the mirrors
             if (error.Contains("400 Bad Request") || error.Contains("cannot fetch token") || error.Contains("authError") || error.Contains("quota") || error.Contains("exceeded") || error.Contains("directory not found") || error.Contains("Failed to"))
             {
                 _ = Logger.Log(error, "ERROR");
@@ -245,7 +245,7 @@ namespace AndroidSideloader
             }
 
             ProcessOutput prcoutput = new ProcessOutput();
-            //Rclone output is unicode, else it will show garbage instead of unicode characters
+            // Rclone output is unicode, else it will show garbage instead of unicode characters
             rclone.StartInfo.StandardOutputEncoding = Encoding.UTF8;
 
             string logcmd = Utilities.StringUtilities.RemoveEverythingBeforeFirst(command, "rclone.exe");
@@ -261,7 +261,7 @@ namespace AndroidSideloader
 
             _ = Logger.Log($"Running Rclone command: {logcmd}");
 
-            //set http source & args
+            // set http source & args
             command += $" --http-url {MainForm.PublicConfigFile.BaseUri} {MainForm.PublicMirrorExtraArgs}";
 
             rclone.StartInfo.FileName = Environment.CurrentDirectory + "\\rclone\\rclone.exe";
@@ -271,7 +271,7 @@ namespace AndroidSideloader
             rclone.StartInfo.RedirectStandardOutput = true;
             rclone.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\rclone";
             rclone.StartInfo.CreateNoWindow = true;
-            //On debug we want to see when rclone is open
+            // Display RCLONE Window if the binary is being run in Debug Mode.
             if (MainForm.debugMode)
             {
                 rclone.StartInfo.CreateNoWindow = false;

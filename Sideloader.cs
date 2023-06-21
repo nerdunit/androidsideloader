@@ -127,7 +127,7 @@ namespace AndroidSideloader
             catch (Exception ex) { _ = Logger.Log(ex.Message, "ERROR"); }
         }
 
-        //uninstalls an app
+        // Removes the game package and its OBB + Data Folders.
         public static ProcessOutput UninstallGame(string packagename)
         {
             ProcessOutput output = ADB.UninstallPackage(packagename);
@@ -260,7 +260,7 @@ namespace AndroidSideloader
             return packageName;
         }
 
-        //Downloads the required files
+        // Download required dependencies.
         public static void downloadFiles()
         {
             WebClient client = new WebClient();

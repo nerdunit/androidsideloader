@@ -63,7 +63,7 @@ namespace AndroidSideloader
         private bool manualIP;
         public MainForm()
         {
-            // check for offline mode
+            // Check for Offline Mode or No RCLONE Updating
             string[] args = Environment.GetCommandLineArgs();
             foreach (string arg in args)
             {
@@ -111,7 +111,7 @@ namespace AndroidSideloader
                 Properties.Settings.Default.SubmittedUpdates = String.Empty;
                 Properties.Settings.Default.Save();
             }
-            //Time for debuglog
+            // Launch time used within debuglog.
             string launchtime = DateTime.Now.ToString("hh:mmtt(UTC)");
             _ = Logger.Log($"\n------\n------\nProgram Launched at: {launchtime}\n------\n------");
             if (string.IsNullOrEmpty(Properties.Settings.Default.CurrentLogPath))
@@ -999,7 +999,7 @@ namespace AndroidSideloader
                 string gameName = $"{GameName} v{VersionInt} {packageName} {HWID.Substring(0, 1)}";
                 string gameZipName = $"{gameName}.zip";
 
-                // delete the zip and txt if they exist from a previously failed upload
+                // Delete both zip & txt if the files exist, most likely due to a failed upload.
                 if (File.Exists($"{Properties.Settings.Default.MainDir}\\{gameZipName}"))
                 {
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameZipName}");
@@ -1074,15 +1074,15 @@ namespace AndroidSideloader
                     string currentlyUploading = GameName;
                     changeTitle("Uploading to server, you can continue to use Rookie while it uploads in the background.");
 
-                    // get size of pending zip upload and write to text file
+                    // Get size of pending zip upload and write to text file
                     long zipSize = new FileInfo($"{Properties.Settings.Default.MainDir}\\{gameZipName}").Length;
                     File.WriteAllText($"{Properties.Settings.Default.MainDir}\\{gameName}.txt", zipSize.ToString());
-                    // upload size file
+                    // Upload size file.
                     _ = RCLONE.runRcloneCommand_UploadConfig($"copy \"{Properties.Settings.Default.MainDir}\\{gameName}.txt\" RSL-gameuploads:");
-                    // upload zip
+                    // Upload zip.
                     _ = RCLONE.runRcloneCommand_UploadConfig($"copy \"{Properties.Settings.Default.MainDir}\\{gameZipName}\" RSL-gameuploads:");
 
-                    // deleting uploaded files
+                    // Delete files once uploaded.
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameName}.txt");
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameZipName}");
 
@@ -1268,7 +1268,7 @@ namespace AndroidSideloader
                                 CurrAPK = file2;
                                 System.Windows.Forms.Timer t3 = new System.Windows.Forms.Timer
                                 {
-                                    Interval = 150000 // 180 seconds to fail
+                                    Interval = 150000 // 150 seconds to fail
                                 };
                                 t3.Tick += timer_Tick4;
                                 t3.Start();
@@ -1617,8 +1617,8 @@ namespace AndroidSideloader
             List<string> blacklistItems = blacklist.ToList();
             List<string> whitelistItems = whitelist.ToList();
             errorOnList = false;
-            //This is for black list, but temporarly will be whitelist
-            //this list has games that we are actually going to upload
+            //This is for the black list, but temporarily will be the whitelist
+            //This list contains games that we are actually going to upload
             newGamesToUploadList = whitelistItems.Intersect(installedGames).ToList();
             progressBar.Style = ProgressBarStyle.Marquee;
             if (SideloaderRCLONE.games.Count > 5)
@@ -1911,7 +1911,7 @@ namespace AndroidSideloader
                     string gameName = $"{game.Uploadgamename} v{game.Uploadversion} {game.Pckgcommand} {SideloaderUtilities.UUID().Substring(0, 1)}";
                     string gameZipName = $"{gameName}.zip";
 
-                    // delete the zip and txt if they exist from a previously failed upload
+                    // Delete both zip & txt if the files exist, most likely due to a failed upload.
                     if (File.Exists($"{Properties.Settings.Default.MainDir}\\{gameZipName}"))
                     {
                         File.Delete($"{Properties.Settings.Default.MainDir}\\{gameZipName}");
@@ -1929,12 +1929,12 @@ namespace AndroidSideloader
                     Directory.Delete($"{Properties.Settings.Default.MainDir}\\{game.Pckgcommand}", true);
                     Program.form.changeTitle("Uploading to server, you may continue to use Rookie while it uploads.");
 
-                    // get size of pending zip upload and write to text file
+                    // Get size of pending zip upload and write to text file
                     long zipSize = new FileInfo($"{Properties.Settings.Default.MainDir}\\{gameZipName}").Length;
                     File.WriteAllText($"{Properties.Settings.Default.MainDir}\\{gameName}.txt", zipSize.ToString());
-                    // upload size file
+                    // Upload size file.
                     _ = RCLONE.runRcloneCommand_UploadConfig($"copy \"{Properties.Settings.Default.MainDir}\\{gameName}.txt\" RSL-gameuploads:");
-                    // upload zip
+                    // Upload zip.
                     _ = RCLONE.runRcloneCommand_UploadConfig($"copy \"{Properties.Settings.Default.MainDir}\\{gameZipName}\" RSL-gameuploads:");
 
                     if (game.isUpdate)
@@ -1943,7 +1943,7 @@ namespace AndroidSideloader
                         Properties.Settings.Default.Save();
                     }
 
-                    // deleting uploaded files
+                    // Delete files once uploaded.
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameName}.txt");
                     File.Delete($"{Properties.Settings.Default.MainDir}\\{gameZipName}");
 
@@ -2081,7 +2081,7 @@ namespace AndroidSideloader
 
                 remotesList.Invoke(() =>
             {
-                remotesList.SelectedIndex = 0; //set mirror to first
+                remotesList.SelectedIndex = 0; // Set mirror to first item in array.
                 currentRemote = "VRP-mirror" + remotesList.SelectedItem.ToString();
             });
 
@@ -2486,7 +2486,7 @@ Things you can try:
                     changeTitle("Downloading game " + gameName, false);
 
                     int i = 0;
-                    //Download
+                    // Begin download.
                     while (t1.IsAlive)
                     {
                         try
@@ -2565,7 +2565,7 @@ Things you can try:
                         break;
                     }
                     {
-                        //Quota Errors
+                        // Handle quota errors.
                         bool isinstalltxt = false;
                         bool quotaError = false;
                         bool otherError = false;
@@ -2585,7 +2585,7 @@ Things you can try:
                             {
                                 otherError = true;
 
-                                //Remove current game
+                                // Remove current game off queue.
                                 cleanupActiveDownloadStatus();
 
                                 _ = FlexibleMessageBox.Show($"Rclone error: {gameDownloadOutput.Error}");
@@ -2716,6 +2716,7 @@ Things you can try:
                                         {
                                             if (!Properties.Settings.Default.nodevicemode | !nodeviceonstart & DeviceConnected)
                                             {
+                                                // Attempt to delete OBB Folder before pushing.
                                                 deleteOBB(packagename);
                                                 Thread obbThread = new Thread(() =>
                                                 {
@@ -2738,6 +2739,7 @@ Things you can try:
                                                     {
                                                         try
                                                         {
+                                                            // Check if OBB was properly pushed with a size comparison.
                                                             obbsMismatch = await compareOBBSizes(packagename, gameName, output);
                                                         }
                                                         catch (Exception ex) { _ = FlexibleMessageBox.Show($"Error comparing OBB sizes: {ex.Message}"); }
@@ -2760,7 +2762,7 @@ Things you can try:
                                 try { Directory.Delete(Properties.Settings.Default.downloadDir + "\\" + gameName, true); } catch (Exception ex) { _ = FlexibleMessageBox.Show($"Error deleting game files: {ex.Message}"); }
                             }
 
-                            //Remove current game
+                            // Remove current game off queue.
                             cleanupActiveDownloadStatus();
                         }
                     }
@@ -2805,6 +2807,7 @@ Things you can try:
 
         private const string OBBFolderPath = "/sdcard/Android/obb/";
 
+        // Logic to compare OBB folders.
         private async Task<bool> compareOBBSizes(string packageName, string gameName, ProcessOutput output)
         {
             string localFolderPath = Path.Combine(Properties.Settings.Default.downloadDir, gameName, packageName);
@@ -2860,6 +2863,7 @@ Things you can try:
             return Regex.Replace(replaced, "[^0-9]", "");
         }
 
+        // Logic to handle mismatches after comparison.
         private async Task<bool> handleObbSizeMismatchAsync(string packageName, string gameName, ProcessOutput output)
         {
             var dialogResult = MessageBox.Show("Warning! It seems like the OBB wasn't pushed correctly, this means that the game may not launch correctly.\n Do you want to retry the push?", "OBB Size Mismatch!", MessageBoxButtons.YesNo);
@@ -3177,7 +3181,7 @@ Things you can try:
         {
             if (keyData == (Keys.Control | Keys.F))
             {
-                //show search
+                // Show search box.
                 searchTextBox.Clear();
                 searchTextBox.Visible = true;
                 label2.Visible = true;
@@ -3231,11 +3235,8 @@ Things you can try:
             {
                 try
                 {
-                    //run the program again and close this one
+                    // Relaunch the program using Sideloader Launcher
                     _ = Process.Start(Application.StartupPath + "\\Sideloader Launcher.exe");
-                    //or you can use Application.ExecutablePath
-
-                    //close this one
                     Process.GetCurrentProcess().Kill();
                 }
                 catch
@@ -3700,8 +3701,6 @@ Things you can try:
                 List<string> blacklistItems = blacklist.ToList();
                 List<string> whitelistItems = whitelist.ToList();
                 errorOnList = false;
-                //This is for black list, but temporarly will be whitelist
-                //this list has games that we are actually going to upload
                 newGamesToUploadList = whitelistItems.Intersect(installedGames).ToList();
                 progressBar.Style = ProgressBarStyle.Marquee;
                 if (SideloaderRCLONE.games.Count > 5)
@@ -4037,8 +4036,6 @@ Things you can try:
                 List<string> blacklistItems = blacklist.ToList();
                 List<string> whitelistItems = whitelist.ToList();
                 errorOnList = false;
-                //This is for black list, but temporarly will be whitelist
-                //this list has games that we are actually going to upload
                 newGamesToUploadList = whitelistItems.Intersect(installedGames).ToList();
                 progressBar.Style = ProgressBarStyle.Marquee;
                 if (SideloaderRCLONE.games.Count > 5)
@@ -4172,8 +4169,6 @@ Things you can try:
                 List<string> blacklistItems = blacklist.ToList();
                 List<string> whitelistItems = whitelist.ToList();
                 errorOnList = false;
-                //This is for black list, but temporarly will be whitelist
-                //this list has games that we are actually going to upload
                 newGamesToUploadList = whitelistItems.Intersect(installedGames).ToList();
                 progressBar.Style = ProgressBarStyle.Marquee;
                 if (SideloaderRCLONE.games.Count > 5)
