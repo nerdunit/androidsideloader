@@ -2754,7 +2754,7 @@ Things you can try:
                                 }
                                 changeTitle($"Installation of {gameName} completed.");
                             }
-                            if (Properties.Settings.Default.deleteAllAfterInstall)
+                            if (Properties.Settings.Default.deleteAllAfterInstall || !obbsMismatch)
                             {
                                 changeTitle("Deleting game files", false);
                                 try { Directory.Delete(Properties.Settings.Default.downloadDir + "\\" + gameName, true); } catch (Exception ex) { _ = FlexibleMessageBox.Show($"Error deleting game files: {ex.Message}"); }
