@@ -533,6 +533,15 @@ namespace AndroidSideloader
                 {
                     if (!ProgressText.IsDisposed)
                     {
+                        var states = new[] { "Sideloading", "Installing", "Copying", "Comparing", "Deleting" };
+                        if (ProgressText.ForeColor == Color.LimeGreen)
+                        {
+                            ProgressText.ForeColor = Color.White;
+                        }
+                        if (states.Any(txt.Contains))
+                        {
+                            ProgressText.ForeColor = Color.LimeGreen;
+                        }
                         ProgressText.Text = txt;
                     }
                 });
