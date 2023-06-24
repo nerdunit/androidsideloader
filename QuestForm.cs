@@ -352,20 +352,5 @@ namespace AndroidSideloader
             Properties.Settings.Default.GlobalUsername = GlobalUsername.Text;
             Properties.Settings.Default.Save();
         }
-
-        private void RefreshRateComboBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void CPUComboBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void GPUComboBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
     }
 }
