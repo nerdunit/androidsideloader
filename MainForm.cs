@@ -61,6 +61,7 @@ namespace AndroidSideloader
         public static PublicConfig PublicConfigFile;
         public static readonly string PublicMirrorExtraArgs = " --tpslimit 1.0 --tpslimit-burst 3";
         private bool manualIP;
+        public static bool PCVRMode = false;
         public MainForm()
         {
             // Check for Offline Mode or No RCLONE Updating
@@ -82,6 +83,12 @@ namespace AndroidSideloader
             }
 
             InitializeComponent();
+            _debounceTimer = new System.Windows.Forms.Timer
+            {
+                Interval = 1000, // 1 second delay
+                Enabled = false
+            };
+            _debounceTimer.Tick += async (sender, e) => await RunSearch();
             gamesQueListBox.DataSource = gamesQueueList;
             //Time between asking for new apps if user clicks No. 96,0,0 DEFAULT
             TimeSpan newDayReference = new TimeSpan(96, 0, 0);
@@ -3299,33 +3306,50 @@ Things you can try:
             return base.ProcessCmdKey(ref msg, keyData);
 
         }
+
+
+
         private void searchTextBox_TextChanged(object sender, EventArgs e)
         {
-            gamesListView.SelectedItems.Clear();
-            searchTextBox.KeyPress += new
-            System.Windows.Forms.KeyPressEventHandler(CheckEnter);
-            // Modified code to filter and select matching items
-            if (gamesListView.Items.Count > 0)
+            _debounceTimer.Stop();
+            _debounceTimer.Start();
+        }
+
+        private async Task RunSearch()
             {
+            _debounceTimer.Stop();
+
+            // Cancel any ongoing searches
+            _cts?.Cancel();
+
+            _allItems = gamesListView.Items.Cast<ListViewItem>().ToList();
+
                 string searchTerm = searchTextBox.Text;
-
-                // Get all items that contain the search term
-                var matchingItems = gamesListView.Items.Cast<ListViewItem>()
-                    .Where(i => i.Text.IndexOf(searchTerm, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                    .ToList();
-
-                if (matchingItems.Count > 0)
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                _cts = new CancellationTokenSource();
+                try
                 {
-                    // Select the first matching item
-                    ListViewItem foundItem = matchingItems[0];
-                    foundItem.Selected = true;
-                    gamesListView.TopItem = foundItem;
+                    var matches = await Task.Run(() =>
+                        _allItems
+                    .Where(i => i.Text.IndexOf(searchTerm, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                            .ToList(),
+                        _cts.Token);
 
-                    // Clear the list and add only the matching items
+                    // Update UI on UI thread
+                    Invoke(new Action(() =>
+                {
                     gamesListView.Items.Clear();
-                    gamesListView.Items.AddRange(matchingItems.ToArray());
-
-                    _ = searchTextBox.Focus();
+                        foreach (var match in matches)
+                        {
+                            gamesListView.Items.Add(match);
+                        }
+                    }));
+                }
+                catch (OperationCanceledException)
+                {
+                    // A new search was initiated before the current search completed.
+                }
                 }
                 else
                 {
