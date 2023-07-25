@@ -281,11 +281,11 @@ namespace AndroidSideloader
                     client.DownloadFile("https://github.com/VRPirates/rookie/raw/master/Rookie%20Offline.cmd", "Rookie Offline.cmd");
                 }
 
-                if (!File.Exists($"{Path.GetPathRoot(Environment.SystemDirectory)}\\RSL\\platform-tools\\aug2021.txt") || !File.Exists($"{Path.GetPathRoot(Environment.SystemDirectory)}\\RSL\\platform-tools\\adb.exe")) //if adb is not updated, download and auto extract
+                if (!File.Exists($"{Path.GetPathRoot(Environment.SystemDirectory)}RSL\\platform-tools\\aug2021.txt") || !File.Exists($"{Path.GetPathRoot(Environment.SystemDirectory)}RSL\\platform-tools\\adb.exe")) //if adb is not updated, download and auto extract
                 {
-                    if (Directory.Exists($"{Path.GetPathRoot(Environment.SystemDirectory)}\\RSL\\2.8.2"))
+                    if (Directory.Exists($"{Path.GetPathRoot(Environment.SystemDirectory)}RSL\\2.8.2"))
                     {
-                        Directory.Delete($"{Path.GetPathRoot(Environment.SystemDirectory)}\\RSL\\2.8.2", true);
+                        Directory.Delete($"{Path.GetPathRoot(Environment.SystemDirectory)}RSL\\2.8.2", true);
                     }
 
                     if (Directory.Exists($"{Properties.Settings.Default.MainDir}\\adb"))
@@ -293,14 +293,14 @@ namespace AndroidSideloader
                         Directory.Delete($"{Properties.Settings.Default.MainDir}\\adb", true);
                     }
 
-                    if (!Directory.Exists($"{Path.GetPathRoot(Environment.SystemDirectory)}\\RSL\\platform-tools"))
+                    if (!Directory.Exists($"{Path.GetPathRoot(Environment.SystemDirectory)}RSL\\platform-tools"))
                     {
-                        _ = Directory.CreateDirectory($"{Path.GetPathRoot(Environment.SystemDirectory)}\\RSL\\platform-tools");
+                        _ = Directory.CreateDirectory($"{Path.GetPathRoot(Environment.SystemDirectory)}RSL\\platform-tools");
                     }
 
                     currentAccessedWebsite = "github";
                     client.DownloadFile("https://github.com/VRPirates/rookie/raw/master/adb2.zip", "Ad.7z");
-                    Utilities.Zip.ExtractFile(Environment.CurrentDirectory + "\\Ad.7z", $"{Path.GetPathRoot(Environment.SystemDirectory)}\\RSL\\platform-tools");
+                    Utilities.Zip.ExtractFile(Environment.CurrentDirectory + "\\Ad.7z", $"{Path.GetPathRoot(Environment.SystemDirectory)}RSL\\platform-tools");
                     File.Delete("Ad.7z");
                 }
 
