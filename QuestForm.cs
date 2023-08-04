@@ -24,7 +24,6 @@ namespace AndroidSideloader
             //Quest 2 settings, might remove them in the future since some of them are broken
             if (RefreshRateComboBox.SelectedIndex != -1)
             {
-                ADB.WakeDevice();
                 _ = ADB.RunAdbCommandToString($"shell setprop debug.oculus.refreshRate {RefreshRateComboBox.SelectedItem}");
                 _ = ADB.RunAdbCommandToString($"shell settings put global 90hz_global {RefreshRateComboBox.SelectedIndex}");
                 _ = ADB.RunAdbCommandToString($"shell settings put global 90hzglobal {RefreshRateComboBox.SelectedIndex}");
@@ -33,7 +32,6 @@ namespace AndroidSideloader
 
             if (TextureResTextBox.Text.Length > 0)
             {
-                ADB.WakeDevice();
                 _ = int.TryParse(TextureResTextBox.Text, out _);
                 _ = ADB.RunAdbCommandToString($"shell settings put global texture_size_Global {TextureResTextBox.Text}");
                 _ = ADB.RunAdbCommandToString($"shell setprop debug.oculus.textureWidth {TextureResTextBox.Text}");
@@ -269,7 +267,6 @@ namespace AndroidSideloader
             }
 
             _ = MessageBox.Show("Please wait until you get the message that the transfer has finished.");
-            ADB.WakeDevice();
             Program.form.changeTitle("Pulling files...");
             _ = ADB.RunAdbCommandToString($"pull \"/sdcard/Oculus/Screenshots\" \"{path}\\Quest ScreenShots\"");
             if (delsh)
@@ -292,8 +289,7 @@ namespace AndroidSideloader
                 _ = Directory.CreateDirectory($"{path}\\Quest VideoShots");
             }
 
-            _ = MessageBox.Show("Please wait until you get the message that the transfer has finished.");
-            ADB.WakeDevice();
+            _ = MessageBox.Show("Please wait until you get the message that the transfer has finished.");;
             Program.form.changeTitle("Pulling files...");
             _ = ADB.RunAdbCommandToString($"pull \"/sdcard/Oculus/Videoshots\" \"{path}\\Quest VideoShots\"");
             if (delsh)

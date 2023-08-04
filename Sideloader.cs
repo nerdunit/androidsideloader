@@ -16,7 +16,6 @@ namespace AndroidSideloader
         //push user.json to device (required for some devices like oculus quest)
         public static void PushUserJsons()
         {
-            ADB.WakeDevice();
             foreach (string userJson in UsernameForm.userJsons)
             {
                 UsernameForm.createUserJsonByName(Utilities.GeneralUtilities.randomString(16), userJson);
@@ -29,23 +28,21 @@ namespace AndroidSideloader
         //public static List<string> InstalledPackageNames = new List<string>();        //Remove folder from device
         public static ProcessOutput RemoveFolder(string path)
         {
-            ADB.WakeDevice();
             if (path == "/sdcard/Android/obb/" || path == "sdcard/Android/data/")
             {
                 return null;
             }
             return ADB.RunAdbCommandToString($"shell rm -r {path}");
         }
+
         public static ProcessOutput RemoveFile(string path)
         {
-            ADB.WakeDevice();
             return ADB.RunAdbCommandToString($"shell rm -f {path}");
         }
 
         //For games that require manual install, like having another folder that isnt an obb
         public static ProcessOutput RunADBCommandsFromFile(string path)
         {
-            ADB.WakeDevice();
             ProcessOutput output = new ProcessOutput();
             string[] commands = File.ReadAllLines(path);
             string currfolder = Path.GetDirectoryName(path);
@@ -147,7 +144,6 @@ namespace AndroidSideloader
             {
                 MainForm.backupFolder = Path.Combine((Properties.Settings.Default.backupDir), $"Rookie Backups");
             }
-            ADB.WakeDevice();
             if (!Directory.Exists(MainForm.backupFolder))
             {
                 _ = Directory.CreateDirectory(MainForm.backupFolder);
@@ -165,7 +161,6 @@ namespace AndroidSideloader
 
         public static ProcessOutput DeleteFile(string GameName)
         {
-            ADB.WakeDevice();
             ProcessOutput output = new ProcessOutput("", "");
 
             string packageName = Sideloader.gameNameToPackageName(GameName);
@@ -184,8 +179,6 @@ namespace AndroidSideloader
         //Extracts apk from device, saves it by package name to sideloader folder
         public static ProcessOutput getApk(string GameName)
         {
-
-            ADB.WakeDevice();
             _ = new ProcessOutput("", "");
 
             string packageName = Sideloader.gameNameToPackageName(GameName);

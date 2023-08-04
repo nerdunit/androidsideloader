@@ -300,8 +300,12 @@ namespace AndroidSideloader
             new Thread(() =>
             {
                 Thread.Sleep(10000);
-                webView21.Invoke(() => { webView21.Enabled = true; });
-                freeDisclaimer.Invoke(() => { freeDisclaimer.Dispose(); });
+                freeDisclaimer.Invoke(() => {
+                    freeDisclaimer.Dispose();
+                });
+                freeDisclaimer.Invoke(() => {
+                    freeDisclaimer.Enabled = false;
+                });
             }).Start();
 
             progressBar.Style = ProgressBarStyle.Marquee;
@@ -366,7 +370,6 @@ namespace AndroidSideloader
                     }
                     else if (wakeywakey.Output.Contains("found"))
                     {
-                        ADB.WakeDevice();
                         Properties.Settings.Default.Wired = false;
                         Properties.Settings.Default.Save();
                     }
@@ -585,7 +588,6 @@ namespace AndroidSideloader
 
         private async void startsideloadbutton_Click(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
             ProcessOutput output = new ProcessOutput("", "");
             string path = string.Empty;
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
@@ -697,8 +699,6 @@ namespace AndroidSideloader
 
         public async void devicesbutton_Click(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
-
             _ = await CheckForDevice();
 
             changeTitlebarToDevice();
@@ -726,7 +726,6 @@ namespace AndroidSideloader
                 Title = "Select OBB folder (must be direct OBB folder, E.G: com.Company.AppName)"
             };
 
-            ADB.WakeDevice();
             if (dialog.Show(Handle))
             {
                 progressBar.Style = ProgressBarStyle.Marquee;
@@ -755,57 +754,43 @@ namespace AndroidSideloader
 
         public void changeTitlebarToDevice()
         {
-            if (!Devices.Contains("unauthorized"))
+            if (Devices == null || Devices.Count == 0)
             {
-                if (Devices[0].Length > 1 && Devices[0].Contains("unauthorized"))
+                this.Invoke(() =>
                 {
                     DeviceConnected = false;
-                    this.Invoke(() =>
+                    Text = "No Device Connected";
+                    if (!Properties.Settings.Default.nodevicemode)
                     {
-                        Text = "Device Not Authorized";
-                        DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "Device not authorized, be sure to authorize computer on device.", "Not Authorized", MessageBoxButtons.RetryCancel);
+                        DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "No device found. Please ensure the following: \n\n -Developer mode is enabled. \n -ADB drivers are installed. \n -ADB connection is enabled on your device (this can reset). \n -Your device is plugged in.\n\nThen press \"Retry\"", "No device found.", MessageBoxButtons.RetryCancel);
                         if (dialogResult == DialogResult.Retry)
                         {
                             devicesbutton.PerformClick();
-                            ;
                         }
-                        else
-                        {
-                            return;
-                        }
+                    }
+                });
+                return; 
+            }
 
-                    });
-                }
-                else if (Devices[0].Length > 1)
+            if (Devices[0].Contains("unauthorized"))
+            {
+                DeviceConnected = false;
+                this.Invoke(() =>
                 {
-                    this.Invoke(() => { Text = "Device Connected with ID | " + Devices[0].Replace("device", String.Empty); });
-                    DeviceConnected = true;
-                }
-                else
-                {
-                    this.Invoke(() =>
+                    Text = "Device Not Authorized";
+                    DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "Device not authorized, be sure to authorize computer on device.", "Not Authorized", MessageBoxButtons.RetryCancel);
+                    if (dialogResult == DialogResult.Retry)
                     {
-                        DeviceConnected = false;
-                        Text = "No Device Connected";
-                        if (!Properties.Settings.Default.nodevicemode)
-                        {
-                            DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "No device found. Please ensure the following: \n\n -Developer mode is enabled. \n -ADB drivers are installed. \n -ADB connection is enabled on your device (this can reset). \n -Your device is plugged in.\n\nThen press \"Retry\"", "No device found.", MessageBoxButtons.RetryCancel);
-                            if (dialogResult == DialogResult.Retry)
-                            {
-                                devicesbutton.PerformClick();
-                            }
-                            else
-                            {
-                                return;
-                            }
-                        }
-
-
-                    });
-                }
+                        devicesbutton.PerformClick();
+                    }
+                });
+            }
+            else
+            {
+                this.Invoke(() => { Text = "Device Connected with ID | " + Devices[0].Replace("device", String.Empty); });
+                DeviceConnected = true;
             }
         }
-
 
         public async void showAvailableSpace()
         {
@@ -867,7 +852,6 @@ namespace AndroidSideloader
             ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
             Thread t1 = new Thread(() =>
             {
-                ADB.WakeDevice();
                 string date_str = DateTime.Today.ToString("yyyy.MM.dd");
                 string CurrBackups = Path.Combine(backupFolder, date_str);
                 _ = FlexibleMessageBox.Show(Program.form, $"This may take up to a minute. Backing up gamesaves to {backupFolder}\\{date_str} (year.month.date)");
@@ -898,8 +882,6 @@ namespace AndroidSideloader
 
         private async void restorebutton_Click(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
-
             ProcessOutput output = new ProcessOutput("", "");
             FolderSelectDialog dialog = new FolderSelectDialog
             {
@@ -986,8 +968,6 @@ namespace AndroidSideloader
         public static bool isworking = false;
         private async void getApkButton_Click(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
-
             if (isOffline)
             {
                 notify("You are not connected to the Internet!");
@@ -1144,7 +1124,6 @@ namespace AndroidSideloader
                 backupFolder = Path.Combine((Properties.Settings.Default.backupDir), $"Rookie Backups");
             }
             string packagename;
-            ADB.WakeDevice();
             if (m_combo.SelectedIndex == -1)
             {
                 _ = FlexibleMessageBox.Show(Program.form, "Please select an app first");
@@ -1184,8 +1163,6 @@ namespace AndroidSideloader
 
         private async void copyBulkObbButton_Click(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
-
             FolderSelectDialog dialog = new FolderSelectDialog
             {
                 Title = "Select your folder with OBBs"
@@ -1229,7 +1206,6 @@ namespace AndroidSideloader
 
             DragDropLbl.Visible = false;
             ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
-            ADB.WakeDevice();
             ADB.DeviceID = GetDeviceID();
             progressBar.Style = ProgressBarStyle.Marquee;
             CurrPCKG = String.Empty;
@@ -2175,7 +2151,6 @@ namespace AndroidSideloader
             }
             else
             {
-                ADB.WakeDevice();
                 DialogResult dialogResult = FlexibleMessageBox.Show(Program.form, "Make sure your Quest is plugged in VIA USB then press OK, if you need a moment press Cancel and come back when you're ready.", "Connect Quest now.", MessageBoxButtons.OKCancel);
                 if (dialogResult == DialogResult.Cancel)
                 {
@@ -2219,7 +2194,6 @@ namespace AndroidSideloader
 
         private async void listApkButton_Click(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
             changeTitle("Refreshing connected devices, installed apps and update list...");
             if (isLoading)
             {
@@ -2646,7 +2620,6 @@ Things you can try:
 
                         if (quotaError == false && otherError == false)
                         {
-                            ADB.WakeDevice();
                             ADB.DeviceID = GetDeviceID();
                             quotaTries = 0;
                             progressBar.Value = 0;
@@ -2695,7 +2668,7 @@ Things you can try:
                                     }
                                     else
                                     {
-                                        output.Output += "All tasks finished. \n";
+                                        output.Output = "\n--- NO DEVICE MODE ---\nAll tasks finished.\n--- NO DEVICE MODE --";
                                     }
                                 }
                                 if (!isinstalltxt)
@@ -2767,7 +2740,7 @@ Things you can try:
                                     }
                                     else
                                     {
-                                        output.Output += "All tasks finished. \n";
+                                        output.Output = "\n--- NO DEVICE MODE ---\nAll tasks finished.\n--- NO DEVICE MODE --";
                                     }
                                 }
                                 changeTitle($"Installation of {gameName} completed.");
@@ -2813,10 +2786,8 @@ Things you can try:
 
         private void deleteOBB(string packagename)
         {
-            ADB.WakeDevice();
             changeTitle("Deleting old OBB Folder...");
             Logger.Log("Attempting to delete old OBB Folder");
-            ADB.WakeDevice();
             ADB.RunAdbCommandToString($"shell rm -rf /sdcard/Android/obb/{packagename}");
         }
 
@@ -2836,8 +2807,6 @@ Things you can try:
             {
                 changeTitle("Comparing obbs...");
                 Logger.Log("Comparing OBBs");
-
-                ADB.WakeDevice();
 
                 DirectoryInfo localFolder = new DirectoryInfo(localFolderPath);
                 long totalLocalFolderSize = localFolderSize(localFolder) / (1024 * 1024);
@@ -3113,7 +3082,6 @@ Things you can try:
 
         private void devicesComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
             showAvailableSpace();
         }
 
@@ -3277,7 +3245,6 @@ Things you can try:
             }
             if (keyData == Keys.F5)
             {
-                ADB.WakeDevice();
                 _ = GetDeviceID();
                 _ = FlexibleMessageBox.Show(Program.form, "If your device is not Connected, hit reconnect first or it won't work!\nNOTE: THIS MAY TAKE UP TO 60 SECONDS.\nThere will be a Popup text window with all updates available when it is done!", "Is device connected?", MessageBoxButtons.OKCancel);
                 listAppsBtn();
@@ -3475,6 +3442,7 @@ Things you can try:
             }
             else
             {
+                webView21.Enabled = true;
                 if (!Directory.Exists(Environment.CurrentDirectory + "\\runtimes"))
                 {
                     WebClient client = new WebClient();
@@ -3521,7 +3489,6 @@ Things you can try:
 
         public void UpdateGamesButton_Click(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
             _ = GetDeviceID();
             _ = FlexibleMessageBox.Show(Program.form, "If your device is not Connected, hit reconnect first or it won't work!\nNOTE: THIS MAY TAKE UP TO 60 SECONDS.\nThere will be a Popup text window with all updates available when it is done!", "Is device connected?", MessageBoxButtons.OKCancel);
             listAppsBtn();
@@ -3549,8 +3516,6 @@ Things you can try:
 
         private void MountButton_Click(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
-
             _ = ADB.RunAdbCommandToString("shell svc usb setFunctions mtp true");
         }
 
@@ -3567,7 +3532,6 @@ Things you can try:
                 _ = FlexibleMessageBox.Show(Program.form, "Please select an app first");
                 return;
             }
-            ADB.WakeDevice();
             ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
             progressBar.Style = ProgressBarStyle.Marquee;
 
@@ -3601,7 +3565,6 @@ Things you can try:
                 _ = FlexibleMessageBox.Show(Program.form, "Please select an app first");
                 return;
             }
-            ADB.WakeDevice();
             ProcessOutput output = new ProcessOutput(String.Empty, String.Empty);
             progressBar.Style = ProgressBarStyle.Marquee;
 
@@ -3922,8 +3885,6 @@ Things you can try:
 
         private async void pullAppToDesktopBtn_Click(object sender, EventArgs e)
         {
-            ADB.WakeDevice();
-
             if (m_combo.SelectedIndex == -1)
             {
                 notify("Please select an app first");

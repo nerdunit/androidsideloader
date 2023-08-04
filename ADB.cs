@@ -202,15 +202,10 @@ namespace AndroidSideloader
                 Properties.Settings.Default.adbdebugwarned = true;
                 Properties.Settings.Default.Save();
             }
-            else
-            {
-                ADB.WakeDevice();
-            }
         }
 
         public static ProcessOutput UninstallPackage(string package)
         {
-            WakeDevice();
             ProcessOutput output = new ProcessOutput("", "");
             output += RunAdbCommandToString($"shell pm uninstall {package}");
             return output;
@@ -222,7 +217,6 @@ namespace AndroidSideloader
             long usedSize = 0;
             long freeSize = 0;
 
-            WakeDevice();
             string[] output = RunAdbCommandToString("shell df").Output.Split('\n');
 
             foreach (string currLine in output)
@@ -244,21 +238,9 @@ namespace AndroidSideloader
         }
 
         public static bool wirelessadbON;
-
-        public static void WakeDevice()
-        {
-            _ = RunAdbCommandToString("shell input keyevent KEYCODE_WAKEUP");
-            if (!string.IsNullOrEmpty(Properties.Settings.Default.IPAddress) && !Properties.Settings.Default.Wired)
-            {
-                _ = RunAdbCommandToString(Properties.Settings.Default.IPAddress);
-            }
-        }
-
-
         public static ProcessOutput Sideload(string path, string packagename = "")
         {
 
-            WakeDevice();
             ProcessOutput ret = new ProcessOutput();
             ret += RunAdbCommandToString($"install -g \"{path}\"");
             string out2 = ret.Output + ret.Error;
@@ -269,16 +251,11 @@ namespace AndroidSideloader
                 if (out2.Contains("offline") && !Properties.Settings.Default.nodevicemode)
                 {
                     DialogResult dialogResult2 = FlexibleMessageBox.Show(Program.form, "Device is offline. Press Yes to reconnect, or if you don't wish to connect and just want to download the game (requires unchecking \"Delete games after install\" from settings menu) then press No.", "Device offline.", MessageBoxButtons.YesNoCancel);
-                    if (dialogResult2 == DialogResult.Yes)
-                    {
-                        ADB.WakeDevice();
-                    }
                 }
                 if (out2.Contains($"signatures do not match previously") || out2.Contains("INSTALL_FAILED_VERSION_DOWNGRADE") || out2.Contains("signatures do not match") || out2.Contains("failed to install"))
                 {
                     ret.Error = string.Empty;
                     ret.Output = string.Empty;
-                    ADB.WakeDevice();
                     if (!Properties.Settings.Default.AutoReinstall)
                     {
                         bool cancelClicked = false;
@@ -344,7 +321,6 @@ namespace AndroidSideloader
                     int y2 = r.Next(9999999);
 
                     long sum2 = (y2 * (long)1000000000) + x2;
-                    ADB.WakeDevice();
                     Properties.Settings.Default.QUStringF = $"{{\"user_id\":{sum},\"app_id\":\"{sum2}\",";
                     Properties.Settings.Default.Save();
                     string boff = Properties.Settings.Default.QUStringF + Properties.Settings.Default.QUString;
@@ -363,8 +339,6 @@ namespace AndroidSideloader
 
         public static ProcessOutput CopyOBB(string path)
         {
-            WakeDevice();
-
             string folder = Path.GetFileName(path);
             return !folder.Contains("+") && !folder.Contains("_") && folder.Contains(".")
                 ? RunAdbCommandToString($"push \"{path}\" \"/sdcard/Android/obb\"")
