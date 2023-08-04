@@ -1,26 +1,7 @@
-RSL 2.21
+RSL 2.22
 
-- Feature: Search now shows all results found
-- Feature: Add --no-rclone-updating launch flag
-- Feature: Add lime-green color to various after download jobs
-- Feature: Update Sideloader Launcher to check for Rookie
-- Feature: Add the ability to download into virtual filesystems (Settings)
-- Feature: Add stacktrace & innerexception to crashlog
-- Feature: Add CallerInfo to debuglog
-- Feature: Rookie will now tell the user when there's a running RCLONE Job
-- Fix: Rookie will no longer repeat "All tasks finished." in No Device Mode
-- Fix: Rookie should no longer delete the entire OBB/Data folder when uninstalling a game
-- Fix: Rookie should no longer freeze on the OBB Comparison
-- Fix: The free disclaimer on launch is no longer broken
-- Fix: Use new process for every ADB command
-- Fix: Do not delete game files on an OBB Mismatch anymore
-- Fix: Change all hardcoded C:/ paths to dynamically grab the system drive for further compatability
-- Fix: Rookie should now function on 32 Bit again
-- Fix: Fix crash on failed extraction
-- Chore: Update quota message to be up to date
-- Chore: Code rewrites for logging system, obb comparison, updater
-- Chore: Several redundant code removals
-- Chore: Change Install w/ Enter Key to Download w/ Enter Key
-- Chore: Several code cleanups & optimizations
-
-~ Chax
+- Fix: Crash on failed extractions.
+- Fix: Trailers controls not functioning properly.
+- Fix: No Device Mode having the wrong output message.
+- Chore: Remove ADB.WakeDevice() due to being non-functional.
+- Chore: Make changeTitlebarToDevice less prone to crashes and more robust.
