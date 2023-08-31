@@ -1,7 +1,8 @@
 # androidsideloader
 ![GitHub last commit](https://img.shields.io/github/last-commit/VRPirates/rookie)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/VRPirates/rookie)
-[![Downloads](https://img.shields.io/github/downloads/VRPirates/rookie/total.svg)](https://github.com/VRPirates/rookie/releases)
+[![Downloads (this repo)](https://img.shields.io/github/downloads/nerdunit/androidsideloader/total.svg)](https://github.com/nerdunit/androidsideloader/releases)
+[![Downloads (new repo)](https://img.shields.io/github/downloads/VRPirates/rookie/total.svg)](https://github.com/VRPirates/rookie/releases)
 ![Issues](https://img.shields.io/github/issues/VRPirates/rookie)
 
 androidsideloader uses the GPL license, any forks of it must have their source code made public on the internet.
