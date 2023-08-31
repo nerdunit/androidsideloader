@@ -1,7 +1,9 @@
 # androidsideloader
 ![GitHub last commit](https://img.shields.io/github/last-commit/VRPirates/rookie)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/VRPirates/rookie)
+This repo
 [![Downloads (this repo)](https://img.shields.io/github/downloads/nerdunit/androidsideloader/total.svg)](https://github.com/nerdunit/androidsideloader/releases)
+New repo
 [![Downloads (new repo)](https://img.shields.io/github/downloads/VRPirates/rookie/total.svg)](https://github.com/VRPirates/rookie/releases)
 ![Issues](https://img.shields.io/github/issues/VRPirates/rookie)
 
