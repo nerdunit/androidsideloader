@@ -1,3 +1,7 @@
+# This repo is no longer maintained.
+
+
+
 # androidsideloader
 ![GitHub last commit](https://img.shields.io/github/last-commit/VRPirates/rookie)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/VRPirates/rookie)
