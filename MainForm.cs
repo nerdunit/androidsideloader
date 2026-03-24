@@ -72,6 +72,8 @@ namespace AndroidSideloader
         public static readonly Color ColorUpdateAvailable = ColorTranslator.FromHtml("#4daa57");
         public static readonly Color ColorDonateGame = ColorTranslator.FromHtml("#cb9cf2");
         private static readonly Color ColorError = ColorTranslator.FromHtml("#f52f57");
+        public static readonly Color ColorDownloaded = ColorTranslator.FromHtml("#67c7b1");
+        private bool downloadedFilter_Clicked = false;
         private Panel _listViewUninstallButton;
         private bool _listViewUninstallButtonHovered = false;
         private ListViewItem _hoveredItemForDeleteBtn;
@@ -2788,6 +2790,30 @@ namespace AndroidSideloader
                 _ = Focus();
             }
 
+            // Count downloaded titles by checking for matching folders in the download directory
+            int downloadedCount = 0;
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+            if (Directory.Exists(dlDir))
+            {
+                var localDirNames = new HashSet<string>(
+                    Directory.GetDirectories(dlDir).Select(d => Path.GetFileName(d)),
+                    StringComparer.OrdinalIgnoreCase);
+
+                foreach (var item in GameList)
+                {
+                    if (item.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex) continue;
+                    string releaseName = item.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+                    if (!localDirNames.Contains(releaseName)) continue;
+                    string folderPath = Path.Combine(dlDir, releaseName);
+                    try
+                    {
+                        if (Directory.GetFiles(folderPath, "*.apk").Length > 0)
+                            downloadedCount++;
+                    }
+                    catch { }
+                }
+            }
+
             // Update UI with computed list
             this.Invoke(() =>
             {
@@ -2800,6 +2826,8 @@ namespace AndroidSideloader
                 btnUpdateAvailable.ForeColor = ColorUpdateAvailable;
                 btnNewerThanList.Text = $"{newerThanListCount} NEWER THAN LIST";
                 btnNewerThanList.ForeColor = ColorDonateGame;
+                btnDownloaded.Text = $"{downloadedCount} DOWNLOADED";
+                btnDownloaded.ForeColor = ColorDownloaded;
 
                 ListViewItem[] arr = GameList.ToArray();
                 gamesListView.BeginUpdate();
@@ -3752,8 +3780,8 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
 
                 string gameDisplayName = Sideloader.gameNameToSimpleName(releaseName);
 
-                // Check disk storage
-                if (downloadDirFreeMB > 0 && gameSizeMB > 0)
+                // Check disk storage (skip already downloaded content)
+                if (downloadDirFreeMB > 0 && gameSizeMB > 0 && !downloadedFilter_Clicked)
                 {
                     double largestGame = Math.Max(maxQueuedGameSizeMB, gameSizeMB);
                     double requiredMB;
@@ -3955,7 +3983,7 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                     catch { }
 
                     double requiredDiskMB = currentGameSizeMB * 2.2;
-                    if (currentDiskFreeMB > 0 && currentDiskFreeMB < requiredDiskMB)
+                    if (!downloadedFilter_Clicked && currentDiskFreeMB > 0 && currentDiskFreeMB < requiredDiskMB)
                     {
                         string driveLetter = Path.GetPathRoot(downloadPath);
 
@@ -4051,6 +4079,18 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                     }
                 }
 
+                // Download Filter View: verify downloaded files exist before proceeding
+                if (downloadedFilter_Clicked)
+                {
+                    string localGameDir = Path.Combine(settings.DownloadDir, gameName);
+                    if (!Directory.Exists(localGameDir) || Directory.GetFiles(localGameDir, "*.apk").Length == 0)
+                    {
+                        changeTitle($"No downloaded files found for {gameDisplayName}");
+                        cleanupActiveDownloadStatus();
+                        continue;
+                    }
+                }
+
                 string gameNameHash = string.Empty;
                 using (MD5 md5 = MD5.Create())
                 {
@@ -4080,7 +4120,12 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                 {
                     bandwidthLimit = $"--bwlimit={settings.BandwidthLimit}M";
                 }
-                if (UsingPublicConfig)
+                if (downloadedFilter_Clicked)
+                {
+                    // Downloaded View: skip download, install from downloaded files
+                    t1 = new Thread(() => { gameDownloadOutput = new ProcessOutput("Download skipped."); });
+                }
+                else if (UsingPublicConfig)
                 {
                     bool doDownload = true;
                     bool skipRedownload = false;
@@ -4161,8 +4206,16 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                 t1.IsBackground = true;
                 t1.Start();
 
-                changeTitle("Downloading game " + gameName);
-                speedLabel.Text = "Starting download...";
+                if (!downloadedFilter_Clicked)
+                {
+                    changeTitle("Downloading game " + gameName);
+                    speedLabel.Text = "Starting download...";
+                }
+                else
+                {
+                    changeTitle("Installing from downloaded files: " + gameDisplayName);
+                    speedLabel.Text = "";
+                }
 
                 // Track the highest valid progress to prevent brief progress bar flashes during multi-file transfers
                 float highestValidPercent = 0;
@@ -6354,6 +6407,11 @@ function onYouTubeIframeAPIReady() {
             btnUpdateAvailable.Click -= btnUpdateAvailable_Click;
             btnNewerThanList.Click -= btnNewerThanList_Click;
 
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+            }
+
             if (upToDate_Clicked || NeedsDonation_Clicked)
             {
                 upToDate_Clicked = false;
@@ -6495,6 +6553,11 @@ function onYouTubeIframeAPIReady() {
             btnUpdateAvailable.Click -= btnUpdateAvailable_Click;
             btnNewerThanList.Click -= btnNewerThanList_Click;
 
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+            }
+
             if (updateAvailableClicked || NeedsDonation_Clicked)
             {
                 updateAvailableClicked = false;
@@ -6535,6 +6598,11 @@ function onYouTubeIframeAPIReady() {
             btnUpdateAvailable.Click -= btnUpdateAvailable_Click;
             btnNewerThanList.Click -= btnNewerThanList_Click;
 
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+            }
+
             if (updateAvailableClicked || upToDate_Clicked)
             {
                 updateAvailableClicked = false;
@@ -6565,6 +6633,85 @@ function onYouTubeIframeAPIReady() {
             btnInstalled.Click += btnInstalled_Click;
             btnUpdateAvailable.Click += btnUpdateAvailable_Click;
             btnNewerThanList.Click += btnNewerThanList_Click;
+        }
+
+        private void btnDownloaded_Click(object sender, EventArgs e)
+        {
+            if (_allItems == null || _allItems.Count == 0)
+            {
+                Logger.Log("btnDownloaded_Click: _allItems is null or empty");
+                return;
+            }
+
+            // Clear other filter states
+            updateAvailableClicked = false;
+            upToDate_Clicked = false;
+            NeedsDonation_Clicked = false;
+
+            if (!downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = true;
+
+                string downloadDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+
+                if (!Directory.Exists(downloadDir))
+                {
+                    changeTitle("Download directory not found");
+                    downloadedFilter_Clicked = false;
+                    UpdateFilterButtonStates();
+                    return;
+                }
+
+                changeTitle("Scanning local library...");
+
+                // Get all subdirectories in the download folder
+                var localDirs = new HashSet<string>(
+                    Directory.GetDirectories(downloadDir)
+                        .Select(d => Path.GetFileName(d)),
+                    StringComparer.OrdinalIgnoreCase);
+
+                // Filter _allItems to only those whose release name matches a local folder
+                // and the folder contains at least one .apk file
+                var localItems = _allItems
+                    .Where(item =>
+                    {
+                        if (item.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex) return false;
+                        string releaseName = item.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+                        if (!localDirs.Contains(releaseName)) return false;
+                        string folderPath = Path.Combine(downloadDir, releaseName);
+                        try
+                        {
+                            return Directory.GetFiles(folderPath, "*.apk").Length > 0;
+                        }
+                        catch { return false; }
+                    })
+                    .ToList();
+
+                gamesListView.BeginUpdate();
+                gamesListView.Items.Clear();
+                gamesListView.Items.AddRange(localItems.ToArray());
+                gamesListView.EndUpdate();
+
+                if (isGalleryView)
+                {
+                    _galleryDataSource = localItems;
+                    PopulateGalleryView();
+                }
+
+                changeTitle("");
+            }
+            else
+            {
+                downloadedFilter_Clicked = false;
+                RestoreFullList();
+            }
+
+            UpdateFilterButtonStates();
+
+            if (isGalleryView)
+            {
+                PopulateGalleryView();
+            }
         }
 
         private void FilterListByColors(Color[] targetColors)
@@ -6633,6 +6780,12 @@ function onYouTubeIframeAPIReady() {
             {
                 changeTitle("No games to restore");
                 return;
+            }
+
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+                UpdateFilterButtonStates();
             }
 
             gamesListView.BeginUpdate();
@@ -6850,6 +7003,10 @@ function onYouTubeIframeAPIReady() {
             updateAvailableClicked = false;
             upToDate_Clicked = false;
             NeedsDonation_Clicked = false;
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+            }
             UpdateFilterButtonStates();
         }
 
@@ -8032,10 +8189,67 @@ function onYouTubeIframeAPIReady() {
                 btnNewerThanList.Inactive2 = inactiveBg;
             }
 
+            // btnLocalLibrary state
+            if (downloadedFilter_Clicked)
+            {
+                btnDownloaded.StrokeColor = ColorDownloaded;
+                btnDownloaded.Inactive1 = activeBg;
+                btnDownloaded.Inactive2 = activeBg;
+            }
+            else
+            {
+                btnDownloaded.StrokeColor = inactiveStroke;
+                btnDownloaded.Inactive1 = inactiveBg;
+                btnDownloaded.Inactive2 = inactiveBg;
+            }
+
             // Force repaint
             btnInstalled.Invalidate();
             btnUpdateAvailable.Invalidate();
             btnNewerThanList.Invalidate();
+            btnDownloaded.Invalidate();
+
+            // Refresh UI
+            UpdateStatusLabels();
+        }
+
+        public void RefreshDownloadedState()
+        {
+            if (_allItems == null || _allItems.Count == 0)
+                return;
+
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+            int downloadedCount = 0;
+
+            if (Directory.Exists(dlDir))
+            {
+                var localDirNames = new HashSet<string>(
+                    Directory.GetDirectories(dlDir).Select(d => Path.GetFileName(d)),
+                    StringComparer.OrdinalIgnoreCase);
+
+                foreach (var item in _allItems)
+                {
+                    if (item.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex) continue;
+                    string releaseName = item.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+                    if (!localDirNames.Contains(releaseName)) continue;
+                    string folderPath = Path.Combine(dlDir, releaseName);
+                    try
+                    {
+                        if (Directory.GetFiles(folderPath, "*.apk").Length > 0)
+                            downloadedCount++;
+                    }
+                    catch { }
+                }
+            }
+
+            btnDownloaded.Text = $"{downloadedCount} DOWNLOADED";
+
+            // If the downloaded filter is currently active, re-apply it
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+                btnDownloaded_Click(this, EventArgs.Empty);
+            }
         }
 
         private void UnfocusSearchTextBox(object sender, EventArgs e)
@@ -8571,6 +8785,7 @@ function onYouTubeIframeAPIReady() {
             bool wasUpdateAvailableClicked = updateAvailableClicked;
             bool wasUpToDateClicked = upToDate_Clicked;
             bool wasNeedsDonationClicked = NeedsDonation_Clicked;
+            bool wasDownloadedClicked = downloadedFilter_Clicked;
             bool wasFavoritesView = favoriteSwitcher.Text == "ALL";
 
             // Save the currently selected package name to restore after refresh
@@ -8637,6 +8852,16 @@ function onYouTubeIframeAPIReady() {
             {
                 NeedsDonation_Clicked = true;
                 FilterListByColor(ColorDonateGame);
+            }
+            else if (wasDownloadedClicked)
+            {
+                downloadedFilter_Clicked = false;
+                if (isGalleryView)
+                {
+                    gamesListView.Visible = false;
+                    gamesGalleryView.Visible = true;
+                }
+                btnDownloaded_Click(null, EventArgs.Empty);
             }
             else if (isGalleryView)
             {
@@ -8766,19 +8991,19 @@ function onYouTubeIframeAPIReady() {
             {
                 sideloadingStatusLabel.Text = "Sideloading: Disabled";
                 sideloadingStatusLabel.ForeColor = Color.FromArgb(255, 100, 100); // Red-ish for disabled
-                downloadInstallGameButton.Text = "DOWNLOAD";
+                downloadInstallGameButton.Text = downloadedFilter_Clicked ? "INSTALL" : "DOWNLOAD";
             }
             else if (isNoDeviceDialogShown || (!DeviceConnected && !isLoading))
             {
                 sideloadingStatusLabel.Text = "Sideloading: No Device Connected";
                 sideloadingStatusLabel.ForeColor = Color.FromArgb(240, 150, 50); // Orange for no device
-                downloadInstallGameButton.Text = "DOWNLOAD";
+                downloadInstallGameButton.Text = downloadedFilter_Clicked ? "INSTALL" : "DOWNLOAD";
             }
             else
             {
                 sideloadingStatusLabel.Text = "Sideloading: Enabled";
                 sideloadingStatusLabel.ForeColor = Color.FromArgb(93, 203, 173); // Accent green for enabled
-                downloadInstallGameButton.Text = "DOWNLOAD AND INSTALL";
+                downloadInstallGameButton.Text = downloadedFilter_Clicked ? "INSTALL" : "DOWNLOAD AND INSTALL";
             }
         }
 

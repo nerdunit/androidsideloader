@@ -134,6 +134,7 @@ namespace AndroidSideloader
             this.btnInstalled = new AndroidSideloader.RoundButton();
             this.btnUpdateAvailable = new AndroidSideloader.RoundButton();
             this.btnNewerThanList = new AndroidSideloader.RoundButton();
+            this.btnDownloaded = new AndroidSideloader.RoundButton();
             this.progressBar = new AndroidSideloader.ModernProgressBar();
             this.downloadInstallGameButton = new AndroidSideloader.RoundButton();
             ((System.ComponentModel.ISupportInitialize)(this.gamesPictureBox)).BeginInit();
@@ -1242,8 +1243,9 @@ namespace AndroidSideloader
             this.tableLayoutPanel1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tableLayoutPanel1.BackColor = System.Drawing.Color.Transparent;
-            this.tableLayoutPanel1.ColumnCount = 6;
+            this.tableLayoutPanel1.ColumnCount = 7;
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
@@ -1252,9 +1254,10 @@ namespace AndroidSideloader
             this.tableLayoutPanel1.Controls.Add(this.searchPanel, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.btnViewToggle, 1, 0);
             this.tableLayoutPanel1.Controls.Add(this.favoriteSwitcher, 2, 0);
-            this.tableLayoutPanel1.Controls.Add(this.btnInstalled, 3, 0);
-            this.tableLayoutPanel1.Controls.Add(this.btnUpdateAvailable, 4, 0);
-            this.tableLayoutPanel1.Controls.Add(this.btnNewerThanList, 5, 0);
+            this.tableLayoutPanel1.Controls.Add(this.btnDownloaded, 3, 0);
+            this.tableLayoutPanel1.Controls.Add(this.btnInstalled, 4, 0);
+            this.tableLayoutPanel1.Controls.Add(this.btnUpdateAvailable, 5, 0);
+            this.tableLayoutPanel1.Controls.Add(this.btnNewerThanList, 6, 0);
             this.tableLayoutPanel1.Location = new System.Drawing.Point(258, 6);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
@@ -1497,6 +1500,31 @@ namespace AndroidSideloader
             this.btnNewerThanList.Transparency = false;
             this.btnNewerThanList.Click += new System.EventHandler(this.btnNewerThanList_Click);
             // 
+            // btnDownloaded
+            // 
+            this.btnDownloaded.Active1 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(45)))), ((int)(((byte)(55)))));
+            this.btnDownloaded.Active2 = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(45)))), ((int)(((byte)(55)))));
+            this.btnDownloaded.BackColor = System.Drawing.Color.Transparent;
+            this.btnDownloaded.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnDownloaded.DialogResult = System.Windows.Forms.DialogResult.OK;
+            this.btnDownloaded.Disabled1 = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(35)))), ((int)(((byte)(45)))));
+            this.btnDownloaded.Disabled2 = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(28)))), ((int)(((byte)(35)))));
+            this.btnDownloaded.DisabledStrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(55)))), ((int)(((byte)(65)))));
+            this.btnDownloaded.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnDownloaded.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(107)))), ((int)(((byte)(128)))), ((int)(((byte)(159)))));
+            this.btnDownloaded.Inactive1 = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(35)))), ((int)(((byte)(45)))));
+            this.btnDownloaded.Inactive2 = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(35)))), ((int)(((byte)(45)))));
+            this.btnDownloaded.Location = new System.Drawing.Point(521, 3);
+            this.btnDownloaded.Name = "btnDownloaded";
+            this.btnDownloaded.Radius = 5;
+            this.btnDownloaded.Size = new System.Drawing.Size(148, 28);
+            this.btnDownloaded.Stroke = true;
+            this.btnDownloaded.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
+            this.btnDownloaded.TabIndex = 105;
+            this.btnDownloaded.Text = "DOWNLOADED";
+            this.btnDownloaded.Transparency = false;
+            this.btnDownloaded.Click += new System.EventHandler(this.btnDownloaded_Click);
+            // 
             // progressBar
             // 
             this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -1707,6 +1735,7 @@ namespace AndroidSideloader
         private RoundButton btnInstalled;
         private RoundButton btnUpdateAvailable;
         private RoundButton btnNewerThanList;
+        private RoundButton btnDownloaded;
         private RoundButton searchPanel;
         private Panel notesPanel;
         private Panel queuePanel;

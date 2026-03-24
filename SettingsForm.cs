@@ -339,6 +339,8 @@ namespace AndroidSideloader
             {
                 _settings.CustomDownloadDir = true;
                 _settings.DownloadDir = dialog.FileName;
+
+                Program.form.RefreshDownloadedState();
             }
         }
 
