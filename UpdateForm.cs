@@ -56,7 +56,7 @@ namespace AndroidSideloader
             // Add title label
             var titleLabel = new Label
             {
-                Text = "Update Available",
+                Text = "Update",
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 ForeColor = TextColor,
                 BackColor = Color.Transparent,

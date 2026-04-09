@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="packages\Costura.Fody.5.7.0\build\Costura.Fody.props" Condition="Exists('packages\Costura.Fody.5.7.0\build\Costura.Fody.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -224,6 +224,12 @@
     <Compile Include="NewApps.Designer.cs">
       <DependentUpon>NewApps.cs</DependentUpon>
     </Compile>
+    <Compile Include="StartupDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StartupDialog.Designer.cs">
+      <DependentUpon>StartupDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="ToggleSwitch.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -276,7 +282,9 @@
     <Compile Include="Utilities\UpdateGameData.cs" />
     <Compile Include="Utilities\UploadGame.cs" />
     <Compile Include="Utilities\Zip.cs" />
-    <Compile Include="Utilities\Metrics.cs" />
+    <EmbeddedResource Include="StartupDialog.resx">
+      <DependentUpon>StartupDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="DonorsListView.resx">
       <DependentUpon>DonorsListView.cs</DependentUpon>
     </EmbeddedResource>

@@ -29,8 +29,8 @@ namespace AndroidSideloader
 {
     public partial class MainForm : Form
     {
-        private readonly ListViewColumnSorter lvwColumnSorter;
-        private static readonly SettingsManager settings = SettingsManager.Instance;
+        public static string repo = "nerdunit/androidsideloader"; // GitHub repo
+        public static string repo_branch = "main"; // GitHub branch
 #if DEBUG
         public static bool debugMode = true;
         public bool DeviceConnected;
@@ -49,6 +49,8 @@ namespace AndroidSideloader
         public bool DeviceConnected = false;
         public static string currremotesimple = "";
 #endif
+        private readonly ListViewColumnSorter lvwColumnSorter;
+        private static readonly SettingsManager settings = SettingsManager.Instance;
         private double _totalQueueSizeMB = 0;
         private double _effectiveQueueSizeMB = 0;
         private Dictionary<string, double> _queueEffectiveSizes = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -72,9 +74,12 @@ namespace AndroidSideloader
         public static readonly Color ColorUpdateAvailable = ColorTranslator.FromHtml("#4daa57");
         public static readonly Color ColorDonateGame = ColorTranslator.FromHtml("#cb9cf2");
         private static readonly Color ColorError = ColorTranslator.FromHtml("#f52f57");
+        public static readonly Color ColorDownloaded = ColorTranslator.FromHtml("#67c7b1");
+        private bool downloadedFilter_Clicked = false;
         private Panel _listViewUninstallButton;
         private bool _listViewUninstallButtonHovered = false;
         private ListViewItem _hoveredItemForDeleteBtn;
+        private bool _folderIconHovered = false;
         private bool isGalleryView;  // Will be set from settings in constructor
         private List<ListViewItem> _galleryDataSource;
         private FastGalleryPanel _fastGallery;
@@ -84,10 +89,16 @@ namespace AndroidSideloader
         private string freeSpaceText = "";
         private string freeSpaceTextDetailed = "";
         private int _questStorageProgress = 0;
+        private Color _mirrorPillColor = Color.FromArgb(32, 36, 44);
+        private DateTime _mirrorMenuClosedAt = DateTime.MinValue;
+        private Color _devicePillColor = Color.FromArgb(32, 36, 44);
+        private DateTime _deviceMenuClosedAt = DateTime.MinValue;
         private bool _trailerPlayerInitialized;          // player.html created and loaded
         private bool _trailerHtmlLoaded;                 // initial navigation completed
         private static readonly Dictionary<string, string> _videoIdCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // per game cache
         private bool isLoading = true;
+        private bool _suppressMirrorRefresh = false;
+        public static bool _isManualMirrorSwitch = false;
         public static bool isOffline = false;
         public static bool noRcloneUpdating;
         public static bool noAppCheck = false;
@@ -109,7 +120,12 @@ namespace AndroidSideloader
             storedIpPath = Path.Combine(Environment.CurrentDirectory, "platform-tools", "StoredIP.txt");
             aaptPath = Path.Combine(Environment.CurrentDirectory, "platform-tools", "aapt.exe");
             InitializeComponent();
+            this.Opacity = 0;
             InitializeModernPanels(); // Initialize modern rounded panels for notes and queue
+            // Center the initial placeholder text in notes panel
+            notesRichTextBox.SelectAll();
+            notesRichTextBox.SelectionAlignment = HorizontalAlignment.Center;
+            notesRichTextBox.DeselectAll();
             Logger.Initialize();
             InitializeTimeReferences();
             CheckCommandLineArguments();
@@ -151,6 +167,16 @@ namespace AndroidSideloader
             SubscribeToHoverEvents(questInfoPanel);
 
             this.Resize += MainForm_Resize;
+
+            // Style the downloads folder icon and overlay it on the left side of btnDownloaded
+            openDownloadsFolderIcon.Paint += OpenDownloadsFolderIcon_Paint;
+            openDownloadsFolderIcon.MouseEnter += (s, ev) => { _folderIconHovered = true; openDownloadsFolderIcon.Invalidate(); };
+            openDownloadsFolderIcon.MouseLeave += (s, ev) => { _folderIconHovered = false; openDownloadsFolderIcon.Invalidate(); };
+            openDownloadsFolderIcon.Parent = btnDownloaded;
+            openDownloadsFolderIcon.Location = new Point(0, 0);
+            openDownloadsFolderIcon.Size = new Size(28, 28);
+            openDownloadsFolderIcon.BringToFront();
+            btnDownloaded.TextXOffset = 24;
 
             // Create an uninstall button overlay for list view
             _listViewUninstallButton = new Panel
@@ -350,34 +376,6 @@ namespace AndroidSideloader
             deviceCheckTimer.Start();
         }
 
-        private async Task GetPublicConfigAsync()
-        {
-            await Task.Run(() => GetDependencies.updatePublicConfig());
-
-            try
-            {
-                string configFilePath = Path.Combine(Environment.CurrentDirectory, "vrp-public.json");
-                if (File.Exists(configFilePath))
-                {
-                    string configFileData = File.ReadAllText(configFilePath);
-                    PublicConfig config = JsonConvert.DeserializeObject<PublicConfig>(configFileData);
-
-                    if (config != null && !string.IsNullOrWhiteSpace(config.BaseUri) && !string.IsNullOrWhiteSpace(config.Password))
-                    {
-                        PublicConfigFile = config;
-                        hasPublicConfig = true;
-
-                        // Test DNS for the public config hostname after it's been created/updated
-                        DnsHelper.TestPublicConfigDns();
-                    }
-                }
-            }
-            catch
-            {
-                hasPublicConfig = false;
-            }
-        }
-
         public static string donorApps = String.Empty;
         private string oldTitle = String.Empty;
         public static bool updatesNotified = false;
@@ -491,63 +489,6 @@ namespace AndroidSideloader
                 catch { }
             });
 
-            // Dependencies and RCLONE in background
-            if (!isOffline)
-            {
-                await Task.Run(() =>
-                {
-                    changeTitle("Downloading Dependencies...");
-                    GetDependencies.downloadFiles();
-                    changeTitle("Initializing RCLONE...");
-                    RCLONE.Init();
-                });
-            }
-
-            // Crashlog handling
-            if (File.Exists("crashlog.txt"))
-            {
-                if (File.Exists(settings.CurrentCrashPath))
-                {
-                    File.Delete(settings.CurrentCrashPath);
-                }
-
-                DialogResult dialogResult = FlexibleMessageBox.Show(Program.form,
-                    $"Sideloader crashed during your last use.\nPress OK if you'd like to send us your crash log.\n\nNOTE: THIS CAN TAKE UP TO 30 SECONDS.",
-                    "Crash Detected", MessageBoxButtons.OKCancel);
-
-                if (dialogResult == DialogResult.OK)
-                {
-                    if (File.Exists(Path.Combine(Environment.CurrentDirectory, "crashlog.txt")))
-                    {
-                        string UUID = SideloaderUtilities.UUID();
-                        System.IO.File.Move("crashlog.txt", Path.Combine(Environment.CurrentDirectory, $"{UUID}.log"));
-                        settings.CurrentCrashPath = Path.Combine(Environment.CurrentDirectory, $"{UUID}.log");
-                        settings.CurrentCrashName = UUID;
-                        settings.Save();
-
-                        Clipboard.SetText(UUID);
-
-                        // Upload in background
-                        _ = Task.Run(() =>
-                        {
-                            if (hasUploadConfig) {
-                                _ = RCLONE.runRcloneCommand_UploadConfig($"copy \"{settings.CurrentCrashPath}\" RSL-gameuploads:CrashLogs");
-                                this.Invoke(() =>
-                                {
-                                    _ = FlexibleMessageBox.Show(Program.form,
-                                        $"Your CrashLog has been copied to the server.\nPlease mention your CrashLogID ({settings.CurrentCrashName}) to the Mods.\nIt has been automatically copied to your clipboard.");
-                                    Clipboard.SetText(settings.CurrentCrashName);
-                                });
-                            }
-                        });
-                    }
-                }
-                else
-                {
-                    File.Delete(Path.Combine(Environment.CurrentDirectory, "crashlog.txt"));
-                }
-            }
-
             // Ensure bottom panels are properly laid out
             LayoutBottomPanels();
 
@@ -572,42 +513,169 @@ namespace AndroidSideloader
                 });
             }).Start();
 
+            // Startup dialog:
+            // The dialog lets the user choose online (with a config URL) or offline mode.
+            // If a valid public.json exists and the server is reachable,
+            // skip the dialog entirely and go straight to online mode.
+            // The --offline flag bypasses the dialog entirely.
             if (!isOffline)
             {
-                string configFilePath = Path.Combine(Environment.CurrentDirectory, "vrp-public.json");
-
-                // Public config check
-                if (File.Exists(configFilePath) && settings.AutoUpdateConfig)
+                // Try to auto-load existing config and skip the dialog
+                bool configAutoLoaded = false;
+                try
                 {
-                    await GetPublicConfigAsync();
-                    if (!hasPublicConfig)
+                    string configFilePath = Path.Combine(Environment.CurrentDirectory, "public.json");
+                    if (File.Exists(configFilePath))
                     {
-                        _ = FlexibleMessageBox.Show(Program.form,
-                            "Failed to fetch public mirror config, and the current one is unreadable.\r\nPlease ensure you can access https://vrpirates.wiki/ in your browser.",
-                            "Config Update Failed", MessageBoxButtons.OK);
+                        string configFileData = File.ReadAllText(configFilePath);
+                        PublicConfig config = JsonConvert.DeserializeObject<PublicConfig>(configFileData);
+
+                        if (config != null &&
+                            !string.IsNullOrWhiteSpace(config.BaseUri) &&
+                            !string.IsNullOrWhiteSpace(config.Password))
+                        {
+                            // Config file is structurally valid — test if server is reachable
+                            string hostname = null;
+                            string baseUri = config.BaseUri;
+                            if (!baseUri.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                                !baseUri.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                            {
+                                baseUri = "https://" + baseUri;
+                            }
+                            if (Uri.TryCreate(baseUri, UriKind.Absolute, out Uri uri))
+                            {
+                                hostname = uri.Host;
+                            }
+
+                            if (!string.IsNullOrEmpty(hostname))
+                            {
+                                bool serverReachable = false;
+                                try
+                                {
+                                    var addresses = Dns.GetHostAddresses(hostname);
+                                    serverReachable = addresses != null && addresses.Length > 0;
+                                }
+                                catch
+                                {
+                                    serverReachable = false;
+                                }
+
+                                if (serverReachable)
+                                {
+                                    PublicConfigFile = config;
+                                    hasPublicConfig = true;
+                                    configAutoLoaded = true;
+                                    DnsHelper.TestPublicConfigDns();
+                                    Logger.Log($"Auto-loaded valid config — server {hostname} is reachable, skipping startup dialog");
+                                }
+                            }
+                        }
                     }
                 }
-                else if (settings.AutoUpdateConfig)
+                catch (Exception ex)
                 {
-                    // Auto-create the public config file if it doesn't exist
-                    Logger.Log("Public config file missing, creating automatically...");
-                    File.Create(configFilePath).Close();
-                    await GetPublicConfigAsync();
-                    if (!hasPublicConfig)
+                    Logger.Log($"Auto-load config check failed: {ex.Message}", LogLevel.WARNING);
+                }
+
+                // If public.json auto-load failed, check for rclone/download.config with mirrors
+                if (!configAutoLoaded)
+                {
+                    try
                     {
-                        _ = FlexibleMessageBox.Show(Program.form,
-                            "Failed to fetch public mirror config, and the current one is unreadable.\r\nPlease ensure you can access https://vrpirates.wiki/ in your browser.",
-                            "Config Update Failed", MessageBoxButtons.OK);
+                        string downloadConfigFile = Path.Combine(Environment.CurrentDirectory, "rclone", "download.config");
+                        if (File.Exists(downloadConfigFile))
+                        {
+                            string configText = File.ReadAllText(downloadConfigFile);
+                            if (Regex.IsMatch(configText, @"\[.*mirror.*\]", RegexOptions.IgnoreCase))
+                            {
+                                configAutoLoaded = true;
+                                Logger.Log("Found rclone/download.config with mirror remotes, skipping startup dialog");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Rclone config check failed: {ex.Message}", LogLevel.WARNING);
+                    }
+                }
+
+                // If auto-load failed, show the startup dialog as usual
+                if (!configAutoLoaded)
+                {
+                    using (var startupDialog = new StartupDialog())
+                    {
+                        var dialogResult = startupDialog.ShowDialog(this);
+
+                        if (dialogResult != DialogResult.OK || startupDialog.Choice == StartupDialog.StartupChoice.None)
+                        {
+                            Application.Exit();
+                            return;
+                        }
+
+                        if (startupDialog.Choice == StartupDialog.StartupChoice.Offline)
+                        {
+                            isOffline = true;
+                            Logger.Log("User chose offline mode from startup dialog");
+                        }
+                        else if (startupDialog.Choice == StartupDialog.StartupChoice.RcloneConfig)
+                        {
+                            // User provided an rclone download config — proceed online without public config
+                            Logger.Log("User provided rclone download.config from startup dialog");
+                        }
+                        else
+                        {
+                            // Online — the StartupDialog already validated, downloaded, and wrote public.json
+                            // Load it into memory
+                            Logger.Log("User chose online mode from startup dialog");
+                            try
+                            {
+                                string configFilePath = Path.Combine(Environment.CurrentDirectory, "public.json");
+                                if (File.Exists(configFilePath))
+                                {
+                                    string configFileData = File.ReadAllText(configFilePath);
+                                    PublicConfig config = JsonConvert.DeserializeObject<PublicConfig>(configFileData);
+
+                                    if (config != null &&
+                                        !string.IsNullOrWhiteSpace(config.BaseUri) &&
+                                        !string.IsNullOrWhiteSpace(config.Password))
+                                    {
+                                        PublicConfigFile = config;
+                                        hasPublicConfig = true;
+
+                                        // Test DNS for the public config hostname
+                                        DnsHelper.TestPublicConfigDns();
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Log($"Failed to load config after startup dialog: {ex.Message}", LogLevel.ERROR);
+                            }
+
+                            if (!hasPublicConfig)
+                            {
+                                // Should rarely happen since the dialog validated it,
+                                // but handle gracefully.
+                                isOffline = true;
+                                Logger.Log("Config invalid after dialog — falling back to offline mode", LogLevel.WARNING);
+                            }
+                        }
                     }
                 }
 
                 // Pre-initialize trailer player in background
-                try
+                if (!isOffline)
                 {
-                    await EnsureTrailerEnvironmentAsync();
+                    try
+                    {
+                        await EnsureTrailerEnvironmentAsync();
+                    }
+                    catch { /* swallow – prewarm should never crash startup */ }
                 }
-                catch { /* swallow – prewarm should never crash startup */ }
             }
+
+            // Show the main form now that startup dialog is done
+            this.Opacity = 1;
 
             // UI setup
             remotesList.Items.Clear();
@@ -629,39 +697,75 @@ namespace AndroidSideloader
             progressBar.IsIndeterminate = true;
             progressBar.OperationType = "Loading";
 
+            // Always download dependencies (adb, aapt, 7z, runtimes) regardless of mode
+            await Task.Run(() =>
+            {
+                changeTitle("Downloading Dependencies...");
+                GetDependencies.downloadFiles();
+            });
+
+            // Init RCLONE only in online mode
+            if (!isOffline)
+            {
+                await Task.Run(() =>
+                {
+                    changeTitle("Initializing RCLONE...");
+                    RCLONE.Init();
+                });
+            }
+
             // Update check
             if (!debugMode && settings.CheckForUpdates && !isOffline)
             {
                 Updater.AppName = "AndroidSideloader";
-                Updater.Repository = "VRPirates/rookie";
+                Updater.Repository = repo;
                 await Updater.Update();
             }
 
             if (!isOffline)
             {
-                changeTitle("Getting Upload Config...");
-                await Task.Run(() => SideloaderRCLONE.updateUploadConfig());
-
-                string uploadConfigPath = Path.Combine(Environment.CurrentDirectory, "rclone", "vrp.upload.config");
-                if (File.Exists(uploadConfigPath))
-                {
-                    hasUploadConfig = true;
-                }
-
                 _ = Logger.Log("Initializing Servers");
                 changeTitle("Initializing Servers...");
 
                 await initMirrors();
-
-                if (!UsingPublicConfig)
-                {
-                    changeTitle("Grabbing the Games List...");
-                    await Task.Run(() => SideloaderRCLONE.initGames(currentRemote));
-                }
             }
             else
             {
-                changeTitle("Offline mode enabled, no Rclone");
+                changeTitle("Offline mode // Scanning local library...");
+
+                // Determine the scan directory; prompt the user on first run
+                // Self-healing: if DownloadDir is set but CustomDownloadDir was lost, recover
+                bool hasValidDir = !string.IsNullOrEmpty(settings.DownloadDir) && Directory.Exists(settings.DownloadDir);
+                if (hasValidDir && !settings.CustomDownloadDir)
+                {
+                    settings.CustomDownloadDir = true;
+                    settings.Save();
+                }
+
+                string dlDir = hasValidDir ? settings.DownloadDir : Environment.CurrentDirectory;
+
+                if (!settings.CustomDownloadDir)
+                {
+                    var folderDialog = new FolderSelectDialog
+                    {
+                        Title = "Select the folder containing your downloaded games",
+                        InitialDirectory = dlDir
+                    };
+
+                    if (folderDialog.Show(Handle))
+                    {
+                        dlDir = folderDialog.FileName;
+                        settings.DownloadDir = dlDir;
+                        settings.CustomDownloadDir = true;
+                        settings.Save();
+                    }
+                }
+
+                // In offline mode, scan the local download directory for games
+                await Task.Run(() =>
+                {
+                    SideloaderRCLONE.ScanLocalGames(dlDir);
+                });
             }
 
             // Device connection and Metadata can run simultaneously
@@ -720,37 +824,38 @@ namespace AndroidSideloader
             });
 
             // Start metadata task in parallel
-            if (UsingPublicConfig)
+            if (!isOffline)
             {
                 metadataTask = Task.Run(() =>
                 {
-                    changeTitle("Updating Metadata...");
-                    SideloaderRCLONE.UpdateMetadataFromPublic();
-
-                    changeTitle("Processing Metadata...");
-                    SideloaderRCLONE.ProcessMetadataFromPublic();
-                });
-            }
-            else if (!isOffline)
-            {
-                metadataTask = Task.Run(() =>
-                {
-                    changeTitle("Updating Game Notes...");
-                    SideloaderRCLONE.UpdateGameNotes(currentRemote);
-
-                    changeTitle("Updating Game Thumbnails...");
-                    SideloaderRCLONE.UpdateGamePhotos(currentRemote);
-
-                    SideloaderRCLONE.UpdateNouns(currentRemote);
-
-                    if (!Directory.Exists(SideloaderRCLONE.ThumbnailsFolder) ||
-                        !Directory.Exists(SideloaderRCLONE.NotesFolder))
+                    if (hasPublicConfig)
                     {
-                        this.Invoke(() =>
+                        changeTitle("Updating Metadata...");
+                        SideloaderRCLONE.UpdateMetadataFromPublic();
+
+                        changeTitle("Processing Metadata...");
+                        SideloaderRCLONE.ProcessMetadataFromPublic();
+                    }
+
+                    if (!UsingPublicConfig)
+                    {
+                        changeTitle("Updating Game Notes...");
+                        SideloaderRCLONE.UpdateGameNotes(currentRemote);
+
+                        changeTitle("Updating Game Thumbnails...");
+                        SideloaderRCLONE.UpdateGamePhotos(currentRemote);
+
+                        SideloaderRCLONE.UpdateNouns(currentRemote);
+
+                        if (!Directory.Exists(SideloaderRCLONE.ThumbnailsFolder) ||
+                            !Directory.Exists(SideloaderRCLONE.NotesFolder))
                         {
-                            _ = FlexibleMessageBox.Show(Program.form,
-                                "It seems you are missing the thumbnails and/or notes database, the first start of the sideloader takes a bit more time, so dont worry if it looks stuck!");
-                        });
+                            this.Invoke(() =>
+                            {
+                                _ = FlexibleMessageBox.Show(Program.form,
+                                    "It seems you are missing the thumbnails and/or notes database, the first start of the sideloader takes a bit more time, so dont worry if it looks stuck!");
+                            });
+                        }
                     }
                 });
             }
@@ -764,6 +869,19 @@ namespace AndroidSideloader
             {
                 await Task.WhenAll(tasksToWait);
             }
+
+            // For non-Public mirrors, load the game list AFTER metadata processing
+            // completes. ProcessMetadataFromPublic() overwrites the game list with
+            // public data, so initGames must run afterwards to get the final word.
+            if (!isOffline && !UsingPublicConfig)
+            {
+                changeTitle("Grabbing the Games List...");
+                await Task.Run(() => SideloaderRCLONE.initGames(currentRemote));
+            }
+
+            string uploadConfigPath = Path.Combine(Environment.CurrentDirectory, "rclone", "upload.config");
+            if (File.Exists(uploadConfigPath))
+                hasUploadConfig = true;
 
             progressBar.IsIndeterminate = true;
             progressBar.OperationType = "Loading";
@@ -988,6 +1106,24 @@ namespace AndroidSideloader
 
             changeTitlebarToDevice();
             showAvailableSpace();
+        }
+
+        private async void resetAdbAuthButton_Click(object sender, EventArgs e)
+        {
+            DialogResult confirm = FlexibleMessageBox.Show(this,
+                "This will kill the ADB server, remove your ADB authorization keys, and restart.\n\n" +
+                "After reset, you will need to approve the USB debugging prompt on your device.\n\nContinue?",
+                "Reset ADB Authorization", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (confirm != DialogResult.Yes)
+                return;
+
+            string result = await Task.Run(() => ADB.ResetAdbAuthorization());
+
+            FlexibleMessageBox.Show(this, result + "\n\nPlease reconnect your device and accept the USB debugging prompt.",
+                "ADB Authorization Reset", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            devicesbutton_Click(sender, e);
         }
 
         public static void notify(string message)
@@ -1573,7 +1709,7 @@ namespace AndroidSideloader
             }
 
             string deviceCodeName = ADB.RunAdbCommandToString("shell getprop ro.product.device").Output.ToLower().Trim();
-            string codeNamesLink = "https://raw.githubusercontent.com/VRPirates/rookie/master/codenames";
+            string codeNamesLink = $"https://raw.githubusercontent.com/{repo}/{repo_branch}/codenames";
             bool codenameExists = false;
             try
             {
@@ -2374,6 +2510,7 @@ namespace AndroidSideloader
         public static bool nodeviceonstart = false;
         public static bool either = false;
         private bool _allItemsInitialized = false;
+        private bool _suppressDonorsDialog = false;
 
         private async void initListView(bool favoriteView)
         {
@@ -2384,6 +2521,16 @@ namespace AndroidSideloader
             int updateAvailableCount = 0;
             int newerThanListCount = 0;
             loaded = false;
+
+            // Reset donation/update tracking so stale values from a prior call
+            // don't trigger the donors dialog after an offline→online switch.
+            either = false;
+            updates = false;
+            newapps = false;
+            updint = 0;
+            newint = 0;
+            donorApps = "";
+            gamesToAskForUpdate.Clear();
 
             var rookienameSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var rookienameListBuilder = new StringBuilder();
@@ -2454,7 +2601,7 @@ namespace AndroidSideloader
             if (SideloaderRCLONE.games.Count > 5)
             {
                 progressBar.IsIndeterminate = true;
-                progressBar.OperationType = "";
+                progressBar.OperationType = "Loading";
 
                 // Use full dumpsys to get all version codes at once
                 Dictionary<string, ulong> installedVersions = new Dictionary<string, ulong>(packageList.Length, StringComparer.OrdinalIgnoreCase);
@@ -2750,20 +2897,126 @@ namespace AndroidSideloader
                 Logger.Log($"Game processing completed in {sw.ElapsedMilliseconds}ms");
                 sw.Restart();
             }
-            else if (!isOffline)
+            else if (!isOffline && !_isManualMirrorSwitch)
             {
                 SwitchMirrors();
                 if (!isOffline)
                 {
+                    // If user provided a new config (quotaTries was reset to 0),
+                    // do a full reconnect before retrying
+                    if (quotaTries == 0)
+                    {
+                        // Reset mirror cycling state left over from exhaustion
+                        reset = false;
+                        steps = 0;
+
+                        // Prevent remotesList_SelectedIndexChanged → refreshCurrentMirror
+                        // from running concurrently (same guard used during startup)
+                        isLoading = true;
+                        loaded = false;
+                        _suppressDonorsDialog = true;
+
+                        // Clear stale data so the recursive call rebuilds everything
+                        _allItems?.Clear();
+                        _allItemsInitialized = false;
+                        _galleryDataSource = null;
+                        _searchIndex?.Clear();
+                        SideloaderRCLONE.games.Clear();
+
+                        RCLONE.killRclone();
+                        await Task.Run(() =>
+                        {
+                            changeTitle("Reloading...");
+                            GetDependencies.downloadFiles();
+                            RCLONE.Init();
+                        });
+
+                        await initMirrors();
+
+                        if (UsingPublicConfig)
+                        {
+                            changeTitle("Updating Metadata...");
+                            await Task.Run(() =>
+                            {
+                                SideloaderRCLONE.UpdateMetadataFromPublic();
+                                SideloaderRCLONE.ProcessMetadataFromPublic();
+                            });
+                        }
+                        else
+                        {
+                            changeTitle("Grabbing the Games List...");
+                            await Task.Run(() => SideloaderRCLONE.initGames(currentRemote));
+                        }
+
+                        isLoading = false;
+                    }
+
                     initListView(false);
                 }
                 return;
+            }
+            else
+            {
+                // Offline mode with local games scanned
+                // Build items from SideloaderRCLONE.games (populated by ScanLocalGames)
+                if (SideloaderRCLONE.games.Count > 0)
+                {
+                    await Task.Run(() =>
+                    {
+                        foreach (string[] release in SideloaderRCLONE.games)
+                        {
+                            string packagename = release[SideloaderRCLONE.PackageNameIndex];
+                            string gameName = release[SideloaderRCLONE.GameNameIndex];
+                            if (rookienameSet.Add(gameName))
+                            {
+                                rookienameListBuilder.Append(gameName).Append('\n');
+                            }
+
+                            var item = new ListViewItem(release);
+
+                            // Attach 'v' to version
+                            item.SubItems[3].Text = $"v{item.SubItems[3].Text}";
+
+                            // Convert size to GB or MB
+                            if (StringUtilities.TryParseDouble(item.SubItems[5].Text, out double itemSizeInMB))
+                            {
+                                if (itemSizeInMB >= 1024)
+                                {
+                                    double sizeInGB = itemSizeInMB / 1024;
+                                    item.SubItems[5].Text = $"{sizeInGB:F2} GB";
+                                }
+                                else
+                                {
+                                    item.SubItems[5].Text = $"{itemSizeInMB:F0} MB";
+                                }
+                            }
+
+                            // Local-only: mark as downloaded
+                            item.ForeColor = ColorDownloaded;
+                            item.SubItems[6].Text = "Local";
+
+                            if (favoriteView)
+                            {
+                                if (settings.FavoritedGames.Contains(item.SubItems[1].Text))
+                                {
+                                    GameList.Add(item);
+                                }
+                            }
+                            else
+                            {
+                                GameList.Add(item);
+                            }
+                        }
+                    });
+
+                    rookienamelist = rookienameListBuilder.ToString();
+                }
             }
 
             if (blacklistSet.Count == 0 && GameList.Count == 0 && !settings.NodeviceMode && !isOffline)
             {
                 _ = FlexibleMessageBox.Show(Program.form,
-                    "Rookie seems to have failed to load all resources. Please try restarting Rookie a few times.\nIf error still persists please disable any VPN or firewalls (rookie uses direct download so a VPN is not needed)\nIf this error still persists try a system reboot, reinstalling the program, and lastly posting the problem on telegram.",
+                    "Rookie seems to have failed to load all resources. Please try restarting Rookie a few times.\nIf error still persists please disable any VPN or firewalls (rookie uses direct download so a VPN is not needed)\nIf this error still persists try a system reboot, reinstalling the program, and lastly posting the problem on telegram.\n\nTip: You can restart in offline mode (--offline) to browse your downloaded library.",
                     "Error loading blacklist or game list!");
             }
 
@@ -2778,14 +3031,38 @@ namespace AndroidSideloader
                 await ProcessNewApps(newGamesList, blacklistSet.ToList());
             }
 
-            progressBar.IsIndeterminate = false;
-
-            if (either && !updatesNotified && !noAppCheck && hasUploadConfig)
+            if (either && !updatesNotified && !noAppCheck && hasUploadConfig && !isOffline && !_suppressDonorsDialog
+                && !string.IsNullOrWhiteSpace(donorApps))
             {
                 changeTitle("");
                 DonorsListViewForm donorForm = new DonorsListViewForm();
                 _ = donorForm.ShowDialog(this);
                 _ = Focus();
+            }
+            _suppressDonorsDialog = false;
+
+            // Count downloaded titles by checking for matching folders in the download directory
+            int downloadedCount = 0;
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+            if (Directory.Exists(dlDir))
+            {
+                var localDirNames = new HashSet<string>(
+                    Directory.GetDirectories(dlDir).Select(d => Path.GetFileName(d)),
+                    StringComparer.OrdinalIgnoreCase);
+
+                foreach (var item in GameList)
+                {
+                    if (item.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex) continue;
+                    string releaseName = item.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+                    if (!localDirNames.Contains(releaseName)) continue;
+                    string folderPath = Path.Combine(dlDir, releaseName);
+                    try
+                    {
+                        if (Directory.GetFiles(folderPath, "*.apk").Length > 0)
+                            downloadedCount++;
+                    }
+                    catch { }
+                }
             }
 
             // Update UI with computed list
@@ -2795,11 +3072,13 @@ namespace AndroidSideloader
                 int installedTotal = upToDateCount + updateAvailableCount;
                 btnInstalled.Text = $"{installedTotal} INSTALLED";
                 btnInstalled.ForeColor = ColorInstalled;
-                if (updateAvailableCount != 1) btnUpdateAvailable.Text = $"{updateAvailableCount} UPDATES AVAILABLE";
-                else btnUpdateAvailable.Text = $"{updateAvailableCount} UPDATE AVAILABLE";
+                if (updateAvailableCount != 1) btnUpdateAvailable.Text = $"{updateAvailableCount} UPDATES";
+                else btnUpdateAvailable.Text = $"{updateAvailableCount} UPDATE";
                 btnUpdateAvailable.ForeColor = ColorUpdateAvailable;
-                btnNewerThanList.Text = $"{newerThanListCount} NEWER THAN LIST";
+                btnNewerThanList.Text = $"{newerThanListCount} AHEAD OF SERVER";
                 btnNewerThanList.ForeColor = ColorDonateGame;
+                btnDownloaded.Text = $"{downloadedCount} DOWNLOADED";
+                btnDownloaded.ForeColor = ColorDownloaded;
 
                 ListViewItem[] arr = GameList.ToArray();
                 gamesListView.BeginUpdate();
@@ -2845,7 +3124,11 @@ namespace AndroidSideloader
             }
 
             loaded = true;
+            isLoading = false;
             Logger.Log($"initListView total completed in {sw.ElapsedMilliseconds}ms");
+
+            // Loading is fully complete — stop the progress bar
+            progressBar.IsIndeterminate = false;
 
             // Show header now that loading is complete
             if (_listViewRenderer != null)
@@ -2973,7 +3256,7 @@ namespace AndroidSideloader
             Program.form.ULLabel.Visible = true;
             isworking = true;
             string deviceCodeName = ADB.RunAdbCommandToString("shell getprop ro.product.device").Output.ToLower().Trim();
-            string codeNamesLink = "https://raw.githubusercontent.com/VRPirates/rookie/master/codenames";
+            string codeNamesLink = $"https://raw.githubusercontent.com/{repo}/{repo_branch}/codenames";
             bool codenameExists = false;
             try
             {
@@ -3077,7 +3360,7 @@ namespace AndroidSideloader
 
                 Thread t1 = new Thread(() =>
                 {
-                    _ = ADB.RunCommandToString($"\"{settings.MainDir}\\rclone\\rclone.exe\" copy \"{settings.MainDir}\\FreeOrNonVR{y}.txt\" VRP-debuglogs:InstalledGamesList", path);
+                    _ = ADB.RunCommandToString($"\"{settings.MainDir}\\rclone\\rclone.exe\" copy \"{settings.MainDir}\\FreeOrNonVR{y}.txt\" debuglogs:InstalledGamesList", path);
                     File.Delete($"{settings.MainDir}\\FreeOrNonVR{y}.txt");
                 })
                 {
@@ -3141,6 +3424,80 @@ namespace AndroidSideloader
                 Uploadversion = installedVersionInt
             };
             gamesToUpload.Add(game);
+        }
+
+        /// <summary>
+        /// Parses the rclone download config and returns the set of top-level
+        /// remote names — remotes that are NOT referenced as dependencies by
+        /// other remotes.  In rclone configs, a remote can reference another
+        /// using the "remotename:path" syntax (e.g. alias, crypt, union, cache).
+        /// Those dependency remotes are helpers and should not appear as mirrors.
+        /// </summary>
+        private static HashSet<string> GetTopLevelRemotes()
+        {
+            var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                string configPath = Path.Combine(Environment.CurrentDirectory, "rclone", RCLONE.downloadConfigPath);
+                if (!File.Exists(configPath))
+                    return result;
+
+                string[] lines = File.ReadAllLines(configPath);
+
+                // First pass: collect section names and their config values
+                var sections = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+                string currentSection = null;
+
+                foreach (string line in lines)
+                {
+                    string trimmed = line.Trim();
+                    if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+                    {
+                        currentSection = trimmed.Substring(1, trimmed.Length - 2).Trim();
+                        if (!sections.ContainsKey(currentSection))
+                            sections[currentSection] = new List<string>();
+                    }
+                    else if (currentSection != null && trimmed.Contains("="))
+                    {
+                        int eqIdx = trimmed.IndexOf('=');
+                        string value = trimmed.Substring(eqIdx + 1).Trim();
+                        sections[currentSection].Add(value);
+                    }
+                }
+
+                // Second pass: find which remotes are referenced by others
+                // via the standard rclone "remotename:" pattern in values
+                var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var kvp in sections)
+                {
+                    foreach (string value in kvp.Value)
+                    {
+                        foreach (string remoteName in sections.Keys)
+                        {
+                            if (string.Equals(kvp.Key, remoteName, StringComparison.OrdinalIgnoreCase))
+                                continue; // skip self-references
+
+                            if (value.IndexOf(remoteName + ":", StringComparison.OrdinalIgnoreCase) >= 0)
+                                referenced.Add(remoteName);
+                        }
+                    }
+                }
+
+                // Top-level = all sections that are not referenced by others
+                foreach (string name in sections.Keys)
+                {
+                    if (!referenced.Contains(name))
+                        result.Add(name);
+                }
+
+                Logger.Log($"Top-level remotes: {string.Join(", ", result)}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Failed to parse rclone config for top-level remotes: {ex.Message}", LogLevel.WARNING);
+            }
+
+            return result;
         }
 
         private async Task initMirrors()
@@ -3224,45 +3581,69 @@ namespace AndroidSideloader
                 itemsCount++;
             }
 
+            // Parse the config to find which remotes are top-level (not
+            // referenced as dependencies by other remotes).  Helper remotes
+            // like [localfs] that only exist as building blocks are excluded.
+            var topLevel = GetTopLevelRemotes();
+
             foreach (string mirror in mirrors)
             {
-                if (mirror.Contains("mirror"))
+                string name = mirror.TrimEnd(':', ' ', '\r', '\n');
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+
+                // When we successfully parsed the config, skip helpers
+                if (topLevel.Count > 0 && !topLevel.Contains(name))
                 {
-                    _ = Logger.Log(mirror.Remove(mirror.Length - 1));
-                    await Task.Run(() => remotesList.Invoke(() =>
-                    {
-                        _ = remotesList.Items.Add(mirror.Remove(mirror.Length - 1).Replace("VRP-mirror", ""));
-                    }));
-                    itemsCount++;
+                    _ = Logger.Log($"Skipping helper remote: {name}");
+                    continue;
                 }
+
+                _ = Logger.Log(name);
+                await Task.Run(() => remotesList.Invoke(() =>
+                {
+                    _ = remotesList.Items.Add(name);
+                }));
+                itemsCount++;
             }
 
             if (itemsCount > 0)
             {
                 await Task.Run(() => remotesList.Invoke(() =>
                 {
-                    if (!string.IsNullOrWhiteSpace(settings.selectedMirror))
+                    // Suppress SelectedIndexChanged — we set currentRemote ourselves below
+                    _suppressMirrorRefresh = true;
+                    try
                     {
-                        int i = remotesList.Items.IndexOf(settings.selectedMirror);
-                        if (i >= 0)
-                            remotesList.SelectedIndex = i;
-                        else
+                        if (!string.IsNullOrWhiteSpace(settings.selectedMirror))
+                        {
+                            int i = remotesList.Items.IndexOf(settings.selectedMirror);
+                            if (i >= 0)
+                                remotesList.SelectedIndex = i;
+                            else
+                                remotesList.SelectedIndex = 0;
+                        }
+
+                        if (remotesList.SelectedIndex < 0 && remotesList.Items.Count > 0)
+                        {
                             remotesList.SelectedIndex = 0;
-                    }
+                        }
 
-                    if (remotesList.SelectedIndex < 0 && remotesList.Items.Count > 0)
+                        string selectedRemote = remotesList.SelectedItem.ToString();
+                        if (selectedRemote == "Public")
+                        {
+                            UsingPublicConfig = true;
+                        }
+                        else
+                        {
+                            UsingPublicConfig = false;
+                            currentRemote = selectedRemote;
+                        }
+                    }
+                    finally
                     {
-                        remotesList.SelectedIndex = 0;
+                        _suppressMirrorRefresh = false;
                     }
-
-                    string selectedRemote = remotesList.SelectedItem.ToString();
-                    currentRemote = "";
-
-                    if (selectedRemote != "Public")
-                    {
-                        currentRemote = "VRP-mirror";
-                    }
-                    currentRemote = string.Concat(currentRemote, selectedRemote);
                 }));
             }
         }
@@ -3417,28 +3798,26 @@ namespace AndroidSideloader
 
         private void aboutBtn_Click(object sender, EventArgs e)
         {
-            string about = $@"Version: {Updater.LocalVersion}
+            string about = $@"
+    VERSION {Updater.LocalVersion}
 
-This software is free.
-{Updater.GitHubUrl}
+    THIS SOFTWARE IS FREE
+    HTTPS://GITHUB.COM/{repo.ToUpper()}
 
-Credits & Acknowledgements
------------------------------------------
-• Software originally developed by: rookie.wtf
-• Special thanks to the VRP Mod Staff, Data Team, and all contributors
-• VRP Staff (past & present):
-   fenopy, Maxine, JarJarBlinkz, pmow, SytheZN, Roma/Rookie, 
-   Flow, Ivan, Kaladin, HarryEffinPotter, John, Sam Hoque, JP
+    CREDITS & ACKNOWLEDGEMENTS
+    —————————————————
+    • SOFTWARE ORIGINALLY DEVELOPED BY ROOKIE.WTF
+    • SPECIAL THANKS TO FENOPY, MAXINE, JARJARBLINKZ, PMOW, SYTHEZN, FLOW, 
+       IVAN, KALADIN, HARRYEFFINPOTTER, JOHN, SAM HOQUE, JP AND ALL CONTRIBUTORS
 
-Additional Thanks & Resources
------------------------------------------
-• rclone - https://rclone.org
-• 7-Zip - https://www.7-zip.org 
-• ErikE - https://stackoverflow.com/users/57611/erike  
-• Serge Weinstock (SergeUtils)  
-• Mike Gold - https://www.c-sharpcorner.com/members/mike-gold2
-";
-
+    ADDITIONAL THANKS & RESOURCES
+    —————————————————
+    • RCLONE — HTTPS://RCLONE.ORG
+    • 7-ZIP — HTTPS://WWW.7-ZIP.ORG
+    • ERIKE — HTTPS://STACKOVERFLOW.COM/USERS/57611/ERIKE
+    • SERGE WEINSTOCK — SERGEUTILS
+    • MIKE GOLD — HTTPS://WWW.C-SHARPCORNER.COM/MEMBERS/MIKE-GOLD2
+    ";
             _ = FlexibleMessageBox.Show(Program.form, about);
         }
 
@@ -3467,24 +3846,36 @@ Additional Thanks & Resources
             progressBar.IsIndeterminate = true;
             progressBar.OperationType = "Refreshing";
 
-            Thread t1 = new Thread(() =>
+            try
             {
-                if (!UsingPublicConfig)
+                Thread t1 = new Thread(() =>
                 {
-                    SideloaderRCLONE.initGames(currentRemote);
+                    try
+                    {
+                        if (!UsingPublicConfig)
+                        {
+                            SideloaderRCLONE.initGames(currentRemote);
+                        }
+                        listAppsBtn();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Error during mirror refresh: {ex.Message}", LogLevel.ERROR);
+                    }
+                })
+                {
+                    IsBackground = true
+                };
+                t1.Start();
+                while (t1.IsAlive)
+                {
+                    await Task.Delay(100);
                 }
-                listAppsBtn();
-            })
-            {
-                IsBackground = false
-            };
-            t1.Start();
-            while (t1.IsAlive)
-            {
-                await Task.Delay(100);
             }
-
-            isLoading = false;
+            finally
+            {
+                isLoading = false;
+            }
 
             // Use RefreshGameListAsync to preserve filter state
             await RefreshGameListAsync();
@@ -3509,57 +3900,121 @@ Additional Thanks & Resources
             try
             {
                 quotaTries++;
+
+                // If we've tried all remotes, show quota exceeded error
+                if (quotaTries > remotesList.Items.Count)
+                {
+                    ShowError_QuotaExceeded();
+
+                    // If the user provided a new config, quotaTries was reset to 0 — let the caller retry
+                    if (quotaTries == 0)
+                        return true;
+
+                    // User cancelled or chose offline — go offline
+                    isOffline = true;
+                    return false;
+                }
+
                 remotesList.Invoke((MethodInvoker)delegate
                 {
-                    if (remotesList.SelectedIndex + 1 == remotesList.Items.Count)
+                    _suppressMirrorRefresh = true;
+                    try
                     {
-                        reset = true;
-                        for (int i = 0; i < steps; i++)
+                        int count = remotesList.Items.Count;
+                        if (count == 0) return;
+
+                        // Simple round-robin: move to next mirror
+                        int nextIndex = (remotesList.SelectedIndex + 1) % count;
+                        remotesList.SelectedIndex = nextIndex;
+
+                        string selected = remotesList.SelectedItem?.ToString();
+                        if (selected == "Public")
                         {
-                            remotesList.SelectedIndex--;
+                            UsingPublicConfig = true;
+                        }
+                        else
+                        {
+                            UsingPublicConfig = false;
+                            currentRemote = selected;
                         }
                     }
-                    if (reset)
+                    finally
                     {
-                        remotesList.SelectedIndex--;
-                    }
-                    if (remotesList.Items.Count > remotesList.SelectedIndex && !reset)
-                    {
-                        remotesList.SelectedIndex++;
-                        steps++;
+                        _suppressMirrorRefresh = false;
                     }
                 });
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Log($"Error in SwitchMirrors: {ex.Message}", LogLevel.ERROR);
                 success = false;
-            }
-
-            // If we've tried all remotes and failed, show quota exceeded error
-            if (quotaTries > remotesList.Items.Count)
-            {
-                ShowError_QuotaExceeded();
-                isOffline = true;
-                success = false;
-                return success;
             }
 
             return success;
         }
 
-        private static void ShowError_QuotaExceeded()
+        private void ShowError_QuotaExceeded()
         {
-            string errorMessage =
-$@"Rookie cannot reach our servers.
+            // Show the startup dialog so the user can reconfigure or go offline.
+            // Use Invoke to ensure we're on the UI thread (SwitchMirrors may be
+            // called from a background thread).
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(ShowError_QuotaExceeded));
+                return;
+            }
 
-If this is your first time launching Rookie, please relaunch and try again.
+            using (var startupDialog = new StartupDialog("Config server is not reachable — check URL and your connection"))
+            {
+                var dialogResult = startupDialog.ShowDialog(this);
 
-If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord (https://discord.gg/tBKMZy7QDA) for troubleshooting steps.";
+                if (dialogResult != DialogResult.OK || startupDialog.Choice == StartupDialog.StartupChoice.None)
+                {
+                    // User cancelled — caller will set isOffline = true
+                    return;
+                }
 
-            FlexibleMessageBox.Show(Program.form, errorMessage, "Unable to connect to remote server");
+                if (startupDialog.Choice == StartupDialog.StartupChoice.Offline)
+                {
+                    // User explicitly chose offline — caller will set isOffline = true
+                    return;
+                }
 
-            // Close application after showing the message
-            // Application.Exit();
+                if (startupDialog.Choice == StartupDialog.StartupChoice.RcloneConfig)
+                {
+                    // User provided rclone config — will be picked up on next mirror init
+                    quotaTries = 0;
+                    return;
+                }
+
+                if (startupDialog.Choice == StartupDialog.StartupChoice.Online)
+                {
+                    // User provided a new config — reload it
+                    try
+                    {
+                        string configFilePath = Path.Combine(Environment.CurrentDirectory, "public.json");
+                        if (File.Exists(configFilePath))
+                        {
+                            string configFileData = File.ReadAllText(configFilePath);
+                            PublicConfig config = JsonConvert.DeserializeObject<PublicConfig>(configFileData);
+
+                            if (config != null &&
+                                !string.IsNullOrWhiteSpace(config.BaseUri) &&
+                                !string.IsNullOrWhiteSpace(config.Password))
+                            {
+                                PublicConfigFile = config;
+                                hasPublicConfig = true;
+                                DnsHelper.TestPublicConfigDns();
+                                quotaTries = 0;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Failed to reload config after quota error: {ex.Message}", LogLevel.ERROR);
+                    }
+                }
+            }
         }
 
         public async void cleanupActiveDownloadStatus()
@@ -3752,8 +4207,8 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
 
                 string gameDisplayName = Sideloader.gameNameToSimpleName(releaseName);
 
-                // Check disk storage
-                if (downloadDirFreeMB > 0 && gameSizeMB > 0)
+                // Check disk storage (skip already downloaded content)
+                if (downloadDirFreeMB > 0 && gameSizeMB > 0 && !downloadedFilter_Clicked)
                 {
                     double largestGame = Math.Max(maxQueuedGameSizeMB, gameSizeMB);
                     double requiredMB;
@@ -3955,7 +4410,7 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                     catch { }
 
                     double requiredDiskMB = currentGameSizeMB * 2.2;
-                    if (currentDiskFreeMB > 0 && currentDiskFreeMB < requiredDiskMB)
+                    if (!downloadedFilter_Clicked && currentDiskFreeMB > 0 && currentDiskFreeMB < requiredDiskMB)
                     {
                         string driveLetter = Path.GetPathRoot(downloadPath);
 
@@ -4051,6 +4506,18 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                     }
                 }
 
+                // Download/Offline Filter View: verify downloaded files exist before proceeding
+                if (downloadedFilter_Clicked || isOffline)
+                {
+                    string localGameDir = Path.Combine(settings.DownloadDir, gameName);
+                    if (!Directory.Exists(localGameDir) || Directory.GetFiles(localGameDir, "*.apk").Length == 0)
+                    {
+                        changeTitle($"No downloaded files found for {gameDisplayName}");
+                        cleanupActiveDownloadStatus();
+                        continue;
+                    }
+                }
+
                 string gameNameHash = string.Empty;
                 using (MD5 md5 = MD5.Create())
                 {
@@ -4080,7 +4547,12 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                 {
                     bandwidthLimit = $"--bwlimit={settings.BandwidthLimit}M";
                 }
-                if (UsingPublicConfig)
+                if (downloadedFilter_Clicked || isOffline)
+                {
+                    // Downloaded/Offline View: skip download, install from downloaded files
+                    t1 = new Thread(() => { gameDownloadOutput = new ProcessOutput("Download skipped."); });
+                }
+                else if (UsingPublicConfig)
                 {
                     bool doDownload = true;
                     bool skipRedownload = false;
@@ -4129,7 +4601,6 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                             $"copy \":http:/{gameNameHash}/\" \"{downloadDirectory}\" {extraArgs} --progress --rc {bandwidthLimit}";
                             gameDownloadOutput = RCLONE.runRcloneCommand_PublicConfig(rclonecommand);
                         });
-                        Utilities.Metrics.CountDownload(packagename, versioncode);
                     }
                     else
                     {
@@ -4145,7 +4616,6 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                     {
                         gameDownloadOutput = RCLONE.runRcloneCommand_DownloadConfig($"copy \"{currentRemote}:{downloadDirectory}\" \"{settings.DownloadDir}\\{gameName}\" {extraArgs} --progress --rc --retries 2 --low-level-retries 1 --check-first {bandwidthLimit}");
                     });
-                    Utilities.Metrics.CountDownload(packagename, versioncode);
                 }
 
                 if (Directory.Exists(downloadDirectory))
@@ -4161,8 +4631,16 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                 t1.IsBackground = true;
                 t1.Start();
 
-                changeTitle("Downloading game " + gameName);
-                speedLabel.Text = "Starting download...";
+                if (!downloadedFilter_Clicked && !isOffline)
+                {
+                    changeTitle("Downloading game " + gameName);
+                    speedLabel.Text = "Starting download...";
+                }
+                else
+                {
+                    changeTitle("Installing from downloaded files: " + gameDisplayName);
+                    speedLabel.Text = "";
+                }
 
                 // Track the highest valid progress to prevent brief progress bar flashes during multi-file transfers
                 float highestValidPercent = 0;
@@ -4318,6 +4796,20 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
 
                             SwitchMirrors();
 
+                            // If user provided a new config, do a full reconnect
+                            if (quotaTries == 0)
+                            {
+                                reset = false;
+                                steps = 0;
+                                isLoading = true;
+
+                                RCLONE.killRclone();
+                                await Task.Run(() => RCLONE.Init());
+                                await initMirrors();
+
+                                isLoading = false;
+                            }
+
                             cleanupActiveDownloadStatus();
                         }
                         else if (!gameDownloadOutput.Error.Contains("Serving remote control on http://127.0.0.1:5572/"))
@@ -4443,7 +4935,7 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                             }
                             else
                             {
-                                output.Output = "Download complete (installation skipped).\n\nConnect a device or enable sideloading to install.";
+                                output.Output = "Complete (installation skipped).\n\nConnect a device or enable sideloading to install.";
                             }
                         }
                         else
@@ -4560,12 +5052,13 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                             }
                             else
                             {
-                                output.Output = "Download complete (installation skipped).\n\nConnect a device or enable sideloading to install.";
+                                output.Output = "Complete (installation skipped).\n\nConnect a device or enable sideloading to install.";
                             }
                             changeTitle($"Installation of {gameName} completed.");
                         }
                         // Only delete if setting enabled and device was connected (so we actually installed)
-                        if (settings.DeleteAllAfterInstall && !nodeviceonstart && DeviceConnected)
+                        // Skip deletion in local library / offline mode
+                        if (settings.DeleteAllAfterInstall && !nodeviceonstart && DeviceConnected && !downloadedFilter_Clicked && !isOffline)
                         {
                             changeTitle("Deleting game files");
                             try { FileSystemUtilities.TryDeleteDirectory(settings.DownloadDir + "\\" + gameName); } catch (Exception ex) { _ = FlexibleMessageBox.Show(Program.form, $"Error deleting game files: {ex.Message}"); }
@@ -5429,6 +5922,7 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
 
         private async void remotesList_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (_suppressMirrorRefresh) return;
             if (remotesList.SelectedItem != null)
             {
                 string selectedRemote = remotesList.SelectedItem.ToString();
@@ -5439,7 +5933,7 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
                 else
                 {
                     UsingPublicConfig = false;
-                    remotesList.Invoke(() => { currentRemote = "VRP-mirror" + selectedRemote; });
+                    remotesList.Invoke(() => { currentRemote = selectedRemote; });
                 }
 
                 settings.selectedMirror = selectedRemote;
@@ -5643,7 +6137,7 @@ If the problem persists, visit our Telegram (https://t.me/VRPirates) or Discord 
 @"Keyboard Shortcuts
 
 F1   - Show shortcuts list
-F3   - Open Quest Settings
+F3   - Open Device Settings
 F4   - Open Rookie Settings
 F5   - Refresh games list
 
@@ -5817,7 +6311,7 @@ CTRL + F4  - Instantly relaunch Rookie Sideloader");
             string webView2LoaderX86 = Path.Combine(runtimesPath, "win-x86", "native", "WebView2Loader.dll");
             string webView2LoaderX64 = Path.Combine(runtimesPath, "win-x64", "native", "WebView2Loader.dll");
 
-            bool runtimeExists = File.Exists(webView2LoaderX86) || File.Exists(webView2LoaderX64) || File.Exists(webView2LoaderArm64);
+            bool runtimeExists = File.Exists(webView2LoaderX86) && File.Exists(webView2LoaderX64) && File.Exists(webView2LoaderArm64);
 
             if (!runtimeExists)
             {
@@ -6309,7 +6803,7 @@ function onYouTubeIframeAPIReady() {
 
         private void freeDisclaimer_Click(object sender, EventArgs e)
         {
-            _ = Process.Start("https://github.com/VRPirates/rookie");
+            _ = Process.Start($"https://github.com/{repo}");
         }
 
         private void searchTextBox_Enter(object sender, EventArgs e)
@@ -6353,6 +6847,11 @@ function onYouTubeIframeAPIReady() {
             btnInstalled.Click -= btnInstalled_Click;
             btnUpdateAvailable.Click -= btnUpdateAvailable_Click;
             btnNewerThanList.Click -= btnNewerThanList_Click;
+
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+            }
 
             if (upToDate_Clicked || NeedsDonation_Clicked)
             {
@@ -6495,6 +6994,11 @@ function onYouTubeIframeAPIReady() {
             btnUpdateAvailable.Click -= btnUpdateAvailable_Click;
             btnNewerThanList.Click -= btnNewerThanList_Click;
 
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+            }
+
             if (updateAvailableClicked || NeedsDonation_Clicked)
             {
                 updateAvailableClicked = false;
@@ -6505,7 +7009,7 @@ function onYouTubeIframeAPIReady() {
             if (!upToDate_Clicked)
             {
                 upToDate_Clicked = true;
-                // Filter to show installed, update available and newer than list entries
+                // Filter to show installed, update available and ahead of server entries
                 FilterListByColors(new[] { ColorInstalled, ColorUpdateAvailable, ColorDonateGame });
             }
             else
@@ -6534,6 +7038,11 @@ function onYouTubeIframeAPIReady() {
             btnInstalled.Click -= btnInstalled_Click;
             btnUpdateAvailable.Click -= btnUpdateAvailable_Click;
             btnNewerThanList.Click -= btnNewerThanList_Click;
+
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+            }
 
             if (updateAvailableClicked || upToDate_Clicked)
             {
@@ -6565,6 +7074,85 @@ function onYouTubeIframeAPIReady() {
             btnInstalled.Click += btnInstalled_Click;
             btnUpdateAvailable.Click += btnUpdateAvailable_Click;
             btnNewerThanList.Click += btnNewerThanList_Click;
+        }
+
+        private void btnDownloaded_Click(object sender, EventArgs e)
+        {
+            if (_allItems == null || _allItems.Count == 0)
+            {
+                Logger.Log("btnDownloaded_Click: _allItems is null or empty");
+                return;
+            }
+
+            // Clear other filter states
+            updateAvailableClicked = false;
+            upToDate_Clicked = false;
+            NeedsDonation_Clicked = false;
+
+            if (!downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = true;
+
+                string downloadDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+
+                if (!Directory.Exists(downloadDir))
+                {
+                    changeTitle("Download directory not found");
+                    downloadedFilter_Clicked = false;
+                    UpdateFilterButtonStates();
+                    return;
+                }
+
+                changeTitle("Scanning local library...");
+
+                // Get all subdirectories in the download folder
+                var localDirs = new HashSet<string>(
+                    Directory.GetDirectories(downloadDir)
+                        .Select(d => Path.GetFileName(d)),
+                    StringComparer.OrdinalIgnoreCase);
+
+                // Filter _allItems to only those whose release name matches a local folder
+                // and the folder contains at least one .apk file
+                var localItems = _allItems
+                    .Where(item =>
+                    {
+                        if (item.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex) return false;
+                        string releaseName = item.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+                        if (!localDirs.Contains(releaseName)) return false;
+                        string folderPath = Path.Combine(downloadDir, releaseName);
+                        try
+                        {
+                            return Directory.GetFiles(folderPath, "*.apk").Length > 0;
+                        }
+                        catch { return false; }
+                    })
+                    .ToList();
+
+                gamesListView.BeginUpdate();
+                gamesListView.Items.Clear();
+                gamesListView.Items.AddRange(localItems.ToArray());
+                gamesListView.EndUpdate();
+
+                if (isGalleryView)
+                {
+                    _galleryDataSource = localItems;
+                    PopulateGalleryView();
+                }
+
+                changeTitle("");
+            }
+            else
+            {
+                downloadedFilter_Clicked = false;
+                RestoreFullList();
+            }
+
+            UpdateFilterButtonStates();
+
+            if (isGalleryView)
+            {
+                PopulateGalleryView();
+            }
         }
 
         private void FilterListByColors(Color[] targetColors)
@@ -6633,6 +7221,12 @@ function onYouTubeIframeAPIReady() {
             {
                 changeTitle("No games to restore");
                 return;
+            }
+
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+                UpdateFilterButtonStates();
             }
 
             gamesListView.BeginUpdate();
@@ -6737,6 +7331,219 @@ function onYouTubeIframeAPIReady() {
             settings.Save();
         }
 
+        private async void btnLocalLibrary_Click(object sender, EventArgs e)
+        {
+            // Always show the startup dialog so the user can change config, switch mode, etc.
+            using (var startupDialog = new StartupDialog())
+            {
+                var dialogResult = startupDialog.ShowDialog(this);
+
+                if (dialogResult != DialogResult.OK || startupDialog.Choice == StartupDialog.StartupChoice.None)
+                {
+                    // User cancelled — stay in current mode
+                    return;
+                }
+
+                if (startupDialog.Choice == StartupDialog.StartupChoice.Offline)
+                {
+                    // User chose offline / local library mode
+                    if (isOffline)
+                    {
+                        // Already offline — nothing to do
+                        return;
+                    }
+
+                    string dlDir;
+
+                    // If a valid directory is already saved, use it directly
+                    if (settings.CustomDownloadDir &&
+                        !string.IsNullOrEmpty(settings.DownloadDir) &&
+                        Directory.Exists(settings.DownloadDir))
+                    {
+                        dlDir = settings.DownloadDir;
+                    }
+                    else
+                    {
+                        // Prompt the user to choose which directory to scan
+                        string initialDir = !string.IsNullOrEmpty(settings.DownloadDir) && Directory.Exists(settings.DownloadDir)
+                            ? settings.DownloadDir
+                            : Environment.CurrentDirectory;
+
+                        var folderDialog = new FolderSelectDialog
+                        {
+                            Title = "Select the folder containing your downloaded games",
+                            InitialDirectory = initialDir
+                        };
+
+                        if (!folderDialog.Show(Handle))
+                            return;
+
+                        dlDir = folderDialog.FileName;
+                        settings.DownloadDir = dlDir;
+                        settings.CustomDownloadDir = true;
+                        settings.Save();
+                    }
+
+                    isOffline = true;
+
+                    changeTitle("Scanning local library...");
+                    progressBar.IsIndeterminate = true;
+                    progressBar.OperationType = "Loading";
+
+                    // Clear the game list immediately to signal the switch
+                    gamesListView.BeginUpdate();
+                    gamesListView.Items.Clear();
+                    gamesListView.EndUpdate();
+                    if (isGalleryView && _fastGallery != null && !_fastGallery.IsDisposed)
+                    {
+                        _fastGallery.UpdateItems(new List<ListViewItem>());
+                    }
+
+                    // Prevent background timers from repopulating the old list
+                    isLoading = true;
+                    loaded = false;
+                    _allItems?.Clear();
+                    _allItemsInitialized = false;
+                    _galleryDataSource = null;
+                    _searchIndex?.Clear();
+
+                    // Kill rclone since we're going offline
+                    RCLONE.killRclone();
+
+                    // Clear existing games and scan the selected directory
+                    await Task.Run(() =>
+                    {
+                        SideloaderRCLONE.games.Clear();
+                        SideloaderRCLONE.ScanLocalGames(dlDir);
+                    });
+
+                    // Refresh game list
+                    _allItemsInitialized = false;
+                    _galleryDataSource = null;
+                    listAppsBtn();
+                    initListView(false);
+
+                    remotesList.Size = System.Drawing.Size.Empty;
+
+                    // Don't reset progressBar here — initListView will do it when truly done
+                    UpdateStatusLabels();
+                }
+                else
+                {
+                    // User chose online mode (possibly with a new config)
+                    // Kill any existing rclone processes so the new config is used cleanly
+                    RCLONE.killRclone();
+
+                    changeTitle("Reconnecting...");
+                    progressBar.IsIndeterminate = true;
+                    progressBar.OperationType = "Loading";
+
+                    // Clear the game list immediately to signal the switch
+                    gamesListView.BeginUpdate();
+                    gamesListView.Items.Clear();
+                    gamesListView.EndUpdate();
+                    if (isGalleryView && _fastGallery != null && !_fastGallery.IsDisposed)
+                    {
+                        _fastGallery.UpdateItems(new List<ListViewItem>());
+                    }
+
+                    // Prevent background timers from repopulating the old list
+                    // and purge every stale data source so nothing can briefly
+                    // rebuild the offline list during the await chain below.
+                    isLoading = true;
+                    loaded = false;
+                    _allItems?.Clear();
+                    _allItemsInitialized = false;
+                    _galleryDataSource = null;
+                    _searchIndex?.Clear();
+                    SideloaderRCLONE.games.Clear();
+
+                    isOffline = false;
+
+                    if (startupDialog.Choice == StartupDialog.StartupChoice.Online)
+                    {
+                        // Load the config that the startup dialog wrote
+                        try
+                        {
+                            string configFilePath = Path.Combine(Environment.CurrentDirectory, "public.json");
+                            if (File.Exists(configFilePath))
+                            {
+                                string configFileData = File.ReadAllText(configFilePath);
+                                PublicConfig config = JsonConvert.DeserializeObject<PublicConfig>(configFileData);
+
+                                if (config != null &&
+                                    !string.IsNullOrWhiteSpace(config.BaseUri) &&
+                                    !string.IsNullOrWhiteSpace(config.Password))
+                                {
+                                    PublicConfigFile = config;
+                                    hasPublicConfig = true;
+                                    DnsHelper.TestPublicConfigDns();
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Log($"Failed to load config: {ex.Message}", LogLevel.ERROR);
+                        }
+
+                        if (!hasPublicConfig)
+                        {
+                            isOffline = true;
+                            progressBar.IsIndeterminate = false;
+                            changeTitle("Config invalid — still in offline mode");
+                            return;
+                        }
+
+                        UsingPublicConfig = true;
+                    }
+                    else
+                    {
+                        // RcloneConfig — no public.json needed
+                        UsingPublicConfig = false;
+                        Logger.Log("Reconnecting with rclone download.config");
+                    }
+
+                    // Ensure dependencies are available
+                    await Task.Run(() =>
+                    {
+                        changeTitle("Downloading Dependencies...");
+                        GetDependencies.downloadFiles();
+                        changeTitle("Initializing RCLONE...");
+                        RCLONE.Init();
+                    });
+
+                    // Re-initialize mirrors and game list
+                    await initMirrors();
+
+                    if (UsingPublicConfig)
+                    {
+                        changeTitle("Updating Metadata...");
+                        await Task.Run(() =>
+                        {
+                            SideloaderRCLONE.UpdateMetadataFromPublic();
+                            SideloaderRCLONE.ProcessMetadataFromPublic();
+                        });
+                    }
+                    else if (remotesList.Items.Count > 0)
+                    {
+                        changeTitle("Grabbing the Games List...");
+                        await Task.Run(() => SideloaderRCLONE.initGames(currentRemote));
+                    }
+
+                    listAppsBtn();
+                    _allItemsInitialized = false;
+                    _galleryDataSource = null;
+                    _suppressDonorsDialog = true;
+                    initListView(false);
+
+                    remotesList.Size = new System.Drawing.Size(121, 21);
+                    changeTitlebarToDevice();
+                    // Don't reset progressBar here — initListView will do it when truly done
+                    UpdateStatusLabels();
+                }
+            }
+        }
+
         private ListViewItem _rightClickedItem;
         private void gamesListView_MouseClick(object sender, MouseEventArgs e)
         {
@@ -6749,6 +7556,7 @@ function onYouTubeIframeAPIReady() {
             _rightClickedItem.Selected = true;
 
             UpdateFavoriteMenuItemText();
+            UpdateOpenFolderMenuItemVisibility();
             favoriteGame.Show(gamesListView, e.Location);
         }
 
@@ -6794,6 +7602,31 @@ function onYouTubeIframeAPIReady() {
             if (_rightClickedItem == null) return;
             string packageName = _rightClickedItem.SubItems[1].Text;
             favoriteButton.Text = settings.FavoritedGames.Contains(packageName) ? "Remove from Favorites" : "★ Add to Favorites";
+        }
+
+        private void UpdateOpenFolderMenuItemVisibility()
+        {
+            if (_rightClickedItem == null || _rightClickedItem.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex)
+            {
+                openFolderButton.Visible = false;
+                return;
+            }
+
+            string releaseName = _rightClickedItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+            string folderPath = Path.Combine(dlDir, releaseName);
+            openFolderButton.Visible = Directory.Exists(folderPath);
+        }
+
+        private void openFolderButton_Click(object sender, EventArgs e)
+        {
+            if (_rightClickedItem == null || _rightClickedItem.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex)
+                return;
+
+            string releaseName = _rightClickedItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+            string folderPath = Path.Combine(dlDir, releaseName);
+            OpenDirectory(folderPath);
         }
 
         private void favoriteSwitcher_Click(object sender, EventArgs e)
@@ -6850,6 +7683,10 @@ function onYouTubeIframeAPIReady() {
             updateAvailableClicked = false;
             upToDate_Clicked = false;
             NeedsDonation_Clicked = false;
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+            }
             UpdateFilterButtonStates();
         }
 
@@ -7448,6 +8285,69 @@ function onYouTubeIframeAPIReady() {
             }
         }
 
+        private void OpenDownloadsFolderIcon_Paint(object sender, PaintEventArgs e)
+        {
+            var pb = (PictureBox)sender;
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            int w = pb.Width;
+            int h = pb.Height;
+            int radius = 5;
+
+            // Read background from btnDownloaded so it stays in sync with filter state
+            Color bgColor = btnDownloaded.Inactive1;
+            Color strokeColor = btnDownloaded.StrokeColor;
+
+            var roundedRect = new RoundedRectangleF(w, h, radius);
+            g.FillRectangle(Brushes.Transparent, pb.ClientRectangle);
+
+            Rectangle rect = new Rectangle(0, 0, w, h);
+            using (var fillBrush = new LinearGradientBrush(rect, bgColor, bgColor, 90f))
+            {
+                g.FillPath(fillBrush, roundedRect.Path);
+            }
+
+            using (var pen = new Pen(strokeColor, 1))
+            {
+                var strokeRect = new RoundedRectangleF(w, h, radius);
+                g.DrawPath(pen, strokeRect.Path);
+            }
+
+            // Draw folder icon: color matches btnDownloaded text, slight upscale on hover
+            var icon = Properties.Resources.FolderIcon;
+            if (icon != null)
+            {
+                int iconSize = _folderIconHovered ? 16 : 14;
+                int iconX = (w - iconSize) / 2;
+                int iconY = (h - iconSize) / 2;
+
+                Color tintColor = btnDownloaded.ForeColor;
+
+                float r = tintColor.R / 255f;
+                float gr = tintColor.G / 255f;
+                float b = tintColor.B / 255f;
+
+                var colorMatrix = new System.Drawing.Imaging.ColorMatrix(new float[][]
+                {
+                    new float[] { 0, 0, 0, 0, 0 },
+                    new float[] { 0, 0, 0, 0, 0 },
+                    new float[] { 0, 0, 0, 0, 0 },
+                    new float[] { 0, 0, 0, 1, 0 },
+                    new float[] { r, gr, b, 0, 1 }
+                });
+
+                using (var attributes = new System.Drawing.Imaging.ImageAttributes())
+                {
+                    attributes.SetColorMatrix(colorMatrix);
+                    g.DrawImage(icon,
+                        new Rectangle(iconX, iconY, iconSize, iconSize),
+                        0, 0, icon.Width, icon.Height,
+                        GraphicsUnit.Pixel, attributes);
+                }
+            }
+        }
+
         private void ListViewUninstallButton_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -7771,33 +8671,368 @@ function onYouTubeIframeAPIReady() {
             return null;
         }
 
-        private void selectDeviceButton_Click(object sender, EventArgs e)
+        private void activeMirrorLabel_Click(object sender, EventArgs e)
         {
-            string selectedDevice = ShowDeviceSelector("Select a device");
-            if (selectedDevice != null)
+            if (remotesList.Items.Count <= 1) return;
+
+            // If menu just closed from this same click, treat as toggle-close
+            if ((DateTime.Now - _mirrorMenuClosedAt).TotalMilliseconds < 300)
+                return;
+
+            mirrorContextMenu.Items.Clear();
+            mirrorContextMenu.Renderer = new CenteredMenuRenderer();
+            mirrorContextMenu.AutoSize = true;
+            mirrorContextMenu.MinimumSize = new Size(activeMirrorLabel.Width, 0);
+            mirrorContextMenu.Closed -= mirrorContextMenu_Closed;
+            mirrorContextMenu.Closed += mirrorContextMenu_Closed;
+
+            string currentMirror = null;
+            if (UsingPublicConfig)
+                currentMirror = "Public";
+            else if (remotesList.SelectedItem != null)
+                currentMirror = remotesList.SelectedItem.ToString();
+
+            int itemCount = 0;
+            foreach (var item in remotesList.Items)
             {
-                ADB.DeviceID = selectedDevice;
-                changeTitlebarToDevice();
-                showAvailableSpace();
-                changeTitle($"Selected device: {selectedDevice}", true);
+                string mirrorName = item.ToString();
+                bool isCurrent = mirrorName == currentMirror;
+                string displayText = isCurrent ? "Mirror: " + mirrorName : "Mirror: " + mirrorName;
+                var menuItem = new ToolStripMenuItem(displayText);
+                menuItem.BackColor = Color.FromArgb(40, 42, 48);
+                menuItem.ForeColor = isCurrent
+                    ? Color.FromArgb(93, 203, 173)
+                    : Color.FromArgb(200, 200, 200);
+                menuItem.Font = isCurrent
+                    ? new Font("Segoe UI", 8F, FontStyle.Bold)
+                    : new Font("Segoe UI", 8F);
+                menuItem.Padding = new Padding(4, 2, 4, 2);
+                menuItem.Tag = mirrorName;
+                menuItem.Click += mirrorMenuItem_Click;
+                mirrorContextMenu.Items.Add(menuItem);
+                itemCount++;
+            }
+
+            // Force items to fill full menu width so the entire row is clickable/hoverable
+            int menuWidth = activeMirrorLabel.Width;
+            foreach (ToolStripItem tsItem in mirrorContextMenu.Items)
+            {
+                tsItem.AutoSize = false;
+                tsItem.Width = menuWidth;
+            }
+
+            mirrorContextMenu.Show(activeMirrorLabel, 0, activeMirrorLabel.Height);
+        }
+
+        private void mirrorContextMenu_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        {
+            _mirrorMenuClosedAt = DateTime.Now;
+        }
+
+        private async void mirrorMenuItem_Click(object sender, EventArgs e)
+        {
+            var menuItem = sender as ToolStripMenuItem;
+            if (menuItem?.Tag == null) return;
+            if (isLoading) return;
+
+            string selected = menuItem.Tag.ToString();
+
+            // Find the target index
+            int targetIndex = -1;
+            for (int i = 0; i < remotesList.Items.Count; i++)
+            {
+                if (remotesList.Items[i].ToString() == selected)
+                {
+                    targetIndex = i;
+                    break;
+                }
+            }
+            if (targetIndex < 0) return;
+
+            // Save previous working state for revert on failure
+            int prevIndex = remotesList.SelectedIndex;
+            string prevRemote = currentRemote;
+            bool prevUsingPublic = UsingPublicConfig;
+
+            // Reset mirror cycling state since user explicitly chose a mirror
+            quotaTries = 0;
+            reset = false;
+            steps = 0;
+
+            // Set manual switch flag to prevent RCLONE cascade
+            _isManualMirrorSwitch = true;
+
+            // Suppress SelectedIndexChanged — we handle the refresh ourselves
+            _suppressMirrorRefresh = true;
+            try
+            {
+                remotesList.SelectedIndex = targetIndex;
+            }
+            finally
+            {
+                _suppressMirrorRefresh = false;
+            }
+
+            // Set mirror state directly
+            if (selected == "Public")
+            {
+                UsingPublicConfig = true;
+            }
+            else
+            {
+                UsingPublicConfig = false;
+                currentRemote = selected;
+            }
+
+            settings.selectedMirror = selected;
+            settings.Save();
+            UpdateStatusLabels();
+
+            // Cache current game list so revert is instant (no re-download)
+            var cachedGames = new List<string[]>(SideloaderRCLONE.games);
+
+            // Try refreshing with the new mirror
+            try
+            {
+                if (UsingPublicConfig)
+                {
+                    changeTitle("Updating Metadata...");
+                    await Task.Run(() =>
+                    {
+                        SideloaderRCLONE.UpdateMetadataFromPublic();
+                        SideloaderRCLONE.ProcessMetadataFromPublic();
+                    });
+                }
+
+                await refreshCurrentMirror("Refreshing App List...");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Mirror switch error: {ex.Message}", LogLevel.ERROR);
+            }
+
+            bool success = SideloaderRCLONE.games.Count > 5;
+
+            _isManualMirrorSwitch = false;
+
+            if (!success)
+            {
+                // Revert to previous working mirror
+                _suppressMirrorRefresh = true;
+                try
+                {
+                    remotesList.SelectedIndex = prevIndex;
+                }
+                finally
+                {
+                    _suppressMirrorRefresh = false;
+                }
+
+                currentRemote = prevRemote;
+                UsingPublicConfig = prevUsingPublic;
+                isOffline = false;
+
+                settings.selectedMirror = remotesList.SelectedItem?.ToString() ?? "Public";
+                settings.Save();
+
+                // Restore cached game list — no network call needed
+                SideloaderRCLONE.games.Clear();
+                SideloaderRCLONE.games.AddRange(cachedGames);
+
+                // Rebuild UI from cached data
+                changeTitle("Restoring previous mirror...");
+                await RefreshGameListAsync();
+                changeTitle("");
+                UpdateStatusLabels();
+
+                FlexibleMessageBox.Show(this,
+                    $"Mirror \"{selected}\" is not reachable.\nReverted to the previous working mirror.",
+                    "Mirror Unavailable",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            else
+            {
+                UpdateStatusLabels();
             }
         }
 
-        private void selectMirrorButton_Click(object sender, EventArgs e)
+        private void activeMirrorLabel_Paint(object sender, PaintEventArgs e)
         {
-            string selectedMirror = ShowMirrorSelector("Select a mirror");
-            if (selectedMirror != null)
+            var lbl = (Label)sender;
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+
+            // Clear entire label with parent background so corners blend in
+            g.Clear(lbl.Parent != null ? lbl.Parent.BackColor : Color.FromArgb(20, 24, 29));
+
+            var rect = new Rectangle(0, 0, lbl.Width - 1, lbl.Height - 1);
+            using (var brush = new SolidBrush(_mirrorPillColor))
+                g.FillRectangle(brush, rect);
+            using (var pen = new Pen(Color.FromArgb(50, 55, 65)))
+                g.DrawRectangle(pen, rect);
+
+            // Draw text
+            TextRenderer.DrawText(g, lbl.Text, lbl.Font, new Rectangle(lbl.Padding.Left, 0, lbl.Width - lbl.Padding.Horizontal, lbl.Height), lbl.ForeColor, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+
+            // Always draw dropdown arrow on the right
+            int arrowSize = 4;
+            int arrowX = lbl.Width - 14;
+            int arrowY = (lbl.Height - arrowSize) / 2;
+            var arrowPoints = new Point[]
             {
-                // Find and select the mirror in the hidden remotesList
-                for (int i = 0; i < remotesList.Items.Count; i++)
+                new Point(arrowX, arrowY),
+                new Point(arrowX + arrowSize * 2, arrowY),
+                new Point(arrowX + arrowSize, arrowY + arrowSize)
+            };
+            using (var brush = new SolidBrush(lbl.ForeColor))
+                g.FillPolygon(brush, arrowPoints);
+        }
+
+        private void activeMirrorLabel_MouseEnter(object sender, EventArgs e)
+        {
+            _mirrorPillColor = Color.FromArgb(42, 47, 58);
+            activeMirrorLabel.ForeColor = Color.FromArgb(130, 225, 200);
+            activeMirrorLabel.Invalidate();
+        }
+
+        private void activeMirrorLabel_MouseLeave(object sender, EventArgs e)
+        {
+            _mirrorPillColor = Color.FromArgb(32, 36, 44);
+            activeMirrorLabel.ForeColor = Color.FromArgb(93, 203, 173);
+            activeMirrorLabel.Invalidate();
+        }
+
+        private void deviceIdLabel_Click(object sender, EventArgs e)
+        {
+            // Refresh the list of devices
+            string output = ADB.RunAdbCommandToString("devices").Output;
+            string[] lines = output.Split('\n');
+
+            var deviceList = new List<string>();
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                if (line.Length > 0 && !string.IsNullOrWhiteSpace(line))
                 {
-                    if (remotesList.Items[i].ToString() == selectedMirror)
-                    {
-                        remotesList.SelectedIndex = i;
-                        break;
-                    }
+                    string deviceId = line.Split('\t')[0];
+                    if (!string.IsNullOrEmpty(deviceId))
+                        deviceList.Add(deviceId);
                 }
             }
+
+            if (deviceList.Count == 0)
+            {
+                FlexibleMessageBox.Show(Program.form, "No devices found. Please connect a device and try again.");
+                return;
+            }
+
+            if ((DateTime.Now - _deviceMenuClosedAt).TotalMilliseconds < 300)
+                return;
+
+            deviceContextMenu.Items.Clear();
+            deviceContextMenu.Renderer = new CenteredMenuRenderer();
+            deviceContextMenu.AutoSize = true;
+            deviceContextMenu.MinimumSize = new Size(deviceIdLabel.Width, 0);
+            deviceContextMenu.Closed -= deviceContextMenu_Closed;
+            deviceContextMenu.Closed += deviceContextMenu_Closed;
+
+            string currentDevice = ADB.DeviceID;
+
+            foreach (var device in deviceList)
+            {
+                bool isCurrent = device == currentDevice;
+                string displayText = "Device: " + device;
+                var menuItem = new ToolStripMenuItem(displayText);
+                menuItem.BackColor = Color.FromArgb(40, 42, 48);
+                menuItem.ForeColor = isCurrent
+                    ? Color.FromArgb(93, 203, 173)
+                    : Color.FromArgb(200, 200, 200);
+                menuItem.Font = isCurrent
+                    ? new Font("Segoe UI", 8F, FontStyle.Bold)
+                    : new Font("Segoe UI", 8F);
+                menuItem.Padding = new Padding(4, 2, 4, 2);
+                menuItem.Tag = device;
+                menuItem.Click += deviceMenuItem_Click;
+                deviceContextMenu.Items.Add(menuItem);
+            }
+
+            int menuWidth = deviceIdLabel.Width;
+            foreach (ToolStripItem tsItem in deviceContextMenu.Items)
+            {
+                tsItem.AutoSize = false;
+                tsItem.Width = menuWidth;
+            }
+
+            deviceContextMenu.Show(deviceIdLabel, 0, deviceIdLabel.Height);
+        }
+
+        private void deviceContextMenu_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        {
+            _deviceMenuClosedAt = DateTime.Now;
+        }
+
+        private void deviceMenuItem_Click(object sender, EventArgs e)
+        {
+            var menuItem = sender as ToolStripMenuItem;
+            if (menuItem?.Tag == null) return;
+
+            string selectedDevice = menuItem.Tag.ToString();
+            ADB.DeviceID = selectedDevice;
+
+            devicesComboBox.Items.Clear();
+            devicesComboBox.Items.Add(selectedDevice);
+            devicesComboBox.SelectedIndex = 0;
+
+            changeTitlebarToDevice();
+            showAvailableSpace();
+            changeTitle($"Selected device: {selectedDevice}", true);
+            UpdateStatusLabels();
+        }
+
+        private void deviceIdLabel_Paint(object sender, PaintEventArgs e)
+        {
+            var lbl = (Label)sender;
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+
+            g.Clear(lbl.Parent != null ? lbl.Parent.BackColor : Color.FromArgb(20, 24, 29));
+
+            var rect = new Rectangle(0, 0, lbl.Width - 1, lbl.Height - 1);
+            using (var brush = new SolidBrush(_devicePillColor))
+                g.FillRectangle(brush, rect);
+            using (var pen = new Pen(Color.FromArgb(50, 55, 65)))
+                g.DrawRectangle(pen, rect);
+
+            TextRenderer.DrawText(g, lbl.Text, lbl.Font, new Rectangle(lbl.Padding.Left, 0, lbl.Width - lbl.Padding.Horizontal, lbl.Height), lbl.ForeColor, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+
+            int arrowSize = 4;
+            int arrowX = lbl.Width - 14;
+            int arrowY = (lbl.Height - arrowSize) / 2;
+            var arrowPoints = new Point[]
+            {
+                new Point(arrowX, arrowY),
+                new Point(arrowX + arrowSize * 2, arrowY),
+                new Point(arrowX + arrowSize, arrowY + arrowSize)
+            };
+            using (var brush = new SolidBrush(lbl.ForeColor))
+                g.FillPolygon(brush, arrowPoints);
+        }
+
+        private void deviceIdLabel_MouseEnter(object sender, EventArgs e)
+        {
+            _devicePillColor = Color.FromArgb(42, 47, 58);
+            deviceIdLabel.ForeColor = Color.FromArgb(130, 225, 200);
+            deviceIdLabel.Invalidate();
+        }
+
+        private void deviceIdLabel_MouseLeave(object sender, EventArgs e)
+        {
+            _devicePillColor = Color.FromArgb(32, 36, 44);
+            deviceIdLabel.ForeColor = Color.FromArgb(93, 203, 173);
+            deviceIdLabel.Invalidate();
         }
 
         private string ShowMirrorSelector(string promptText = "Select a mirror")
@@ -8032,10 +9267,91 @@ function onYouTubeIframeAPIReady() {
                 btnNewerThanList.Inactive2 = inactiveBg;
             }
 
+            // btnLocalLibrary state
+            if (downloadedFilter_Clicked)
+            {
+                btnDownloaded.StrokeColor = ColorDownloaded;
+                btnDownloaded.Inactive1 = activeBg;
+                btnDownloaded.Inactive2 = activeBg;
+            }
+            else
+            {
+                btnDownloaded.StrokeColor = inactiveStroke;
+                btnDownloaded.Inactive1 = inactiveBg;
+                btnDownloaded.Inactive2 = inactiveBg;
+            }
+
             // Force repaint
             btnInstalled.Invalidate();
             btnUpdateAvailable.Invalidate();
             btnNewerThanList.Invalidate();
+            btnDownloaded.Invalidate();
+            openDownloadsFolderIcon.Invalidate();
+
+            // Refresh UI
+            UpdateStatusLabels();
+        }
+
+        public void RefreshDownloadedState()
+        {
+            if (_allItems == null || _allItems.Count == 0)
+                return;
+
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+            int downloadedCount = 0;
+
+            if (Directory.Exists(dlDir))
+            {
+                var localDirNames = new HashSet<string>(
+                    Directory.GetDirectories(dlDir).Select(d => Path.GetFileName(d)),
+                    StringComparer.OrdinalIgnoreCase);
+
+                foreach (var item in _allItems)
+                {
+                    if (item.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex) continue;
+                    string releaseName = item.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+                    if (!localDirNames.Contains(releaseName)) continue;
+                    string folderPath = Path.Combine(dlDir, releaseName);
+                    try
+                    {
+                        if (Directory.GetFiles(folderPath, "*.apk").Length > 0)
+                            downloadedCount++;
+                    }
+                    catch { }
+                }
+            }
+
+            btnDownloaded.Text = $"{downloadedCount} DOWNLOADED";
+
+            // If the downloaded filter is currently active, re-apply it
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+                btnDownloaded_Click(this, EventArgs.Empty);
+            }
+        }
+
+        public async void RescanLocalLibrary()
+        {
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+
+            changeTitle("Scanning local library...");
+            progressBar.IsIndeterminate = true;
+            progressBar.OperationType = "Scanning";
+
+            await Task.Run(() =>
+            {
+                SideloaderRCLONE.games.Clear();
+                SideloaderRCLONE.ScanLocalGames(dlDir);
+            });
+
+            _allItemsInitialized = false;
+            _galleryDataSource = null;
+            initListView(false);
+
+            progressBar.IsIndeterminate = false;
+            changeTitle("Local library mode active", true);
+            UpdateStatusLabels();
         }
 
         private void UnfocusSearchTextBox(object sender, EventArgs e)
@@ -8083,10 +9399,9 @@ function onYouTubeIframeAPIReady() {
 
             protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
             {
-                // Use the full item bounds for centered text
-                var textRect = new Rectangle(0, 0, e.Item.Width, e.Item.Height);
+                var textRect = new Rectangle(8, 0, e.Item.Width - 16, e.Item.Height);
                 TextRenderer.DrawText(e.Graphics, e.Text, e.TextFont, textRect, e.TextColor,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
             }
 
             protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
@@ -8571,6 +9886,7 @@ function onYouTubeIframeAPIReady() {
             bool wasUpdateAvailableClicked = updateAvailableClicked;
             bool wasUpToDateClicked = upToDate_Clicked;
             bool wasNeedsDonationClicked = NeedsDonation_Clicked;
+            bool wasDownloadedClicked = downloadedFilter_Clicked;
             bool wasFavoritesView = favoriteSwitcher.Text == "ALL";
 
             // Save the currently selected package name to restore after refresh
@@ -8637,6 +9953,16 @@ function onYouTubeIframeAPIReady() {
             {
                 NeedsDonation_Clicked = true;
                 FilterListByColor(ColorDonateGame);
+            }
+            else if (wasDownloadedClicked)
+            {
+                downloadedFilter_Clicked = false;
+                if (isGalleryView)
+                {
+                    gamesListView.Visible = false;
+                    gamesGalleryView.Visible = true;
+                }
+                btnDownloaded_Click(null, EventArgs.Empty);
             }
             else if (isGalleryView)
             {
@@ -8737,14 +10063,16 @@ function onYouTubeIframeAPIReady() {
             // Active Mirror
             string mirrorName = "None";
             if (UsingPublicConfig)
-            {
                 mirrorName = "Public";
-            }
             else if (remotesList.SelectedItem != null)
-            {
                 mirrorName = remotesList.SelectedItem.ToString();
-            }
             activeMirrorLabel.Text = $"Mirror: {mirrorName}";
+
+            activeMirrorLabel.Cursor = Cursors.Hand;
+            activeMirrorLabel.Invalidate();
+
+            deviceIdLabel.Cursor = Cursors.Hand;
+            deviceIdLabel.Invalidate();
 
             UpdateSideloadingUI();
         }
@@ -8766,19 +10094,19 @@ function onYouTubeIframeAPIReady() {
             {
                 sideloadingStatusLabel.Text = "Sideloading: Disabled";
                 sideloadingStatusLabel.ForeColor = Color.FromArgb(255, 100, 100); // Red-ish for disabled
-                downloadInstallGameButton.Text = "DOWNLOAD";
+                downloadInstallGameButton.Text = downloadedFilter_Clicked || isOffline ? "INSTALL" : "DOWNLOAD";
             }
             else if (isNoDeviceDialogShown || (!DeviceConnected && !isLoading))
             {
                 sideloadingStatusLabel.Text = "Sideloading: No Device Connected";
                 sideloadingStatusLabel.ForeColor = Color.FromArgb(240, 150, 50); // Orange for no device
-                downloadInstallGameButton.Text = "DOWNLOAD";
+                downloadInstallGameButton.Text = downloadedFilter_Clicked || isOffline ? "INSTALL" : "DOWNLOAD";
             }
             else
             {
                 sideloadingStatusLabel.Text = "Sideloading: Enabled";
                 sideloadingStatusLabel.ForeColor = Color.FromArgb(93, 203, 173); // Accent green for enabled
-                downloadInstallGameButton.Text = "DOWNLOAD AND INSTALL";
+                downloadInstallGameButton.Text = downloadedFilter_Clicked || isOffline ? "INSTALL" : "DOWNLOAD AND INSTALL";
             }
         }
 

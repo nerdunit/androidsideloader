@@ -14,53 +14,6 @@ namespace AndroidSideloader
 {
     internal class GetDependencies
     {
-        public static void updatePublicConfig()
-        {
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls
-                                                 | SecurityProtocolType.Tls11
-                                                 | SecurityProtocolType.Tls12
-                                                 | SecurityProtocolType.Ssl3;
-
-            _ = Logger.Log("Attempting to update public config from main.");
-
-            string configUrl = "https://raw.githubusercontent.com/vrpyou/quest/main/vrp-public.json";
-            string fallbackUrl = "https://vrpirates.wiki/downloads/vrp-public.json";
-
-            try
-            {
-                string resultString;
-
-                // Try fetching raw JSON data from the provided link
-                HttpWebRequest getUrl = DnsHelper.CreateWebRequest(configUrl);
-                using (StreamReader responseReader = new StreamReader(getUrl.GetResponse().GetResponseStream()))
-                {
-                    resultString = responseReader.ReadToEnd();
-                    _ = Logger.Log($"Retrieved updated config from main: {configUrl}.");
-                    File.WriteAllText(Path.Combine(Environment.CurrentDirectory, "vrp-public.json"), resultString);
-                    _ = Logger.Log("Public config updated successfully from main.");
-                }
-            }
-            catch (Exception mainException)
-            {
-                _ = Logger.Log($"Failed to update public config from main: {mainException.Message}, trying fallback.", LogLevel.ERROR);
-                try
-                {
-                    HttpWebRequest getUrl = DnsHelper.CreateWebRequest(fallbackUrl);
-                    using (StreamReader responseReader = new StreamReader(getUrl.GetResponse().GetResponseStream()))
-                    {
-                        string resultString = responseReader.ReadToEnd();
-                        _ = Logger.Log($"Retrieved updated config from fallback: {fallbackUrl}.");
-                        File.WriteAllText(Path.Combine(Environment.CurrentDirectory, "vrp-public.json"), resultString);
-                        _ = Logger.Log("Public config updated successfully from fallback.");
-                    }
-                }
-                catch (Exception fallbackException)
-                {
-                    _ = Logger.Log($"Failed to update public config from fallback: {fallbackException.Message}.", LogLevel.ERROR);
-                }
-            }
-        }
-
         // Download required dependencies
         public static void downloadFiles()
         {
@@ -77,7 +30,7 @@ namespace AndroidSideloader
                 {
                     currentAccessedWebsite = "github";
                     _ = Logger.Log($"Missing 'Sideloader Launcher.exe'. Attempting to download from {currentAccessedWebsite}");
-                    DownloadFileWithDnsFallback(client, "https://github.com/VRPirates/rookie/raw/master/Sideloader%20Launcher.exe", "Sideloader Launcher.exe");
+                    DownloadFileWithDnsFallback(client, $"https://github.com/{MainForm.repo}/raw/{MainForm.repo_branch}/Sideloader%20Launcher.exe", "Sideloader Launcher.exe");
                     _ = Logger.Log($"'Sideloader Launcher.exe' download successful");
                 }
 
@@ -85,7 +38,7 @@ namespace AndroidSideloader
                 {
                     currentAccessedWebsite = "github";
                     _ = Logger.Log($"Missing 'Rookie Offline.cmd'. Attempting to download from {currentAccessedWebsite}");
-                    DownloadFileWithDnsFallback(client, "https://github.com/VRPirates/rookie/raw/master/Rookie%20Offline.cmd", "Rookie Offline.cmd");
+                    DownloadFileWithDnsFallback(client, $"https://github.com/{MainForm.repo}/raw/{MainForm.repo_branch}/Rookie%20Offline.cmd", "Rookie Offline.cmd");
                     _ = Logger.Log($"'Rookie Offline.cmd' download successful");
                 }
 
@@ -93,7 +46,7 @@ namespace AndroidSideloader
                 {
                     currentAccessedWebsite = "github";
                     _ = Logger.Log($"Missing 'CleanupInstall.cmd'. Attempting to download from {currentAccessedWebsite}");
-                    DownloadFileWithDnsFallback(client, "https://github.com/VRPirates/rookie/raw/master/CleanupInstall.cmd", "CleanupInstall.cmd");
+                    DownloadFileWithDnsFallback(client, $"https://github.com/{MainForm.repo}/raw/{MainForm.repo_branch}/CleanupInstall.cmd", "CleanupInstall.cmd");
                     _ = Logger.Log($"'CleanupInstall.cmd' download successful");
                 }
 
@@ -101,7 +54,7 @@ namespace AndroidSideloader
                 {
                     currentAccessedWebsite = "github";
                     _ = Logger.Log($"Missing 'AddDefenderExceptions.ps1'. Attempting to download from {currentAccessedWebsite}");
-                    DownloadFileWithDnsFallback(client, "https://github.com/VRPirates/rookie/raw/master/AddDefenderExceptions.ps1", "AddDefenderExceptions.ps1");
+                    DownloadFileWithDnsFallback(client, $"https://github.com/{MainForm.repo}/raw/{MainForm.repo_branch}/AddDefenderExceptions.ps1", "AddDefenderExceptions.ps1");
                     _ = Logger.Log($"'AddDefenderExceptions.ps1' download successful");
                 }
             }
@@ -124,7 +77,7 @@ namespace AndroidSideloader
 
                     currentAccessedWebsite = "github";
                     _ = Logger.Log($"Missing adb within {platformToolsDir}. Attempting to download from {currentAccessedWebsite}");
-                    DownloadFileWithDnsFallback(client, "https://github.com/VRPirates/rookie/raw/master/dependencies.7z", "dependencies.7z");
+                    DownloadFileWithDnsFallback(client, $"https://github.com/{MainForm.repo}/raw/{MainForm.repo_branch}/dependencies.7z", "dependencies.7z");
                     Utilities.Zip.ExtractFile(Path.Combine(Environment.CurrentDirectory, "dependencies.7z"), platformToolsDir);
                     File.Delete("dependencies.7z");
                     _ = Logger.Log($"adb download successful");
@@ -204,22 +157,57 @@ namespace AndroidSideloader
 
             if (!runtimeExists)
             {
+                string archivePath = Path.Combine(Environment.CurrentDirectory, "runtimes.7z");
+                string tempArchivePath = archivePath + ".tmp";
+
                 try
                 {
                     _ = Logger.Log("Missing WebView2 runtime. Attempting to download...");
-                    string archivePath = Path.Combine(Environment.CurrentDirectory, "runtimes.7z");
 
-                    DownloadFileWithDnsFallback("https://vrpirates.wiki/downloads/runtimes.7z", archivePath);
+                    // Clean up any leftover archives from a previous failed attempt
+                    try { if (File.Exists(archivePath)) File.Delete(archivePath); } catch { }
+                    try { if (File.Exists(tempArchivePath)) File.Delete(tempArchivePath); } catch { }
+
+                    // Download to a temp file first so a failed download never leaves
+                    // a corrupt archive at the final path
+                    DownloadFileWithDnsFallback(
+                        $"https://github.com/{MainForm.repo}/raw/{MainForm.repo_branch}/runtimes.7z",
+                        tempArchivePath);
+
+                    // Verify the download produced a valid file (runtimes.7z is ~1 MB+)
+                    if (!File.Exists(tempArchivePath) || new FileInfo(tempArchivePath).Length < 1024)
+                    {
+                        _ = Logger.Log("Downloaded runtimes.7z is missing or too small — aborting extraction", LogLevel.ERROR);
+                        try { if (File.Exists(tempArchivePath)) File.Delete(tempArchivePath); } catch { }
+                        return;
+                    }
+
+                    // Rename to final path only after successful download
+                    File.Move(tempArchivePath, archivePath);
 
                     _ = Logger.Log("Extracting WebView2 runtime...");
                     Utilities.Zip.ExtractFile(archivePath, Environment.CurrentDirectory);
-                    File.Delete(archivePath);
-                    _ = Logger.Log("WebView2 runtime download successful");
+
+                    // Verify extraction actually produced the expected DLLs
+                    bool extractionOk = File.Exists(webView2LoaderX86) && File.Exists(webView2LoaderX64) && File.Exists(webView2LoaderArm64);
+                    if (extractionOk)
+                    {
+                        _ = Logger.Log("WebView2 runtime download successful");
+                    }
+                    else
+                    {
+                        _ = Logger.Log("Extraction completed but WebView2Loader.dll not found — archive may be corrupt", LogLevel.ERROR);
+                    }
                 }
                 catch (Exception ex)
                 {
                     _ = Logger.Log($"Failed to download WebView2 runtime: {ex.Message}", LogLevel.ERROR);
-                    // Don't show message box here - let CreateEnvironment handle the UI feedback
+                }
+                finally
+                {
+                    // Always clean up archive files so a corrupt download is never left behind
+                    try { if (File.Exists(archivePath)) File.Delete(archivePath); } catch { }
+                    try { if (File.Exists(tempArchivePath)) File.Delete(tempArchivePath); } catch { }
                 }
             }
         }
@@ -268,14 +256,14 @@ namespace AndroidSideloader
 
                 if (updateRclone == true)
                 {
-                    // Preserve vrp.download.config if it exists
-                    string configPath = Path.Combine(dirRclone, "vrp.download.config");
-                    string tempConfigPath = Path.Combine(Environment.CurrentDirectory, "vrp.download.config.bak");
+                    // Preserve download.config if it exists
+                    string configPath = Path.Combine(dirRclone, "download.config");
+                    string tempConfigPath = Path.Combine(Environment.CurrentDirectory, "download.config.bak");
                     bool hasConfig = false;
 
                     if (File.Exists(configPath))
                     {
-                        _ = Logger.Log("Preserving vrp.download.config before update");
+                        _ = Logger.Log("Preserving download.config before update");
                         File.Copy(configPath, tempConfigPath, true);
                         hasConfig = true;
                     }
@@ -285,7 +273,7 @@ namespace AndroidSideloader
                     if (useFallback == true)
                     {
                         _ = Logger.Log($"Using git fallback for rclone download");
-                        url = $"https://raw.githubusercontent.com/VRPirates/rookie/master/dep/rclone-v{wantedRcloneVersion}-windows-{architecture}.zip";
+                        url = $"https://raw.githubusercontent.com/{MainForm.repo}/{MainForm.repo_branch}/dep/rclone-v{wantedRcloneVersion}-windows-{architecture}.zip";
                     }
                     _ = Logger.Log($"Downloading rclone from {url}");
 
@@ -311,10 +299,10 @@ namespace AndroidSideloader
                     }
                     FileSystemUtilities.TryDeleteDirectory(dirExtractedRclone);
 
-                    // Restore vrp.download.config if it was backed up
+                    // Restore download.config if it was backed up
                     if (hasConfig && File.Exists(tempConfigPath))
                     {
-                        _ = Logger.Log("Restoring vrp.download.config after update");
+                        _ = Logger.Log("Restoring download.config after update");
                         File.Move(tempConfigPath, configPath);
                     }
 

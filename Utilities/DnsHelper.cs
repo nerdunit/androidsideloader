@@ -21,7 +21,6 @@ namespace AndroidSideloader.Utilities
         {
             "raw.githubusercontent.com",
             "downloads.rclone.org",
-            "vrpirates.wiki",
             "github.com"
         };
 
@@ -42,7 +41,7 @@ namespace AndroidSideloader.Utilities
         // Gets the proxy URL for rclone to use, or empty string if not needed
         public static string ProxyUrl => _proxyRunning ? $"http://127.0.0.1:{_proxyPort}" : string.Empty;
 
-        // Called after vrp-public.json is created/updated to test the hostname
+        // Called after public.json is created/updated to test the hostname
         // Enable fallback DNS if the hostname fails on system DNS but works with fallback DNS
         public static void TestPublicConfigDns()
         {
@@ -105,7 +104,7 @@ namespace AndroidSideloader.Utilities
         {
             try
             {
-                string configPath = Path.Combine(Environment.CurrentDirectory, "vrp-public.json");
+                string configPath = Path.Combine(Environment.CurrentDirectory, "public.json");
                 if (!File.Exists(configPath))
                     return null;
 
@@ -117,7 +116,7 @@ namespace AndroidSideloader.Utilities
             }
             catch (Exception ex)
             {
-                Logger.Log($"Failed to get hostname from vrp-public.json: {ex.Message}", LogLevel.WARNING);
+                Logger.Log($"Failed to get hostname from public.json: {ex.Message}", LogLevel.WARNING);
             }
             return null;
         }
@@ -130,7 +129,7 @@ namespace AndroidSideloader.Utilities
             if (!string.IsNullOrWhiteSpace(host) && !hostnames.Contains(host))
             {
                 hostnames.Add(host);
-                Logger.Log($"Added {host} from vrp-public.json to critical hostnames");
+                Logger.Log($"Added {host} from public.json to critical hostnames");
             }
 
             return hostnames.ToArray();

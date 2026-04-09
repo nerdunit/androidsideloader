@@ -51,10 +51,9 @@ namespace AndroidSideloader
         }
 
         // Change if you want to use a config
-        public static string downloadConfigPath = "vrp.download.config";
-        public static string uploadConfigPath = "vrp.upload.config";
+        public static string downloadConfigPath = "download.config";
+        public static string uploadConfigPath = "upload.config";
         public static string rclonepw = "";
-
 
         private static readonly Process rclone = new Process();
 
@@ -78,6 +77,12 @@ namespace AndroidSideloader
             }
 
             command += $" --inplace";
+
+            // Shorter timeouts for manual mirror switch probing
+            if (MainForm._isManualMirrorSwitch)
+            {
+                command += " --contimeout 5s --timeout 10s --retries 0 --low-level-retries 1";
+            }
 
             // set rclonepw
             if (rclonepw.Length > 0)
@@ -137,19 +142,29 @@ namespace AndroidSideloader
             // Switch mirror upon matching error output.
             if (error.Contains("400 Bad Request") || error.Contains("cannot fetch token") || error.Contains("authError") || error.Contains("quota") || error.Contains("exceeded") || error.Contains("directory not found") || error.Contains("Failed to"))
             {
-                string oldRemote = MainForm.currentRemote;
-                bool retSM = false;
-                try
+                if (MainForm._isManualMirrorSwitch)
                 {
-                    retSM = Program.form.SwitchMirrors();
+                    // User-initiated mirror switch — don't cascade through mirrors,
+                    // just return the error so the caller can revert gracefully.
+                    prcoutput.Output = output;
+                    prcoutput.Error = error;
                 }
-                catch
+                else
                 {
-                    return new ProcessOutput("All mirrors are on quota or down...", "All mirrors are on quota or down...");
-                }
-                if (retSM)
-                {
-                    prcoutput = runRcloneCommand_DownloadConfig(originalCommand.Replace(oldRemote, MainForm.currentRemote));
+                    string oldRemote = MainForm.currentRemote;
+                    bool retSM = false;
+                    try
+                    {
+                        retSM = Program.form.SwitchMirrors();
+                    }
+                    catch
+                    {
+                        return new ProcessOutput("All mirrors are on quota or down...", "All mirrors are on quota or down...");
+                    }
+                    if (retSM)
+                    {
+                        prcoutput = runRcloneCommand_DownloadConfig(originalCommand.Replace(oldRemote, MainForm.currentRemote));
+                    }
                 }
             }
             else

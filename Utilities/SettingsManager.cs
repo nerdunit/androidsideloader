@@ -84,7 +84,6 @@ namespace AndroidSideloader.Utilities
         public bool EnableMessageBoxes { get; set; } = true;
         public bool FirstRun { get; set; } = true;
         public bool DeleteAllAfterInstall { get; set; } = true;
-        public bool AutoUpdateConfig { get; set; } = true;
         public bool UserJsonOnGameInstall { get; set; } = false;
         public bool CallUpgrade { get; set; } = true;
         public string BackPicturePath { get; set; } = string.Empty;
@@ -138,6 +137,8 @@ namespace AndroidSideloader.Utilities
         public string selectedMirror { get; set; } = string.Empty;
         public bool TrailersEnabled { get; set; } = true;
         public bool UseGalleryView { get; set; } = true;
+        public int GalleryTileSize { get; set; } = 100;
+        public string ConfigUrl { get; set; } = string.Empty;
 
         // Window state persistence
         public int WindowX { get; set; } = -1;
@@ -224,7 +225,6 @@ namespace AndroidSideloader.Utilities
             EnableMessageBoxes = true;
             FirstRun = true;
             DeleteAllAfterInstall = true;
-            AutoUpdateConfig = true;
             UserJsonOnGameInstall = false;
             CallUpgrade = true;
             BackPicturePath = string.Empty;
@@ -278,6 +278,8 @@ namespace AndroidSideloader.Utilities
             selectedMirror = string.Empty;
             TrailersEnabled = true;
             UseGalleryView = true;
+            GalleryTileSize = 100;
+            ConfigUrl = string.Empty;
             WindowX = -1;
             WindowY = -1;
             WindowWidth = -1;

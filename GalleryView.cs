@@ -17,9 +17,11 @@ public class FastGalleryPanel : Control
     // Data
     private List<ListViewItem> _items;
     private List<ListViewItem> _originalItems; // Keep original for re-sorting
-    private readonly int _tileWidth;
-    private readonly int _tileHeight;
+    private int _tileWidth;
+    private int _tileHeight;
     private readonly int _spacing;
+    private readonly int _baseTileWidth;
+    private readonly int _baseTileHeight;
 
     // Grouping
     private Dictionary<string, List<ListViewItem>> _groupedByPackage;
@@ -50,7 +52,12 @@ public class FastGalleryPanel : Control
     private readonly Panel _sortPanel;
     private readonly List<Button> _sortButtons;
     private Label _sortStatusLabel;
+    private ModernSlider _sizeSlider;
+    private Label _sizeLabel;
     private const int SORT_PANEL_HEIGHT = 36;
+    private const int SLIDER_MIN = 100;
+    private const int SLIDER_MAX = 150;
+    private const int SLIDER_DEFAULT = 100;
 
     // Layout
     private int _columns;
@@ -114,7 +121,6 @@ public class FastGalleryPanel : Control
     private static readonly Color SortButtonHoverBg = Color.FromArgb(55, 58, 65);
     private static readonly Color OverlayBgColor = Color.FromArgb(250, 28, 30, 36);
     private static readonly Color VersionRowHoverBg = Color.FromArgb(255, 45, 48, 56);
-    private static readonly Color VersionBadgeColor = Color.FromArgb(200, 93, 203, 173);
 
     public event EventHandler<int> TileClicked;
     public event EventHandler<int> TileDoubleClicked;
@@ -159,6 +165,177 @@ public class FastGalleryPanel : Control
         public float TargetGroupBadgeOpacity = 0f;
     }
 
+    private class ModernSlider : Control
+    {
+        private int _minimum = 100;
+        private int _maximum = 150;
+        private int _value = 100;
+        private bool _dragging;
+        private bool _hovering;
+        private float _hoverOpacity;
+        private readonly System.Windows.Forms.Timer _fadeTimer;
+
+        private static readonly Color TrackBg = Color.FromArgb(50, 52, 58);
+        private static readonly Color TrackFill = Color.FromArgb(93, 203, 173);
+        private static readonly Color ThumbColor = Color.FromArgb(93, 203, 173);
+        private static readonly Color ThumbHoverColor = Color.FromArgb(130, 220, 195);
+        private static readonly Color ThumbBorderColor = Color.FromArgb(255, 255, 255);
+
+        private const int TRACK_HEIGHT = 4;
+        private const int THUMB_RADIUS = 5;
+        private const int THUMB_HOVER_RADIUS = 7;
+
+        public event EventHandler ValueChanged;
+
+        public int Minimum { get { return _minimum; } set { _minimum = value; Invalidate(); } }
+        public int Maximum { get { return _maximum; } set { _maximum = value; Invalidate(); } }
+        public int Value
+        {
+            get { return _value; }
+            set
+            {
+                int clamped = Math.Max(_minimum, Math.Min(_maximum, value));
+                if (clamped != _value) { _value = clamped; ValueChanged?.Invoke(this, EventArgs.Empty); Invalidate(); }
+            }
+        }
+
+        public ModernSlider()
+        {
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint |
+                     ControlStyles.OptimizedDoubleBuffer | ControlStyles.SupportsTransparentBackColor, true);
+            BackColor = Color.Transparent;
+            Height = 26;
+            Width = 100;
+            Cursor = Cursors.Hand;
+
+            _fadeTimer = new System.Windows.Forms.Timer { Interval = 16 };
+            _fadeTimer.Tick += (s, e) =>
+            {
+                float target = (_hovering || _dragging) ? 1.0f : 0f;
+                float diff = target - _hoverOpacity;
+                if (Math.Abs(diff) > 0.02f) { _hoverOpacity += diff * 0.3f; Invalidate(); }
+                else { _hoverOpacity = target; _fadeTimer.Stop(); Invalidate(); }
+            };
+        }
+
+        private int GetTrackLeft() { return THUMB_HOVER_RADIUS + 1; }
+        private int GetTrackRight() { return Width - THUMB_HOVER_RADIUS - 1; }
+
+        private int ValueToX()
+        {
+            if (_maximum <= _minimum) return GetTrackLeft();
+            float ratio = (float)(_value - _minimum) / (_maximum - _minimum);
+            return GetTrackLeft() + (int)(ratio * (GetTrackRight() - GetTrackLeft()));
+        }
+
+        private int XToValue(int x)
+        {
+            float ratio = (float)(x - GetTrackLeft()) / (GetTrackRight() - GetTrackLeft());
+            ratio = Math.Max(0f, Math.Min(1f, ratio));
+            return _minimum + (int)(ratio * (_maximum - _minimum));
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            int cy = Height / 2;
+            int trackLeft = GetTrackLeft();
+            int trackRight = GetTrackRight();
+            int thumbX = ValueToX();
+
+            // Track background
+            using (var trackPath = CreatePillPath(trackLeft, cy - TRACK_HEIGHT / 2, trackRight - trackLeft, TRACK_HEIGHT))
+            using (var trackBrush = new SolidBrush(TrackBg))
+                g.FillPath(trackBrush, trackPath);
+
+            // Track fill (left of thumb)
+            if (thumbX > trackLeft)
+            {
+                int fillWidth = thumbX - trackLeft;
+                using (var fillPath = CreatePillPath(trackLeft, cy - TRACK_HEIGHT / 2, fillWidth, TRACK_HEIGHT))
+                using (var fillBrush = new SolidBrush(TrackFill))
+                    g.FillPath(fillBrush, fillPath);
+            }
+
+            // Thumb hover glow
+            if (_hoverOpacity > 0.01f)
+            {
+                int glowRadius = THUMB_HOVER_RADIUS + 4;
+                using (var glowBrush = new SolidBrush(Color.FromArgb((int)(30 * _hoverOpacity), TrackFill)))
+                    g.FillEllipse(glowBrush, thumbX - glowRadius, cy - glowRadius, glowRadius * 2, glowRadius * 2);
+            }
+
+            // Thumb
+            int thumbR = THUMB_RADIUS + (int)((THUMB_HOVER_RADIUS - THUMB_RADIUS) * _hoverOpacity);
+            Color currentThumb = BlendColor(ThumbColor, ThumbHoverColor, _hoverOpacity);
+            using (var thumbBrush = new SolidBrush(currentThumb))
+                g.FillEllipse(thumbBrush, thumbX - thumbR, cy - thumbR, thumbR * 2, thumbR * 2);
+
+            // Thumb border
+            using (var borderPen = new Pen(Color.FromArgb((int)(60 * (1f - _hoverOpacity * 0.5f)), ThumbBorderColor), 1.5f))
+                g.DrawEllipse(borderPen, thumbX - thumbR, cy - thumbR, thumbR * 2, thumbR * 2);
+        }
+
+        private static Color BlendColor(Color a, Color b, float t)
+        {
+            return Color.FromArgb(
+                (int)(a.R + (b.R - a.R) * t),
+                (int)(a.G + (b.G - a.G) * t),
+                (int)(a.B + (b.B - a.B) * t));
+        }
+
+        private static GraphicsPath CreatePillPath(int x, int y, int width, int height)
+        {
+            var path = new GraphicsPath();
+            if (width <= 0) { path.AddEllipse(x, y, height, height); return path; }
+            int r = height;
+            path.AddArc(x, y, r, r, 90, 180);
+            path.AddArc(x + width - r, y, r, r, 270, 180);
+            path.CloseFigure();
+            return path;
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            if (e.Button == MouseButtons.Left) { _dragging = true; Value = XToValue(e.X); }
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            if (_dragging) Value = XToValue(e.X);
+        }
+
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            base.OnMouseUp(e);
+            _dragging = false;
+        }
+
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            _hovering = true;
+            _fadeTimer.Start();
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            _hovering = false;
+            if (!_dragging) _fadeTimer.Start();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) { _fadeTimer?.Stop(); _fadeTimer?.Dispose(); }
+            base.Dispose(disposing);
+        }
+    }
+
     public FastGalleryPanel(List<ListViewItem> items, int tileWidth, int tileHeight, int spacing, int initialWidth, int initialHeight)
     {
         _originalItems = items ?? new List<ListViewItem>();
@@ -166,8 +343,12 @@ public class FastGalleryPanel : Control
         _displayTiles = new List<GroupedTile>();
         _groupedByPackage = new Dictionary<string, List<ListViewItem>>(StringComparer.OrdinalIgnoreCase);
         _versionRects = new List<Rectangle>();
-        _tileWidth = tileWidth;
-        _tileHeight = tileHeight;
+        _baseTileWidth = tileWidth;
+        _baseTileHeight = tileHeight;
+        int savedSize = Math.Max(SLIDER_MIN, Math.Min(SLIDER_MAX, SettingsManager.Instance.GalleryTileSize));
+        float initScale = savedSize / 100f;
+        _tileWidth = Math.Max(80, (int)(tileWidth * initScale));
+        _tileHeight = Math.Max(55, (int)(tileHeight * initScale));
         _spacing = spacing;
         _imageCache = new Dictionary<string, Image>(StringComparer.OrdinalIgnoreCase);
         _cacheOrder = new Queue<string>();
@@ -195,6 +376,7 @@ public class FastGalleryPanel : Control
         // Create sort panel
         _sortPanel = CreateSortPanel();
         Controls.Add(_sortPanel);
+        LayoutSliderControls();
 
         // Scrollbar - direct interaction jumps immediately (no smooth scroll)
         _scrollBar = new VScrollBar { Minimum = 0, SmallChange = _tileHeight / 2, LargeChange = _tileHeight * 2 };
@@ -349,6 +531,32 @@ public class FastGalleryPanel : Control
         };
         panel.Controls.Add(_sortStatusLabel);
 
+        // Tile size slider (right-aligned)
+        _sizeLabel = new Label
+        {
+            Text = "Tile Size",
+            ForeColor = Color.FromArgb(140, 140, 140),
+            Font = new Font("Segoe UI", 8.5f),
+            AutoSize = true,
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
+        };
+        panel.Controls.Add(_sizeLabel);
+
+        _sizeSlider = new ModernSlider
+        {
+            Minimum = SLIDER_MIN,
+            Maximum = SLIDER_MAX,
+            Value = Math.Max(SLIDER_MIN, Math.Min(SLIDER_MAX, SettingsManager.Instance.GalleryTileSize)),
+            Height = 22,
+            Width = 100,
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
+        };
+        _sizeSlider.ValueChanged += SizeSlider_ValueChanged;
+        panel.Controls.Add(_sizeSlider);
+
+        // Position slider controls on the right side
+        panel.Resize += (s, ev) => LayoutSliderControls();
+
         UpdateSortButtonStyles();
         return panel;
     }
@@ -426,6 +634,28 @@ public class FastGalleryPanel : Control
 
         // Update the sort status label
         if (_sortStatusLabel != null) _sortStatusLabel.Text = GetSortStatusText();
+    }
+
+    private void LayoutSliderControls()
+    {
+        if (_sortPanel == null || _sizeSlider == null || _sizeLabel == null) return;
+        int panelWidth = _sortPanel.ClientSize.Width;
+        _sizeSlider.Location = new Point(panelWidth - _sizeSlider.Width - 8, 5);
+        _sizeLabel.Location = new Point(_sizeSlider.Left - _sizeLabel.Width - 4, 9);
+    }
+
+    private void SizeSlider_ValueChanged(object sender, EventArgs e)
+    {
+        float scale = _sizeSlider.Value / 100f;
+        _tileWidth = Math.Max(80, (int)(_baseTileWidth * scale));
+        _tileHeight = Math.Max(55, (int)(_baseTileHeight * scale));
+
+        SettingsManager.Instance.GalleryTileSize = _sizeSlider.Value;
+        SettingsManager.Instance.Save();
+
+        CloseOverlay();
+        RecalculateLayout();
+        Invalidate();
     }
 
     private void ApplySort()
@@ -1153,41 +1383,47 @@ public class FastGalleryPanel : Control
 
         // Left-side badges
         int badgeY = y + 4;
-        if (state.FavoriteOpacity > 0.5f) { DrawBadge(g, "★", x + 4, badgeY, BadgeFavoriteBg); badgeY += 18; }
+        if (state.FavoriteOpacity > 0.5f) { DrawBadge(g, "★", x + 4, badgeY, BadgeFavoriteBg); badgeY += 15; }
 
         bool hasUpdate = tile.Versions.Any(v => v.ForeColor.ToArgb() == MainForm.ColorUpdateAvailable.ToArgb());
         bool installed = IsAnyVersionInstalled(tile);
         bool canDonate = tile.Versions.Any(v => v.ForeColor.ToArgb() == MainForm.ColorDonateGame.ToArgb());
 
-        if (hasUpdate) { DrawBadge(g, "UPDATE AVAILABLE", x + 4, badgeY, Color.FromArgb(180, MainForm.ColorUpdateAvailable)); badgeY += 18; }
-        if (canDonate) { DrawBadge(g, "NEWER THAN LIST", x + 4, badgeY, Color.FromArgb(180, MainForm.ColorDonateGame)); badgeY += 18; }
+        if (hasUpdate) { DrawBadge(g, "UPDATE", x + 4, badgeY, Color.FromArgb(180, MainForm.ColorUpdateAvailable)); badgeY += 15; }
+        if (canDonate) { DrawBadge(g, "AHEAD", x + 4, badgeY, Color.FromArgb(180, MainForm.ColorDonateGame)); badgeY += 15; }
         if (installed) DrawBadge(g, "INSTALLED", x + 4, badgeY, BadgeInstalledBg);
 
-        // Right-side badges
+        // Right-side badges (top)
         int rightBadgeY = y + 4;
 
-        // Version count badge
-        if (tile.Versions.Count > 1 && state.GroupBadgeOpacity > 0.01f)
+        // Size badge - show largest size across all versions for grouped tiles
+        string sizeText = "";
+        if (tile.Versions.Count > 1)
         {
-            string countText = tile.Versions.Count + " VERSIONS";
-            DrawRightAlignedBadge(g, countText, x + scaledW - 4, rightBadgeY, state.GroupBadgeOpacity);
-            rightBadgeY += 18;
+            double maxSize = 0;
+            foreach (var v in tile.Versions)
+            {
+                string vSize = v.SubItems.Count > 5 ? v.SubItems[5].Text : "";
+                double parsed = ParseSize(vSize);
+                if (parsed > maxSize) { maxSize = parsed; sizeText = vSize; }
+            }
         }
-
-        // Size badge
-        string sizeText = item.SubItems.Count > 5 ? item.SubItems[5].Text : "";
+        else
+        {
+            sizeText = item.SubItems.Count > 5 ? item.SubItems[5].Text : "";
+        }
         if (!string.IsNullOrEmpty(sizeText))
         {
             DrawRightAlignedBadge(g, sizeText, x + scaledW - 4, rightBadgeY, 1.0f);
-            rightBadgeY += 18;
+            rightBadgeY += 15;
         }
 
         // Date badge
-        if (state.TooltipOpacity > 0.01f && item.SubItems.Count > 4)
+        if (item.SubItems.Count > 4)
         {
             string formattedDate = FormatLastUpdated(item.SubItems[4].Text);
             if (!string.IsNullOrEmpty(formattedDate))
-                DrawRightAlignedBadge(g, formattedDate, x + scaledW - 4, rightBadgeY, state.TooltipOpacity);
+                DrawRightAlignedBadge(g, formattedDate, x + scaledW - 4, rightBadgeY, 1.0f);
         }
 
         // Delete button
@@ -1230,6 +1466,30 @@ public class FastGalleryPanel : Control
             if (state.FavoriteOpacity > 0.5f) // Favorite border
                 using (var favPen = new Pen(Color.FromArgb((int)(180 * state.FavoriteOpacity), TileBorderFavorite), 1f))
                     g.DrawPath(favPen, tilePath);
+        }
+
+        // Version count badge (top-center, straddling the top edge) - drawn last so it's on top
+        if (tile.Versions.Count > 1 && state.GroupBadgeOpacity > 0.01f)
+        {
+            string countText = tile.Versions.Count + " VERSIONS";
+            using (var badgeFont = new Font("Segoe UI", 6f, FontStyle.Bold))
+            {
+                var sz = g.MeasureString(countText, badgeFont);
+                int badgeW = (int)sz.Width + 6;
+                int badgeH = 12;
+                int vbX = x + (scaledW - badgeW) / 2;
+                int vbY = y - badgeH / 2 + 1;
+                var badgeRect = new Rectangle(vbX, vbY, badgeW, badgeH);
+                int alpha = (int)(255 * state.GroupBadgeOpacity);
+                using (var path = CreateRoundedRectangle(badgeRect, 3))
+                using (var bgBrush = new SolidBrush(Color.FromArgb(alpha * 220 / 255, 24, 24, 28)))
+                {
+                    g.FillPath(bgBrush, path);
+                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    using (var textBrush = new SolidBrush(Color.FromArgb(alpha, 230, 230, 230)))
+                        g.DrawString(countText, badgeFont, textBrush, badgeRect, sf);
+                }
+            }
         }
     }
 
@@ -1289,11 +1549,11 @@ public class FastGalleryPanel : Control
 
     private void DrawRightAlignedBadge(Graphics g, string text, int rightX, int y, float opacity)
     {
-        using (var font = new Font("Segoe UI", 7f, FontStyle.Bold))
+        using (var font = new Font("Segoe UI", 6.5f, FontStyle.Bold))
         {
             var sz = g.MeasureString(text, font);
-            var rect = new Rectangle(rightX - (int)sz.Width - 8, y, (int)sz.Width + 8, 14);
-            using (var path = CreateRoundedRectangle(rect, 4))
+            var rect = new Rectangle(rightX - (int)sz.Width - 6, y, (int)sz.Width + 6, 13);
+            using (var path = CreateRoundedRectangle(rect, 3))
             using (var bgBrush = new SolidBrush(Color.FromArgb((int)(180 * opacity), 0, 0, 0)))
             {
                 g.FillPath(bgBrush, path);
@@ -1320,8 +1580,8 @@ public class FastGalleryPanel : Control
         using (var font = new Font("Segoe UI", 6.5f, FontStyle.Bold))
         {
             var sz = g.MeasureString(text, font);
-            var rect = new Rectangle(x, y, (int)sz.Width + 8, 14);
-            using (var path = CreateRoundedRectangle(rect, 4))
+            var rect = new Rectangle(x, y, (int)sz.Width + 6, 13);
+            using (var path = CreateRoundedRectangle(rect, 3))
             using (var brush = new SolidBrush(bgColor))
             {
                 g.FillPath(brush, path);
@@ -1620,6 +1880,11 @@ public class FastGalleryPanel : Control
         var favoriteItem = new ToolStripMenuItem("★ Add to Favorites");
         favoriteItem.Click += ContextMenu_FavoriteClick;
         _contextMenu.Items.Add(favoriteItem);
+
+        var openFolderItem = new ToolStripMenuItem("📂 Open Folder");
+        openFolderItem.Click += ContextMenu_OpenFolderClick;
+        _contextMenu.Items.Add(openFolderItem);
+
         _contextMenu.Opening += ContextMenu_Opening;
     }
 
@@ -1641,6 +1906,17 @@ public class FastGalleryPanel : Control
 
         bool isFavorite = _favoritesCache.Contains(packageName);
         ((ToolStripMenuItem)_contextMenu.Items[0]).Text = isFavorite ? "Remove from Favorites" : "★ Add to Favorites";
+
+        // Show "Open Folder" only if the game folder exists locally
+        if (_contextMenu.Items.Count > 1)
+        {
+            string releaseName = targetItem.SubItems.Count > SideloaderRCLONE.ReleaseNameIndex
+                ? targetItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text : "";
+            var settings = SettingsManager.Instance;
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+            string folderPath = Path.Combine(dlDir, releaseName);
+            _contextMenu.Items[1].Visible = !string.IsNullOrEmpty(releaseName) && Directory.Exists(folderPath);
+        }
     }
 
     private void ContextMenu_FavoriteClick(object sender, EventArgs e)
@@ -1679,6 +1955,27 @@ public class FastGalleryPanel : Control
         }
 
         Invalidate();
+    }
+
+    private void ContextMenu_OpenFolderClick(object sender, EventArgs e)
+    {
+        if (_rightClickedIndex < 0 || _rightClickedIndex >= _displayTiles.Count) return;
+
+        var tile = _displayTiles[_rightClickedIndex];
+        ListViewItem targetItem;
+
+        if (_rightClickedVersionIndex >= 0 && _rightClickedVersionIndex < tile.Versions.Count)
+            targetItem = tile.Versions[_rightClickedVersionIndex];
+        else
+            targetItem = tile.Primary;
+
+        if (targetItem.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex) return;
+
+        string releaseName = targetItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+        var settings = SettingsManager.Instance;
+        string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+        string folderPath = Path.Combine(dlDir, releaseName);
+        MainForm.OpenDirectory(folderPath);
     }
 
     private void RemoveVersionFromDisplay(GroupedTile tile, ListViewItem item, int tileIndex)

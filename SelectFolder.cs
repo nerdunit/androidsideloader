@@ -95,7 +95,8 @@ namespace AndroidSideloader
                     Filter = c_foldersFilter,
                     InitialDirectory = initialDirectory,
                     Multiselect = false,
-                    Title = title
+                    Title = title,
+                    RestoreDirectory = true
                 };
 
                 object iFileDialog = s_createVistaDialogMethodInfo.Invoke(openFileDialog, new object[] { });

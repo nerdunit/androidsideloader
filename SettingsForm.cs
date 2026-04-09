@@ -35,7 +35,6 @@ namespace AndroidSideloader
             toggleCheckForUpdates.SetCheckedSilent(_settings.CheckForUpdates);
             toggleMessageBoxes.SetCheckedSilent(_settings.EnableMessageBoxes);
             toggleDeleteAfterInstall.SetCheckedSilent(_settings.DeleteAllAfterInstall);
-            toggleUpdateConfig.SetCheckedSilent(_settings.AutoUpdateConfig);
             toggleUserJson.SetCheckedSilent(_settings.UserJsonOnGameInstall);
             toggleNoDeviceMode.SetCheckedSilent(_settings.NodeviceMode);
             toggleBMBF.SetCheckedSilent(_settings.BMBFChecked);
@@ -87,7 +86,6 @@ namespace AndroidSideloader
             _settings.CheckForUpdates = toggleCheckForUpdates.Checked;
             _settings.EnableMessageBoxes = toggleMessageBoxes.Checked;
             _settings.DeleteAllAfterInstall = toggleDeleteAfterInstall.Checked;
-            _settings.AutoUpdateConfig = toggleUpdateConfig.Checked;
             _settings.UserJsonOnGameInstall = toggleUserJson.Checked;
             _settings.NodeviceMode = toggleNoDeviceMode.Checked;
             _settings.BMBFChecked = toggleBMBF.Checked;
@@ -102,11 +100,6 @@ namespace AndroidSideloader
             {
                 Program.form.SetTrailerVisibility(toggleTrailers.Checked);
                 Program.form.UpdateSideloadingUI();
-            }
-
-            if (_settings.AutoUpdateConfig)
-            {
-                _settings.CreatePubMirrorFile = true;
             }
 
             _settings.Save();
@@ -228,11 +221,6 @@ namespace AndroidSideloader
             // Settings saved on form close
         }
 
-        private void toggleUpdateConfig_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
-        }
-
         private void toggleUserJson_CheckedChanged(object sender, EventArgs e)
         {
             // Settings saved on form close
@@ -339,6 +327,11 @@ namespace AndroidSideloader
             {
                 _settings.CustomDownloadDir = true;
                 _settings.DownloadDir = dialog.FileName;
+
+                if (MainForm.isOffline)
+                    Program.form.RescanLocalLibrary();
+                else
+                    Program.form.RefreshDownloadedState();
             }
         }
 

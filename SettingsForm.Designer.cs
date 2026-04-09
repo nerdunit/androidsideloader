@@ -37,7 +37,6 @@
             this.lblDirectoriesSection = new System.Windows.Forms.Label();
             this.lblDebugSection = new System.Windows.Forms.Label();
             this.lblCheckForUpdates = new System.Windows.Forms.Label();
-            this.lblUpdateConfig = new System.Windows.Forms.Label();
             this.lblNoDeviceMode = new System.Windows.Forms.Label();
             this.lblDeleteAfterInstall = new System.Windows.Forms.Label();
             this.lblSingleThread = new System.Windows.Forms.Label();
@@ -56,7 +55,6 @@
             this.separator3 = new System.Windows.Forms.Panel();
             this.separator4 = new System.Windows.Forms.Panel();
             this.toggleCheckForUpdates = new AndroidSideloader.ToggleSwitch();
-            this.toggleUpdateConfig = new AndroidSideloader.ToggleSwitch();
             this.toggleMessageBoxes = new AndroidSideloader.ToggleSwitch();
             this.toggleTrailers = new AndroidSideloader.ToggleSwitch();
             this.toggleNoDeviceMode = new AndroidSideloader.ToggleSwitch();
@@ -166,17 +164,6 @@
             this.lblCheckForUpdates.Size = new System.Drawing.Size(168, 15);
             this.lblCheckForUpdates.TabIndex = 2;
             this.lblCheckForUpdates.Text = "Check for Application Updates";
-            // 
-            // lblUpdateConfig
-            // 
-            this.lblUpdateConfig.AutoSize = true;
-            this.lblUpdateConfig.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblUpdateConfig.ForeColor = System.Drawing.Color.White;
-            this.lblUpdateConfig.Location = new System.Drawing.Point(348, 49);
-            this.lblUpdateConfig.Name = "lblUpdateConfig";
-            this.lblUpdateConfig.Size = new System.Drawing.Size(151, 15);
-            this.lblUpdateConfig.TabIndex = 4;
-            this.lblUpdateConfig.Text = "Auto-Update Public Config";
             // 
             // lblNoDeviceMode
             // 
@@ -368,19 +355,6 @@
             this.toggleCheckForUpdates.ThumbColor = System.Drawing.Color.White;
             this.toggleCheckForUpdates.CheckedChanged += new System.EventHandler(this.toggleCheckForUpdates_CheckedChanged);
             // 
-            // toggleUpdateConfig
-            // 
-            this.toggleUpdateConfig.BackColor = System.Drawing.Color.Transparent;
-            this.toggleUpdateConfig.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.toggleUpdateConfig.Location = new System.Drawing.Point(306, 48);
-            this.toggleUpdateConfig.Name = "toggleUpdateConfig";
-            this.toggleUpdateConfig.OffColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(65)))), ((int)(((byte)(75)))));
-            this.toggleUpdateConfig.OnColor = System.Drawing.Color.FromArgb(((int)(((byte)(93)))), ((int)(((byte)(203)))), ((int)(((byte)(173)))));
-            this.toggleUpdateConfig.Size = new System.Drawing.Size(36, 18);
-            this.toggleUpdateConfig.TabIndex = 3;
-            this.toggleUpdateConfig.ThumbColor = System.Drawing.Color.White;
-            this.toggleUpdateConfig.CheckedChanged += new System.EventHandler(this.toggleUpdateConfig_CheckedChanged);
-            // 
             // toggleMessageBoxes
             // 
             this.toggleMessageBoxes.BackColor = System.Drawing.Color.Transparent;
@@ -534,6 +508,7 @@
             this.setDownloadDirectory.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(65)))), ((int)(((byte)(75)))));
             this.setDownloadDirectory.TabIndex = 23;
             this.setDownloadDirectory.Text = "Set Download Dir";
+            this.setDownloadDirectory.TextXOffset = 0;
             this.setDownloadDirectory.Transparency = false;
             this.setDownloadDirectory.Click += new System.EventHandler(this.setDownloadDirectory_Click);
             // 
@@ -559,6 +534,7 @@
             this.openDownloadDirectory.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(65)))), ((int)(((byte)(75)))));
             this.openDownloadDirectory.TabIndex = 27;
             this.openDownloadDirectory.Text = "Open Download Dir";
+            this.openDownloadDirectory.TextXOffset = 0;
             this.openDownloadDirectory.Transparency = false;
             this.openDownloadDirectory.Click += new System.EventHandler(this.openDownloadDirectory_Click);
             // 
@@ -584,6 +560,7 @@
             this.setBackupDirectory.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(65)))), ((int)(((byte)(75)))));
             this.setBackupDirectory.TabIndex = 24;
             this.setBackupDirectory.Text = "Set Backup Dir";
+            this.setBackupDirectory.TextXOffset = 0;
             this.setBackupDirectory.Transparency = false;
             this.setBackupDirectory.Click += new System.EventHandler(this.setBackupDirectory_Click);
             // 
@@ -609,6 +586,7 @@
             this.openBackupDirectory.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(65)))), ((int)(((byte)(75)))));
             this.openBackupDirectory.TabIndex = 28;
             this.openBackupDirectory.Text = "Open Backup Dir";
+            this.openBackupDirectory.TextXOffset = 0;
             this.openBackupDirectory.Transparency = false;
             this.openBackupDirectory.Click += new System.EventHandler(this.openBackupDirectory_Click);
             // 
@@ -634,6 +612,7 @@
             this.btnOpenDebug.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(65)))), ((int)(((byte)(75)))));
             this.btnOpenDebug.TabIndex = 21;
             this.btnOpenDebug.Text = "Open Log";
+            this.btnOpenDebug.TextXOffset = 0;
             this.btnOpenDebug.Transparency = false;
             this.btnOpenDebug.Click += new System.EventHandler(this.btnOpenDebug_Click);
             // 
@@ -659,6 +638,7 @@
             this.btnResetDebug.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(65)))), ((int)(((byte)(75)))));
             this.btnResetDebug.TabIndex = 20;
             this.btnResetDebug.Text = "Reset Log";
+            this.btnResetDebug.TextXOffset = 0;
             this.btnResetDebug.Transparency = false;
             this.btnResetDebug.Click += new System.EventHandler(this.btnResetDebug_click);
             // 
@@ -684,6 +664,7 @@
             this.btnUploadDebug.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(65)))), ((int)(((byte)(75)))));
             this.btnUploadDebug.TabIndex = 19;
             this.btnUploadDebug.Text = "Upload Log";
+            this.btnUploadDebug.TextXOffset = 0;
             this.btnUploadDebug.Transparency = false;
             this.btnUploadDebug.Click += new System.EventHandler(this.btnUploadDebug_click);
             // 
@@ -709,6 +690,7 @@
             this.applyButton.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(93)))), ((int)(((byte)(203)))), ((int)(((byte)(173)))));
             this.applyButton.TabIndex = 17;
             this.applyButton.Text = "SAVE & CLOSE";
+            this.applyButton.TextXOffset = 0;
             this.applyButton.Transparency = false;
             this.applyButton.Click += new System.EventHandler(this.applyButton_Click);
             // 
@@ -734,6 +716,7 @@
             this.resetSettingsButton.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
             this.resetSettingsButton.TabIndex = 18;
             this.resetSettingsButton.Text = "CANCEL";
+            this.resetSettingsButton.TextXOffset = 0;
             this.resetSettingsButton.Transparency = false;
             this.resetSettingsButton.Click += new System.EventHandler(this.resetSettingsButton_Click);
             // 
@@ -820,8 +803,6 @@
             this.Controls.Add(this.lblGeneralSection);
             this.Controls.Add(this.toggleCheckForUpdates);
             this.Controls.Add(this.lblCheckForUpdates);
-            this.Controls.Add(this.toggleUpdateConfig);
-            this.Controls.Add(this.lblUpdateConfig);
             this.Controls.Add(this.toggleMessageBoxes);
             this.Controls.Add(this.lblMessageBoxes);
             this.Controls.Add(this.toggleTrailers);
@@ -889,7 +870,6 @@
 
         // Toggle Switches
         private ToggleSwitch toggleCheckForUpdates;
-        private ToggleSwitch toggleUpdateConfig;
         private ToggleSwitch toggleNoDeviceMode;
         private ToggleSwitch toggleDeleteAfterInstall;
         private ToggleSwitch toggleSingleThread;
@@ -903,7 +883,6 @@
 
         // Toggle Labels
         private System.Windows.Forms.Label lblCheckForUpdates;
-        private System.Windows.Forms.Label lblUpdateConfig;
         private System.Windows.Forms.Label lblNoDeviceMode;
         private System.Windows.Forms.Label lblDeleteAfterInstall;
         private System.Windows.Forms.Label lblSingleThread;

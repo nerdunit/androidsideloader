@@ -262,7 +262,7 @@ namespace AndroidSideloader
             this.upddet.Name = "upddet";
             this.upddet.Size = new System.Drawing.Size(135, 20);
             this.upddet.TabIndex = 3;
-            this.upddet.Text = "Updates Available";
+            this.upddet.Text = "Updates";
             this.upddet.Visible = false;
             this.upddet.MouseDown += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseDown);
             this.upddet.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DonorsListViewForm_MouseMove);
