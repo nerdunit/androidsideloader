@@ -1,8 +1,8 @@
 RSL 3.1
 
-- Introduced startup dialog to choose between online mode (via config) or offline mode (local library), also accessible anytime via the dedicated 'SETUP' button
-- Online mode: Config can be provided via URL, local file, or pasted JSON
-- Local library mode (serverless): Scans your directory, reads APK version codes, and caches results per directory (allowing multiple caches for different dirs)
+- Introduced startup dialog to choose between online (via public config or rclone config) or offline (via local library) mode, also accessible anytime via dedicated 'SETUP' button; configs can be provided via local file, URL, or paste
+- Local library mode (serverless): Scans your directory, reads APK version codes, and caches results per directory (allowing multiple caches for different directories)
+- Dependencies are downloaded early on startup; rclone is only initialized when online
 - Gallery View: Visual refinements to badges, sizing, and grouped tiles; new slider to dynamically adjust tile size
 - Added 'DOWNLOADED' filter to browse and install locally saved apps
 - Added folder button in 'DOWNLOADED' filter for quick access to your download directory
@@ -13,7 +13,7 @@ RSL 3.1
 - Dedicated 'SETTINGS' button for quicker access to rookie settings
 - Device settings moved to device category
 - Added 'RESET ADB AUTH' button to fix rare ADB connection issues
-- Improved error handling for missing runtimes, invalid config, invalid mirrors, and defunct ADB connections
+- Improved error handling for runtimes, configs, mirrors, and ADB connections
 - Added support for alternative repos and branches
 - Moved runtimes.7z hosting to GitHub
 - Removed crashlog upload functionality
