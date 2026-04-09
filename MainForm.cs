@@ -30,7 +30,7 @@ namespace AndroidSideloader
     public partial class MainForm : Form
     {
         public static string repo = "nerdunit/androidsideloader"; // GitHub repo
-        public static string repo_branch = "main"; // GitHub branch
+        public static string repo_branch = "master"; // GitHub branch
 #if DEBUG
         public static bool debugMode = true;
         public bool DeviceConnected;
