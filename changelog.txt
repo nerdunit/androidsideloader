@@ -1,12 +1,20 @@
-RSL 3.0.1
+RSL 3.1
 
-- Fixed popularity ranking not working on some systems
-- Fixed favorites not updating immediately when removing items
-- Improved YouTube trailer matching accuracy
-- Implemented real-time progress updates for drag and drop operations
-- Refined backup button labels and dialogs
-- Gallery View: Added grouped tiles for games with multiple versions (e.g. Beat Saber)
-- ListView: Uninstall button now shows on hover instead of click
-- Public config file is now created automatically without prompt
-- Sideloading status label now shows device connection state
-- Download button text now reflects sideloading status
+- Introduced startup dialog to choose between online mode (via config) or offline mode (local library), also accessible anytime via the dedicated 'SETUP' button
+- Online mode: Config can be provided via URL, local file, or pasted JSON
+- Local library mode (serverless): Scans your directory, reads APK version codes, and caches results per directory (allowing multiple caches for different dirs)
+- Gallery View: Visual refinements to badges, sizing, and grouped tiles; new slider to dynamically adjust tile size
+- Added 'DOWNLOADED' filter to browse and install locally saved apps
+- Added folder button in 'DOWNLOADED' filter for quick access to your download directory
+- Added 'Open Folder' right-click context menu action when right-clicking apps in 'DOWNLOADED' view
+- Renamed 'NEWER THAN LIST' filter to 'AHEAD OF SERVER'
+- Reworked left-side menu, window layout, controls, labels, and tooltips
+- Device and mirror switching now via dropdowns for faster access
+- Dedicated 'SETTINGS' button for quicker access to rookie settings
+- Device settings moved to device category
+- Added 'RESET ADB AUTH' button to fix rare ADB connection issues
+- Improved error handling for missing runtimes, invalid config, invalid mirrors, and defunct ADB connections
+- Added support for alternative repos and branches
+- Moved runtimes.7z hosting to GitHub
+- Removed crashlog upload functionality
+- Removed deprecated Metrics utility and autoUpdateConfig setting

@@ -545,7 +545,7 @@ namespace AndroidSideloader
                     }
                 }
 
-                if (error.Contains("ADB_VENDOR_KEYS") && settings.AdbDebugWarned)
+                if (error.Contains("ADB_VENDOR_KEYS") && !settings.AdbDebugWarned)
                 {
                     ADBDebugWarning();
                 }
@@ -602,7 +602,7 @@ namespace AndroidSideloader
                         proc.WaitForExit();
                     }
 
-                    if (error.Contains("ADB_VENDOR_KEYS") && settings.AdbDebugWarned)
+                    if (error.Contains("ADB_VENDOR_KEYS") && !settings.AdbDebugWarned)
                     {
                         ADBDebugWarning();
                     }
@@ -625,13 +625,50 @@ namespace AndroidSideloader
             Program.form.Invoke(() =>
             {
                 DialogResult dialogResult = FlexibleMessageBox.Show(Program.form,
-                    "On your headset, click on the Notifications Bell, and then select the USB Detected notification to enable Connections.",
+                    "If this is your first time, accept the prompt on your headset (\"Always Allow\").\r\n\r\nIf you don't see a prompt:\r\n  • Make sure developer mode is enabled\r\n  • Make sure your USB cable supports data\r\n  • Try a different USB port or cable\r\n  • Restart your headset\r\n  • If nothing else helped, click RESET ADB AUTH in the left panel under MISCELLANEOUS",
                     "ADB Debugging not enabled.", MessageBoxButtons.OKCancel);
-                if (dialogResult == DialogResult.Cancel)
-                {
-                    settings.Save();
-                }
+                settings.AdbDebugWarned = true;
+                settings.Save();
             });
+        }
+
+        public static string ResetAdbAuthorization()
+        {
+            try
+            {
+                // Kill the running ADB server
+                RunAdbCommandToString("kill-server");
+                _adbClient = null;
+                _currentDevice = default;
+
+                // Remove stale ADB vendor keys so a fresh RSA pair is generated on next start
+                string androidDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".android");
+                string[] keyFiles = new[] { "adbkey", "adbkey.pub" };
+                foreach (string keyFile in keyFiles)
+                {
+                    string path = Path.Combine(androidDir, keyFile);
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                        Logger.Log($"Deleted ADB key file: {path}");
+                    }
+                }
+
+                // Restart the ADB server so new keys are generated
+                settings.AdbDebugWarned = false;
+                settings.Save();
+
+                var server = new AdbServer();
+                server.StartServer(adbFilePath, true);
+                Logger.Log("ADB authorization reset complete. New keys generated.");
+
+                return "ADB authorization reset successfully. Please re-authorize on your device when prompted.";
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error resetting ADB authorization: {ex.Message}", LogLevel.ERROR);
+                return $"Error resetting ADB authorization: {ex.Message}";
+            }
         }
 
         public static ProcessOutput UninstallPackage(string package)

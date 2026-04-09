@@ -45,8 +45,8 @@ namespace AndroidSideloader.Utilities
                 try
                 {
                     // Use DNS fallback download method from GetDependencies
-                    GetDependencies.DownloadFileWithDnsFallback($"https://github.com/VRPirates/rookie/raw/master/7z{architecture}.exe", "7z.exe");
-                    GetDependencies.DownloadFileWithDnsFallback($"https://github.com/VRPirates/rookie/raw/master/7z{architecture}.dll", "7z.dll");
+                    GetDependencies.DownloadFileWithDnsFallback($"https://github.com/{MainForm.repo}/raw/{MainForm.repo_branch}/7z{architecture}.exe", "7z.exe");
+                    GetDependencies.DownloadFileWithDnsFallback($"https://github.com/{MainForm.repo}/raw/{MainForm.repo_branch}/7z{architecture}.dll", "7z.dll");
                 }
                 catch (Exception ex)
                 {

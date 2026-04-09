@@ -12,7 +12,7 @@ namespace AndroidSideloader.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.14.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "18.4.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -68,18 +68,6 @@ namespace AndroidSideloader.Properties {
             }
             set {
                 this["deleteAllAfterInstall"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool autoUpdateConfig {
-            get {
-                return ((bool)(this["autoUpdateConfig"]));
-            }
-            set {
-                this["autoUpdateConfig"] = value;
             }
         }
         
@@ -739,6 +727,54 @@ namespace AndroidSideloader.Properties {
             }
             set {
                 this["bandwidthLimit"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool useProxy {
+            get {
+                return ((bool)(this["useProxy"]));
+            }
+            set {
+                this["useProxy"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string proxyAddress {
+            get {
+                return ((string)(this["proxyAddress"]));
+            }
+            set {
+                this["proxyAddress"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string proxyPort {
+            get {
+                return ((string)(this["proxyPort"]));
+            }
+            set {
+                this["proxyPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string selectedMirror {
+            get {
+                return ((string)(this["selectedMirror"]));
+            }
+            set {
+                this["selectedMirror"] = value;
             }
         }
     }

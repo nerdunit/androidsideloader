@@ -1,4 +1,17 @@
-﻿RSL 3.0
+﻿RSL 3.0.1
+
+- Fixed popularity ranking not working on some systems
+- Fixed favorites not updating immediately when removing items
+- Improved YouTube trailer matching accuracy
+- Implemented real-time progress updates for drag and drop operations
+- Refined backup button labels and dialogs
+- Gallery View: Added grouped tiles for games with multiple versions (e.g. Beat Saber)
+- ListView: Uninstall button now shows on hover instead of click
+- Public config file is now created automatically without prompt
+- Sideloading status label now shows device connection state
+- Download button text now reflects sideloading status
+
+RSL 3.0
 
 Major Rookie overhaul with modernized UI, significant performance improvements and upgraded UX.
 
@@ -76,7 +89,7 @@ RSL 2.30
 - Feature: Added "Disable Checking for New Apps" argument (for Testers sanity)
 - Feature: Added Bandwidth Limiter to Settings
 - Fix: Fixes for using Sponsored Mirrors
-    -- Eliminated downloading of vrp.download.config from the wiki
+    -- Eliminated downloading of download.config from the wiki
     -- Fixed issue where Rookie would check for the mirror before it was loaded in
 - Fix: Add quotes around all ADB path commands
 - Fix: Public Mirror label not displaying
@@ -1867,7 +1880,7 @@ delete settings for any games installed while it was enabled, you must do
 this with the previously mentioned RemoveQU Setting option. Clear Settings 
 just clears the values entered in the fields. Settings entered into those 
 fields will persist between instances of RSL.
-+ Public key for HarryEffingPotter(Rookie contributor/VRPE dev) added to 
++ Public key for HarryEffingPotter(Rookie contributor/dev) added to 
 Rookie directory.
 = Fixed Install.txt automation to make Manual installs automatic.
 
@@ -1879,8 +1892,7 @@ Released: May 29th 2021
 Public key for Rookie and HarryEffingPotter included in Rookie 
 directory along with Checksum(can be run with QuickSFV.exe)
 
-THIS SOFTWARE IS FREE TO USE, IF YOU PAID FOR IT YOU WERE
-RIPPED OFF. We can be found on Telegram @ t.me/VRPirates.
+THIS SOFTWARE IS FREE TO USE, IF YOU PAID FOR IT YOU WERE RIPPED OFF.
 -----BEGIN PGP SIGNATURE-----
 
 iQIzBAEBCAAdFiEEKjgtlwMyrpVu4TGfx/Rql1VoczcFAmCyMHUACgkQx/Rql1Vo

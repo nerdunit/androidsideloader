@@ -10,10 +10,8 @@ namespace AndroidSideloader
     {
         public static string AppName { get; set; }
         public static string Repository { get; set; }
-        private static readonly string RawGitHubUrl = "https://raw.githubusercontent.com/VRPirates/rookie";
-        public static readonly string GitHubUrl = "https://github.com/VRPirates/rookie";
 
-        public static readonly string LocalVersion = "3.0.1";
+        public static readonly string LocalVersion = "3.1";
         public static string currentVersion = string.Empty;
         public static string changelog = string.Empty;
 
@@ -24,8 +22,8 @@ namespace AndroidSideloader
             {
                 try
                 {
-                    currentVersion = await client.GetStringAsync($"{RawGitHubUrl}/master/version");
-                    changelog = await client.GetStringAsync($"{RawGitHubUrl}/master/changelog.txt");
+                    currentVersion = await client.GetStringAsync($"https://raw.githubusercontent.com/{MainForm.repo}/{MainForm.repo_branch}/version");
+                    changelog = await client.GetStringAsync($"https://raw.githubusercontent.com/{MainForm.repo}/{MainForm.repo_branch}/changelog.txt");
                     currentVersion = currentVersion.Trim();
                 }
                 catch (HttpRequestException)
@@ -90,15 +88,15 @@ namespace AndroidSideloader
                     ServicePointManager.Expect100Continue = true;
                     ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-                    Logger.Log($"Downloading update from {GitHubUrl}/releases/download/v{currentVersion}/{AppName}.exe to {AppName} v{currentVersion}.exe");
-                    fileClient.DownloadFile($"{GitHubUrl}/releases/download/v{currentVersion}/{AppName}.exe", $"{AppName} v{currentVersion}.exe");
+                    Logger.Log($"Downloading update from https://github.com/{MainForm.repo}/releases/download/v{currentVersion}/{AppName}.exe to {AppName} v{currentVersion}.exe");
+                    fileClient.DownloadFile($"https://github.com/{MainForm.repo}/releases/download/v{currentVersion}/{AppName}.exe", $"{AppName} v{currentVersion}.exe");
 
                     Logger.Log($"Starting {AppName} v{currentVersion}.exe");
                     Process.Start($"{AppName} v{currentVersion}.exe");
                 }
 
                 // Delete current version
-                AndroidSideloader.Utilities.GeneralUtilities.Melt();
+                Utilities.GeneralUtilities.Melt();
             }
             catch (Exception ex)
             {

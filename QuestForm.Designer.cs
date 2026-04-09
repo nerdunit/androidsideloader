@@ -447,7 +447,7 @@ namespace AndroidSideloader
             this.MinimizeBox = false;
             this.Name = "QuestForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Quest Settings";
+            this.Text = "Device Settings";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.QuestForm_FormClosed);
             this.Load += new System.EventHandler(this.QuestForm_Load);
             this.ResumeLayout(false);

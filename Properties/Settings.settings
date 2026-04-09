@@ -14,9 +14,6 @@
     <Setting Name="deleteAllAfterInstall" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
-    <Setting Name="autoUpdateConfig" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
-    </Setting>
     <Setting Name="userJsonOnGameInstall" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>

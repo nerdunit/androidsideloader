@@ -16,6 +16,7 @@ namespace AndroidSideloader
         private Color inactive1, inactive2, active1, active2;
         private Color strokeColor;
         private bool stroke;
+        private int textXOffset;
 
         public bool Stroke
         {
@@ -184,7 +185,8 @@ namespace AndroidSideloader
             })
             using (Brush brush = new SolidBrush(ForeColor))
             {
-                e.Graphics.DrawString(Text, Font, brush, ClientRectangle, sf);
+                Rectangle textRect = new Rectangle(textXOffset, 0, Width - textXOffset, Height);
+                e.Graphics.DrawString(Text, Font, brush, textRect, sf);
             }
             #endregion
             base.OnPaint(e);
@@ -288,6 +290,15 @@ namespace AndroidSideloader
             }
         }
         public bool Transparency { get; set; }
+        public int TextXOffset
+        {
+            get => textXOffset;
+            set
+            {
+                textXOffset = value;
+                Invalidate();
+            }
+        }
         public override string Text
         {
             get => base.Text;
