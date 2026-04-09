@@ -619,9 +619,6 @@ namespace AndroidSideloader
                 if (string.IsNullOrWhiteSpace(content))
                     return "Config content is empty";
 
-                if (!Regex.IsMatch(content, @"\[.*mirror.*\]", RegexOptions.IgnoreCase))
-                    return "Config must contain at least one [mirror...] section";
-
                 string destPath = Path.Combine(Environment.CurrentDirectory, "rclone", "download.config");
                 Directory.CreateDirectory(Path.GetDirectoryName(destPath));
                 File.WriteAllText(destPath, content);
@@ -647,19 +644,6 @@ namespace AndroidSideloader
                 _existingConfigLabel.Visible = false;
             if (_existingRcloneLabel != null)
                 _existingRcloneLabel.Visible = false;
-        }
-
-        private void ClearError()
-        {
-            if (_errorLabel != null)
-            {
-                _errorLabel.Text = "";
-                _errorLabel.Visible = false;
-            }
-            if (_existingConfigLabel != null && _hasExistingConfig)
-                _existingConfigLabel.Visible = true;
-            if (_existingRcloneLabel != null && _hasExistingRcloneConfig)
-                _existingRcloneLabel.Visible = true;
         }
 
         // Custom painting
@@ -924,7 +908,7 @@ namespace AndroidSideloader
 
         /// <summary>
         /// Checks if rclone/download.config exists and contains at least one
-        /// mirror remote section.
+        /// remote section.
         /// </summary>
         private bool TryValidateExistingRcloneConfig()
         {
@@ -938,7 +922,7 @@ namespace AndroidSideloader
                 if (string.IsNullOrWhiteSpace(text))
                     return false;
 
-                return Regex.IsMatch(text, @"\[.*mirror.*\]", RegexOptions.IgnoreCase);
+                return Regex.IsMatch(text, @"^\[.+\]", RegexOptions.Multiline);
             }
             catch
             {

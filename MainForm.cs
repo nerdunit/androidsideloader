@@ -3426,6 +3426,80 @@ namespace AndroidSideloader
             gamesToUpload.Add(game);
         }
 
+        /// <summary>
+        /// Parses the rclone download config and returns the set of top-level
+        /// remote names — remotes that are NOT referenced as dependencies by
+        /// other remotes.  In rclone configs, a remote can reference another
+        /// using the "remotename:path" syntax (e.g. alias, crypt, union, cache).
+        /// Those dependency remotes are helpers and should not appear as mirrors.
+        /// </summary>
+        private static HashSet<string> GetTopLevelRemotes()
+        {
+            var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                string configPath = Path.Combine(Environment.CurrentDirectory, "rclone", RCLONE.downloadConfigPath);
+                if (!File.Exists(configPath))
+                    return result;
+
+                string[] lines = File.ReadAllLines(configPath);
+
+                // First pass: collect section names and their config values
+                var sections = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+                string currentSection = null;
+
+                foreach (string line in lines)
+                {
+                    string trimmed = line.Trim();
+                    if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+                    {
+                        currentSection = trimmed.Substring(1, trimmed.Length - 2).Trim();
+                        if (!sections.ContainsKey(currentSection))
+                            sections[currentSection] = new List<string>();
+                    }
+                    else if (currentSection != null && trimmed.Contains("="))
+                    {
+                        int eqIdx = trimmed.IndexOf('=');
+                        string value = trimmed.Substring(eqIdx + 1).Trim();
+                        sections[currentSection].Add(value);
+                    }
+                }
+
+                // Second pass: find which remotes are referenced by others
+                // via the standard rclone "remotename:" pattern in values
+                var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var kvp in sections)
+                {
+                    foreach (string value in kvp.Value)
+                    {
+                        foreach (string remoteName in sections.Keys)
+                        {
+                            if (string.Equals(kvp.Key, remoteName, StringComparison.OrdinalIgnoreCase))
+                                continue; // skip self-references
+
+                            if (value.IndexOf(remoteName + ":", StringComparison.OrdinalIgnoreCase) >= 0)
+                                referenced.Add(remoteName);
+                        }
+                    }
+                }
+
+                // Top-level = all sections that are not referenced by others
+                foreach (string name in sections.Keys)
+                {
+                    if (!referenced.Contains(name))
+                        result.Add(name);
+                }
+
+                Logger.Log($"Top-level remotes: {string.Join(", ", result)}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Failed to parse rclone config for top-level remotes: {ex.Message}", LogLevel.WARNING);
+            }
+
+            return result;
+        }
+
         private async Task initMirrors()
         {
             _ = Logger.Log("Looking for Additional Mirrors...");
@@ -3507,17 +3581,30 @@ namespace AndroidSideloader
                 itemsCount++;
             }
 
+            // Parse the config to find which remotes are top-level (not
+            // referenced as dependencies by other remotes).  Helper remotes
+            // like [localfs] that only exist as building blocks are excluded.
+            var topLevel = GetTopLevelRemotes();
+
             foreach (string mirror in mirrors)
             {
-                if (mirror.Contains("mirror"))
+                string name = mirror.TrimEnd(':', ' ', '\r', '\n');
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+
+                // When we successfully parsed the config, skip helpers
+                if (topLevel.Count > 0 && !topLevel.Contains(name))
                 {
-                    _ = Logger.Log(mirror.Remove(mirror.Length - 1));
-                    await Task.Run(() => remotesList.Invoke(() =>
-                    {
-                        _ = remotesList.Items.Add(mirror.Remove(mirror.Length - 1));
-                    }));
-                    itemsCount++;
+                    _ = Logger.Log($"Skipping helper remote: {name}");
+                    continue;
                 }
+
+                _ = Logger.Log(name);
+                await Task.Run(() => remotesList.Invoke(() =>
+                {
+                    _ = remotesList.Items.Add(name);
+                }));
+                itemsCount++;
             }
 
             if (itemsCount > 0)
