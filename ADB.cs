@@ -74,6 +74,11 @@ namespace AndroidSideloader
 
         public static ProcessOutput RunAdbCommandToString(string command, bool suppressLogging = false)
         {
+            if (!File.Exists(adbFilePath))
+            {
+                return new ProcessOutput("", "adb.exe not found");
+            }
+
             command = command.Replace("adb", "");
 
             settings.ADBFolder = adbFolderPath;

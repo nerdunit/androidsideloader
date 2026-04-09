@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace AndroidSideloader
@@ -48,10 +49,11 @@ namespace AndroidSideloader
         }
 
         // Result
-        public enum StartupChoice { None, Online, Offline }
+        public enum StartupChoice { None, Online, Offline, RcloneConfig }
         public StartupChoice Choice { get; private set; } = StartupChoice.None;
         // State
         private bool _hasExistingConfig;
+        private bool _hasExistingRcloneConfig;
         private string _configFailReason;
 
         public StartupDialog(string initialError = null)
@@ -67,26 +69,73 @@ namespace AndroidSideloader
             // Show version in title
             _titleLabel.Text = $"Rookie Sideloader {Updater.LocalVersion}";
 
-            // Check for an existing valid download.config before asking for a URL
+            // Check for existing valid configs before asking for a URL
             _hasExistingConfig = TryValidateExistingConfig();
+            _hasExistingRcloneConfig = TryValidateExistingRcloneConfig();
+
+            // Position existing config labels and resize the form to fit exactly
+            int TITLE_BOTTOM_Y = 30;    // first usable Y below title/close button
+            const int LABEL_ROW_HEIGHT = 16;  // height per label row (13px font + 3px gap)
+            const int AFTER_LABEL_GAP = 6;    // gap between last label and first button
+            const int DESIGNER_BUTTON_Y = 50; // _btnProvidePublic.Top in designer
+
+            int labelCount = 0;
+            int labelY = TITLE_BOTTOM_Y;
 
             if (_hasExistingConfig)
             {
-                _existingConfigLabel.Text = "\u2714 Valid config found \u2014 click HERE to reconnect";
+                _existingConfigLabel.Text = "\u2714 Public config found \u2014 click here to reconnect";
                 _existingConfigLabel.ForeColor = AccentColor;
+                _existingConfigLabel.Location = new Point(3, labelY);
                 _existingConfigLabel.Visible = true;
                 _existingConfigLabel.Cursor = Cursors.Hand;
+                labelCount++;
+                labelY += LABEL_ROW_HEIGHT;
             }
-            else if (_configFailReason != null)
+
+            if (_hasExistingRcloneConfig)
+            {
+                _existingRcloneLabel.Text = "\u2714 Rclone config found \u2014 click here to reconnect";
+                _existingRcloneLabel.ForeColor = AccentColor;
+                _existingRcloneLabel.Location = new Point(3, labelY);
+                _existingRcloneLabel.Visible = true;
+                _existingRcloneLabel.Cursor = Cursors.Hand;
+                labelCount++;
+            }
+
+            // Keep error label aligned with the label area
+            _errorLabel.Location = new Point(2, TITLE_BOTTOM_Y);
+
+            if (!_hasExistingConfig && !_hasExistingRcloneConfig && _configFailReason != null)
             {
                 // Config file exists but failed validation — tell the user why
                 ShowError(_configFailReason);
+                labelCount = 1;
             }
 
             // If the caller passed an explicit error (e.g. all mirrors exhausted),
-            // show it — this overrides the existing-config label if needed.
+            // show it — this overrides the existing-config labels if needed.
             if (!string.IsNullOrEmpty(initialError))
+            {
                 ShowError(initialError);
+                if (labelCount == 0) labelCount = 1;
+            }
+
+            // Move the buttons down a little if there are no labels
+            if (labelCount == 0)
+            {
+                TITLE_BOTTOM_Y += 8;
+            }
+
+            // Shift all controls below the label area and resize the form to match
+            int buttonTopY = TITLE_BOTTOM_Y + labelCount * LABEL_ROW_HEIGHT + (labelCount > 0 ? AFTER_LABEL_GAP : 0);
+            int shift = buttonTopY - DESIGNER_BUTTON_Y;
+            _btnProvidePublic.Top += shift;
+            _btnProvideRclone.Top += shift;
+            _separator.Top += shift;
+            _orLabel.Top += shift;
+            _offlineButton.Top += shift;
+            this.Height += shift;
 
             this.ActiveControl = _titleLabel;
         }
@@ -123,26 +172,33 @@ namespace AndroidSideloader
             panel1.Controls.Add(closeButton);
             closeButton.BringToFront();
 
-            // Enter URL button
-            _btnEnterUrl.Paint += RoundedButton_Paint;
-            _btnEnterUrl.Click += (s, e) => OnEnterUrlClicked();
-            _btnEnterUrl.MouseEnter += (s, e) => _btnEnterUrl.BackColor = ButtonActive1;
-            _btnEnterUrl.MouseLeave += (s, e) => _btnEnterUrl.BackColor = ButtonInactive1;
+            // Provide Public Config button
+            _btnProvidePublic.Paint += RoundedButton_Paint;
+            _btnProvidePublic.Click += (s, e) => OnProvidePublicClicked();
+            _btnProvidePublic.MouseEnter += (s, e) => _btnProvidePublic.BackColor = ButtonActive1;
+            _btnProvidePublic.MouseLeave += (s, e) => _btnProvidePublic.BackColor = ButtonInactive1;
 
-            // Browse File button
-            _btnBrowseFile.Paint += RoundedButton_Paint;
-            _btnBrowseFile.Click += (s, e) => OnBrowseJsonClicked();
-            _btnBrowseFile.MouseEnter += (s, e) => _btnBrowseFile.BackColor = ButtonActive1;
-            _btnBrowseFile.MouseLeave += (s, e) => _btnBrowseFile.BackColor = ButtonInactive1;
+            // Provide Rclone Config button
+            _btnProvideRclone.Paint += RoundedButton_Paint;
+            _btnProvideRclone.Click += (s, e) => OnProvideRcloneClicked();
+            _btnProvideRclone.MouseEnter += (s, e) => _btnProvideRclone.BackColor = ButtonActive1;
+            _btnProvideRclone.MouseLeave += (s, e) => _btnProvideRclone.BackColor = ButtonInactive1;
 
-            // Paste Config button
-            _btnPasteCode.Paint += RoundedButton_Paint;
-            _btnPasteCode.Click += (s, e) => OnPasteJsonClicked();
-            _btnPasteCode.MouseEnter += (s, e) => _btnPasteCode.BackColor = ButtonActive1;
-            _btnPasteCode.MouseLeave += (s, e) => _btnPasteCode.BackColor = ButtonInactive1;
-
-            // Existing config label click
-            _existingConfigLabel.Click += (s, e) => OnExistingConfigClicked();
+            // Existing config label clicks
+            _existingConfigLabel.Click += (s, e) =>
+            {
+                if (!_hasExistingConfig) return;
+                Choice = StartupChoice.Online;
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            };
+            _existingRcloneLabel.Click += (s, e) =>
+            {
+                if (!_hasExistingRcloneConfig) return;
+                Choice = StartupChoice.RcloneConfig;
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            };
 
             // Offline button paint + events
             _offlineButton.Paint += RoundedButton_Paint;
@@ -158,9 +214,9 @@ namespace AndroidSideloader
             // Enable dragging on labels (but not the clickable buttons/links)
             foreach (Control ctrl in panel1.Controls)
             {
-                if (ctrl is Label && ctrl != _btnEnterUrl && ctrl != _btnBrowseFile
-                    && ctrl != _btnPasteCode && ctrl != _offlineButton
-                    && ctrl != _existingConfigLabel)
+                if (ctrl is Label && ctrl != _btnProvidePublic && ctrl != _btnProvideRclone
+                    && ctrl != _offlineButton
+                    && ctrl != _existingConfigLabel && ctrl != _existingRcloneLabel)
                 {
                     ctrl.MouseDown += StartupDialog_MouseDown;
                 }
@@ -180,13 +236,50 @@ namespace AndroidSideloader
         private void StartupDialog_MouseMove(object sender, MouseEventArgs e) { }
         private void StartupDialog_MouseUp(object sender, MouseEventArgs e) { }
 
-        // Enter URL logic
-        private void OnEnterUrlClicked()
+        // Provide Public Config
+        private void OnProvidePublicClicked()
         {
+            if (ShowProvideConfigDialog(true))
+            {
+                Choice = StartupChoice.Online;
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            }
+        }
+
+        // Provide Rclone Config
+        private void OnProvideRcloneClicked()
+        {
+            if (ShowProvideConfigDialog(false))
+            {
+                Choice = StartupChoice.RcloneConfig;
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            }
+        }
+
+        /// <summary>
+        /// Shows a unified dialog that lets the user provide config content by
+        /// pasting it, browsing for a file, or fetching from a URL.
+        /// Returns true if the config was successfully validated and saved.
+        /// </summary>
+        private bool ShowProvideConfigDialog(bool isPublic)
+        {
+            string title = isPublic ? "Provide Public Config" : "Provide Rclone Config";
+            string hint = isPublic
+                ? "Paste JSON config, browse for a .json file, or fetch from a URL:"
+                : "Paste Rclone config, browse for a file, or fetch from a URL:";
+            string browseFilter = isPublic
+                ? "JSON files (*.json)|*.json|All files (*.*)|*.*"
+                : "Config files (*.config;*.conf)|*.config;*.conf|All files (*.*)|*.*";
+            string browseTitle = isPublic
+                ? "Select a public config JSON file"
+                : "Select an Rclone config file";
+
             using (Form dialog = new Form())
             {
-                dialog.Text = "Enter Config URL";
-                dialog.Size = new Size(440, 180);
+                dialog.Text = title;
+                dialog.Size = new Size(460, 340);
                 dialog.StartPosition = FormStartPosition.CenterParent;
                 dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dialog.MaximizeBox = false;
@@ -196,7 +289,7 @@ namespace AndroidSideloader
 
                 var label = new Label
                 {
-                    Text = "Enter URL to a config file:",
+                    Text = hint,
                     ForeColor = Color.White,
                     AutoSize = true,
                     Location = new Point(15, 15)
@@ -205,44 +298,229 @@ namespace AndroidSideloader
                 var textBox = new TextBox
                 {
                     Location = new Point(15, 38),
-                    Size = new Size(395, 23),
+                    Size = new Size(415, 185),
+                    Multiline = true,
+                    ScrollBars = ScrollBars.Vertical,
                     BackColor = Color.FromArgb(28, 32, 38),
                     ForeColor = Color.FromArgb(200, 205, 215),
                     BorderStyle = BorderStyle.FixedSingle,
-                    Font = new Font("Segoe UI", 9.5F)
+                    Font = new Font("Consolas", 9F),
+                    AcceptsReturn = true
                 };
-
-                string savedUrl = SettingsManager.Instance.ConfigUrl;
-                if (!string.IsNullOrWhiteSpace(savedUrl))
-                    textBox.Text = savedUrl;
 
                 var errorLbl = new Label
                 {
                     ForeColor = ErrorColor,
                     Font = new Font("Segoe UI", 8F),
-                    Location = new Point(15, 65),
-                    Size = new Size(395, 16),
+                    Location = new Point(15, 228),
+                    Size = new Size(415, 16),
                     Visible = false
                 };
 
-                var connectBtn = new Button
+                // Browse button — loads file content into the textbox
+                var browseBtn = new Button
                 {
-                    Text = "CONNECT",
-                    Location = new Point(245, 105),
+                    Text = "FROM FILE",
+                    Location = new Point(15, 250),
                     Size = new Size(85, 28),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(42, 45, 58),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9F),
+                    Cursor = Cursors.Hand
+                };
+                browseBtn.FlatAppearance.BorderSize = 0;
+                browseBtn.Click += (s, ev) =>
+                {
+                    using (var ofd = new OpenFileDialog())
+                    {
+                        ofd.Title = browseTitle;
+                        ofd.Filter = browseFilter;
+                        if (!isPublic)
+                        {
+                            string rcloneDir = Path.Combine(Environment.CurrentDirectory, "rclone");
+                            ofd.InitialDirectory = Directory.Exists(rcloneDir) ? rcloneDir : Environment.CurrentDirectory;
+                        }
+                        else
+                        {
+                            ofd.InitialDirectory = Environment.CurrentDirectory;
+                        }
+                        if (ofd.ShowDialog(dialog) == DialogResult.OK)
+                        {
+                            try { textBox.Text = File.ReadAllText(ofd.FileName); errorLbl.Visible = false; }
+                            catch (Exception ex) { errorLbl.Text = $"Failed to read file: {ex.Message}"; errorLbl.Visible = true; }
+                        }
+                    }
+                };
+
+                // From URL button — fetches content from a URL into the textbox
+                var urlBtn = new Button
+                {
+                    Text = "FROM URL",
+                    Location = new Point(108, 250),
+                    Size = new Size(95, 28),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(42, 45, 58),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9F),
+                    Cursor = Cursors.Hand
+                };
+                urlBtn.FlatAppearance.BorderSize = 0;
+                urlBtn.Click += (s, ev) =>
+                {
+                    using (Form urlDialog = new Form())
+                    {
+                        urlDialog.Text = "Fetch from URL";
+                        urlDialog.Size = new Size(440, 155);
+                        urlDialog.StartPosition = FormStartPosition.CenterParent;
+                        urlDialog.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        urlDialog.MaximizeBox = false;
+                        urlDialog.MinimizeBox = false;
+                        urlDialog.BackColor = Color.FromArgb(20, 24, 29);
+                        urlDialog.ForeColor = Color.White;
+
+                        var urlLabel = new Label
+                        {
+                            Text = "Enter URL:",
+                            ForeColor = Color.White,
+                            AutoSize = true,
+                            Location = new Point(15, 15)
+                        };
+
+                        var urlTextBox = new TextBox
+                        {
+                            Location = new Point(15, 38),
+                            Size = new Size(395, 23),
+                            BackColor = Color.FromArgb(28, 32, 38),
+                            ForeColor = Color.FromArgb(200, 205, 215),
+                            BorderStyle = BorderStyle.FixedSingle,
+                            Font = new Font("Segoe UI", 9.5F)
+                        };
+
+                        if (isPublic)
+                        {
+                            string savedUrl = SettingsManager.Instance.ConfigUrl;
+                            if (!string.IsNullOrWhiteSpace(savedUrl))
+                                urlTextBox.Text = savedUrl;
+                        }
+
+                        var urlErrorLbl = new Label
+                        {
+                            ForeColor = ErrorColor,
+                            Font = new Font("Segoe UI", 8F),
+                            Location = new Point(15, 65),
+                            Size = new Size(395, 16),
+                            Visible = false
+                        };
+
+                        var fetchBtn = new Button
+                        {
+                            Text = "FETCH",
+                            Location = new Point(255, 85),
+                            Size = new Size(75, 28),
+                            FlatStyle = FlatStyle.Flat,
+                            BackColor = AccentColor,
+                            ForeColor = Color.Black,
+                            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold),
+                            Cursor = Cursors.Hand
+                        };
+                        fetchBtn.FlatAppearance.BorderSize = 0;
+
+                        var urlCancelBtn = new Button
+                        {
+                            Text = "Cancel",
+                            DialogResult = DialogResult.Cancel,
+                            Location = new Point(340, 85),
+                            Size = new Size(75, 28),
+                            FlatStyle = FlatStyle.Flat,
+                            BackColor = Color.FromArgb(42, 45, 58),
+                            ForeColor = Color.White,
+                            Font = new Font("Segoe UI", 9F),
+                            Cursor = Cursors.Hand
+                        };
+                        urlCancelBtn.FlatAppearance.BorderSize = 0;
+
+                        bool busy = false;
+                        fetchBtn.Click += async (s2, ev2) =>
+                        {
+                            string url = urlTextBox.Text.Trim();
+                            if (string.IsNullOrWhiteSpace(url) || busy) return;
+
+                            busy = true;
+                            urlErrorLbl.Visible = false;
+                            fetchBtn.Text = "...";
+                            fetchBtn.Cursor = Cursors.WaitCursor;
+                            urlTextBox.Enabled = false;
+
+                            try
+                            {
+                                var result = await System.Threading.Tasks.Task.Run(() => FetchUrlContent(url));
+                                if (result.Item1 != null)
+                                {
+                                    if (isPublic)
+                                    {
+                                        SettingsManager.Instance.ConfigUrl = url;
+                                        SettingsManager.Instance.Save();
+                                    }
+                                    textBox.Text = result.Item1;
+                                    urlDialog.DialogResult = DialogResult.OK;
+                                    urlDialog.Close();
+                                }
+                                else
+                                {
+                                    urlErrorLbl.Text = result.Item2;
+                                    urlErrorLbl.Visible = true;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                urlErrorLbl.Text = $"Unexpected error: {ex.Message}";
+                                urlErrorLbl.Visible = true;
+                            }
+                            finally
+                            {
+                                busy = false;
+                                fetchBtn.Text = "FETCH";
+                                fetchBtn.Cursor = Cursors.Hand;
+                                urlTextBox.Enabled = true;
+                            }
+                        };
+
+                        urlTextBox.KeyDown += (s2, ev2) =>
+                        {
+                            if (ev2.KeyCode == Keys.Enter)
+                            {
+                                ev2.SuppressKeyPress = true;
+                                fetchBtn.PerformClick();
+                            }
+                        };
+
+                        urlDialog.Controls.AddRange(new Control[] { urlLabel, urlTextBox, urlErrorLbl, fetchBtn, urlCancelBtn });
+                        urlDialog.CancelButton = urlCancelBtn;
+                        urlDialog.Shown += (s2, ev2) => urlTextBox.Focus();
+                        urlDialog.ShowDialog(dialog);
+                    }
+                };
+
+                // Apply button — validates content and saves the config file
+                var applyBtn = new Button
+                {
+                    Text = "APPLY",
+                    Location = new Point(275, 250),
+                    Size = new Size(75, 28),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = AccentColor,
                     ForeColor = Color.Black,
                     Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
-                connectBtn.FlatAppearance.BorderSize = 0;
+                applyBtn.FlatAppearance.BorderSize = 0;
 
                 var cancelBtn = new Button
                 {
                     Text = "Cancel",
                     DialogResult = DialogResult.Cancel,
-                    Location = new Point(340, 105),
+                    Location = new Point(360, 250),
                     Size = new Size(75, 28),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(42, 45, 58),
@@ -252,86 +530,43 @@ namespace AndroidSideloader
                 };
                 cancelBtn.FlatAppearance.BorderSize = 0;
 
-                bool busy = false;
-                connectBtn.Click += async (s, ev) =>
+                applyBtn.Click += (s, ev) =>
                 {
-                    string url = textBox.Text.Trim();
-                    if (string.IsNullOrWhiteSpace(url) || busy) return;
-
-                    busy = true;
                     errorLbl.Visible = false;
-                    connectBtn.Text = "...";
-                    connectBtn.Cursor = Cursors.WaitCursor;
-                    textBox.Enabled = false;
-
-                    try
+                    string content = textBox.Text.Trim();
+                    if (string.IsNullOrWhiteSpace(content))
                     {
-                        string err = await System.Threading.Tasks.Task.Run(() => TryFetchConfig(url));
-                        if (err == null)
-                        {
-                            SettingsManager.Instance.ConfigUrl = url;
-                            SettingsManager.Instance.Save();
-                            dialog.DialogResult = DialogResult.OK;
-                            dialog.Close();
-                        }
-                        else
-                        {
-                            errorLbl.Text = err;
-                            errorLbl.Visible = true;
-                        }
+                        errorLbl.Text = "Provide config content first";
+                        errorLbl.Visible = true;
+                        return;
                     }
-                    catch (Exception ex)
+
+                    string error = isPublic ? TryLoadJsonContent(content) : TryLoadRcloneContent(content);
+                    if (error == null)
                     {
-                        errorLbl.Text = $"Unexpected error: {ex.Message}";
+                        dialog.DialogResult = DialogResult.OK;
+                        dialog.Close();
+                    }
+                    else
+                    {
+                        errorLbl.Text = error;
                         errorLbl.Visible = true;
                     }
-                    finally
-                    {
-                        busy = false;
-                        connectBtn.Text = "CONNECT";
-                        connectBtn.Cursor = Cursors.Hand;
-                        textBox.Enabled = true;
-                    }
                 };
 
-                dialog.Controls.AddRange(new Control[] { label, textBox, errorLbl, connectBtn, cancelBtn });
+                dialog.Controls.AddRange(new Control[] { label, textBox, errorLbl, browseBtn, urlBtn, applyBtn, cancelBtn });
                 dialog.CancelButton = cancelBtn;
-
-                textBox.KeyDown += (s, ev) =>
-                {
-                    if (ev.KeyCode == Keys.Enter)
-                    {
-                        ev.SuppressKeyPress = true;
-                        connectBtn.PerformClick();
-                    }
-                };
-
                 dialog.Shown += (s, ev) => textBox.Focus();
 
-                if (dialog.ShowDialog(this) != DialogResult.OK)
-                    return;
+                return dialog.ShowDialog(this) == DialogResult.OK;
             }
-
-            Choice = StartupChoice.Online;
-            this.DialogResult = DialogResult.OK;
-            this.Close();
-        }
-
-        // Use existing config
-        private void OnExistingConfigClicked()
-        {
-            if (!_hasExistingConfig) return;
-            Choice = StartupChoice.Online;
-            this.DialogResult = DialogResult.OK;
-            this.Close();
         }
 
         /// <summary>
-        /// Attempts to download config JSON from the given URL, parse it,
-        /// and write it to public.json.  Returns null on success or
-        /// an error message string on failure.
+        /// Downloads text content from a URL.
+        /// Returns Tuple(content, null) on success, or Tuple(null, errorMessage) on failure.
         /// </summary>
-        private string TryFetchConfig(string url)
+        private Tuple<string, string> FetchUrlContent(string url)
         {
             try
             {
@@ -347,59 +582,56 @@ namespace AndroidSideloader
                     System.Net.SecurityProtocolType.Tls12 |
                     System.Net.SecurityProtocolType.Ssl3;
 
-                string json;
-                try
+                var request = DnsHelper.CreateWebRequest(url);
+                request.Timeout = 15000;
+                using (var response = request.GetResponse())
+                using (var stream = response.GetResponseStream())
+                using (var reader = new StreamReader(stream))
                 {
-                    var request = DnsHelper.CreateWebRequest(url);
-                    request.Timeout = 15000;
-                    using (var response = request.GetResponse())
-                    using (var stream = response.GetResponseStream())
-                    using (var reader = new System.IO.StreamReader(stream))
-                    {
-                        json = reader.ReadToEnd();
-                    }
+                    string content = reader.ReadToEnd();
+                    if (string.IsNullOrWhiteSpace(content))
+                        return Tuple.Create((string)null, "Server returned an empty response");
+                    return Tuple.Create(content, (string)null);
                 }
-                catch (System.Net.WebException wex)
-                {
-                    Logger.Log($"Config fetch failed: {wex.Message}", LogLevel.ERROR);
-                    if (wex.Response is System.Net.HttpWebResponse httpResp)
-                        return $"Server returned {(int)httpResp.StatusCode} {httpResp.StatusDescription}";
-                    return $"Could not reach the server. Check URL and your connection";
-                }
+            }
+            catch (System.Net.WebException wex)
+            {
+                Logger.Log($"URL fetch failed: {wex.Message}", LogLevel.ERROR);
+                if (wex.Response is System.Net.HttpWebResponse httpResp)
+                    return Tuple.Create((string)null, $"Server returned {(int)httpResp.StatusCode} {httpResp.StatusDescription}");
+                return Tuple.Create((string)null, "Could not reach the server. Check URL and your connection");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"URL fetch error: {ex.Message}", LogLevel.ERROR);
+                return Tuple.Create((string)null, $"Failed to fetch URL: {ex.Message}");
+            }
+        }
 
-                if (string.IsNullOrWhiteSpace(json))
-                    return "Server returned an empty response";
+        /// <summary>
+        /// Validates rclone config content and writes it to rclone/download.config.
+        /// Returns null on success, or an error message on failure.
+        /// </summary>
+        private string TryLoadRcloneContent(string content)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(content))
+                    return "Config content is empty";
 
-                Models.PublicConfig config;
-                try
-                {
-                    config = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.PublicConfig>(json);
-                }
-                catch
-                {
-                    return "Response does not include a valid config";
-                }
+                if (!Regex.IsMatch(content, @"\[.*mirror.*\]", RegexOptions.IgnoreCase))
+                    return "Config must contain at least one [mirror...] section";
 
-                if (config == null)
-                    return "Response does not include a valid config";
-
-                if (string.IsNullOrWhiteSpace(config.BaseUri))
-                    return "Config is missing the 'baseUri' field";
-
-                if (string.IsNullOrWhiteSpace(config.Password))
-                    return "Config is missing the 'password' field";
-
-                string configFilePath = System.IO.Path.Combine(
-                    Environment.CurrentDirectory, "public.json");
-                System.IO.File.WriteAllText(configFilePath, json);
-                Logger.Log($"Config saved from: {url}");
-
+                string destPath = Path.Combine(Environment.CurrentDirectory, "rclone", "download.config");
+                Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+                File.WriteAllText(destPath, content);
+                Logger.Log("Rclone download.config written from user-provided content");
                 return null;
             }
             catch (Exception ex)
             {
-                Logger.Log($"Config fetch error: {ex.Message}", LogLevel.ERROR);
-                return $"Failed to retrieve config: {ex.Message}";
+                Logger.Log($"Rclone config save error: {ex.Message}", LogLevel.ERROR);
+                return $"Failed to save config: {ex.Message}";
             }
         }
 
@@ -413,6 +645,8 @@ namespace AndroidSideloader
             }
             if (_existingConfigLabel != null)
                 _existingConfigLabel.Visible = false;
+            if (_existingRcloneLabel != null)
+                _existingRcloneLabel.Visible = false;
         }
 
         private void ClearError()
@@ -424,6 +658,8 @@ namespace AndroidSideloader
             }
             if (_existingConfigLabel != null && _hasExistingConfig)
                 _existingConfigLabel.Visible = true;
+            if (_existingRcloneLabel != null && _hasExistingRcloneConfig)
+                _existingRcloneLabel.Visible = true;
         }
 
         // Custom painting
@@ -686,127 +922,29 @@ namespace AndroidSideloader
             }
         }
 
-        // Browse JSON file
-        private void OnBrowseJsonClicked()
+        /// <summary>
+        /// Checks if rclone/download.config exists and contains at least one
+        /// mirror remote section.
+        /// </summary>
+        private bool TryValidateExistingRcloneConfig()
         {
-            using (var dialog = new OpenFileDialog())
+            try
             {
-                dialog.Title = "Select a config JSON file";
-                dialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
-                dialog.InitialDirectory = Environment.CurrentDirectory;
+                string configPath = Path.Combine(Environment.CurrentDirectory, "rclone", "download.config");
+                if (!File.Exists(configPath))
+                    return false;
 
-                if (dialog.ShowDialog(this) != DialogResult.OK)
-                    return;
+                string text = File.ReadAllText(configPath);
+                if (string.IsNullOrWhiteSpace(text))
+                    return false;
 
-                try
-                {
-                    string json = File.ReadAllText(dialog.FileName);
-                    string error = TryLoadJsonContent(json);
-
-                    if (error == null)
-                    {
-                        Choice = StartupChoice.Online;
-                        this.DialogResult = DialogResult.OK;
-                        this.Close();
-                    }
-                    else
-                    {
-                        ShowError(error);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ShowError($"Failed to read file: {ex.Message}");
-                }
+                return Regex.IsMatch(text, @"\[.*mirror.*\]", RegexOptions.IgnoreCase);
+            }
+            catch
+            {
+                return false;
             }
         }
 
-        // Paste JSON code
-        private void OnPasteJsonClicked()
-        {
-            using (Form dialog = new Form())
-            {
-                dialog.Text = "Paste Config JSON";
-                dialog.Size = new Size(440, 280);
-                dialog.StartPosition = FormStartPosition.CenterParent;
-                dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dialog.MaximizeBox = false;
-                dialog.MinimizeBox = false;
-                dialog.BackColor = Color.FromArgb(20, 24, 29);
-                dialog.ForeColor = Color.White;
-
-                var label = new Label
-                {
-                    Text = "Paste JSON config content below:",
-                    ForeColor = Color.White,
-                    AutoSize = true,
-                    Location = new Point(15, 15)
-                };
-
-                var textBox = new TextBox
-                {
-                    Location = new Point(15, 38),
-                    Size = new Size(395, 155),
-                    Multiline = true,
-                    ScrollBars = ScrollBars.Vertical,
-                    BackColor = Color.FromArgb(28, 32, 38),
-                    ForeColor = Color.FromArgb(200, 205, 215),
-                    BorderStyle = BorderStyle.FixedSingle,
-                    Font = new Font("Consolas", 9F),
-                    AcceptsReturn = true
-                };
-
-                var okButton = new Button
-                {
-                    Text = "Apply",
-                    DialogResult = DialogResult.OK,
-                    Location = new Point(255, 205),
-                    Size = new Size(75, 28),
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = AccentColor,
-                    ForeColor = Color.Black,
-                    Font = new Font("Segoe UI", 9F),
-                    Cursor = Cursors.Hand
-                };
-                okButton.FlatAppearance.BorderSize = 0;
-
-                var cancelButton = new Button
-                {
-                    Text = "Cancel",
-                    DialogResult = DialogResult.Cancel,
-                    Location = new Point(340, 205),
-                    Size = new Size(75, 28),
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = Color.FromArgb(42, 45, 58),
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 9F),
-                    Cursor = Cursors.Hand
-                };
-                cancelButton.FlatAppearance.BorderSize = 0;
-
-                dialog.Controls.AddRange(new Control[] { label, textBox, okButton, cancelButton });
-                dialog.AcceptButton = okButton;
-                dialog.CancelButton = cancelButton;
-
-                dialog.Shown += (s, ev) => textBox.Focus();
-
-                if (dialog.ShowDialog(this) != DialogResult.OK)
-                    return;
-
-                string json = textBox.Text.Trim();
-                string error = TryLoadJsonContent(json);
-
-                if (error == null)
-                {
-                    Choice = StartupChoice.Online;
-                    this.DialogResult = DialogResult.OK;
-                    this.Close();
-                }
-                else
-                {
-                    ShowError(error);
-                }
             }
         }
-    }
-}

@@ -577,6 +577,28 @@ namespace AndroidSideloader
                     Logger.Log($"Auto-load config check failed: {ex.Message}", LogLevel.WARNING);
                 }
 
+                // If public.json auto-load failed, check for rclone/download.config with mirrors
+                if (!configAutoLoaded)
+                {
+                    try
+                    {
+                        string downloadConfigFile = Path.Combine(Environment.CurrentDirectory, "rclone", "download.config");
+                        if (File.Exists(downloadConfigFile))
+                        {
+                            string configText = File.ReadAllText(downloadConfigFile);
+                            if (Regex.IsMatch(configText, @"\[.*mirror.*\]", RegexOptions.IgnoreCase))
+                            {
+                                configAutoLoaded = true;
+                                Logger.Log("Found rclone/download.config with mirror remotes, skipping startup dialog");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Rclone config check failed: {ex.Message}", LogLevel.WARNING);
+                    }
+                }
+
                 // If auto-load failed, show the startup dialog as usual
                 if (!configAutoLoaded)
                 {
@@ -594,6 +616,11 @@ namespace AndroidSideloader
                         {
                             isOffline = true;
                             Logger.Log("User chose offline mode from startup dialog");
+                        }
+                        else if (startupDialog.Choice == StartupDialog.StartupChoice.RcloneConfig)
+                        {
+                            // User provided an rclone download config — proceed online without public config
+                            Logger.Log("User provided rclone download.config from startup dialog");
                         }
                         else
                         {
@@ -670,13 +697,18 @@ namespace AndroidSideloader
             progressBar.IsIndeterminate = true;
             progressBar.OperationType = "Loading";
 
-            // Download dependencies and init RCLONE (only needed for online mode)
+            // Always download dependencies (adb, aapt, 7z, runtimes) regardless of mode
+            await Task.Run(() =>
+            {
+                changeTitle("Downloading Dependencies...");
+                GetDependencies.downloadFiles();
+            });
+
+            // Init RCLONE only in online mode
             if (!isOffline)
             {
                 await Task.Run(() =>
                 {
-                    changeTitle("Downloading Dependencies...");
-                    GetDependencies.downloadFiles();
                     changeTitle("Initializing RCLONE...");
                     RCLONE.Init();
                 });
@@ -696,12 +728,6 @@ namespace AndroidSideloader
                 changeTitle("Initializing Servers...");
 
                 await initMirrors();
-
-                if (!UsingPublicConfig)
-                {
-                    changeTitle("Grabbing the Games List...");
-                    await Task.Run(() => SideloaderRCLONE.initGames(currentRemote));
-                }
             }
             else
             {
@@ -802,11 +828,14 @@ namespace AndroidSideloader
             {
                 metadataTask = Task.Run(() =>
                 {
-                    changeTitle("Updating Metadata...");
-                    SideloaderRCLONE.UpdateMetadataFromPublic();
+                    if (hasPublicConfig)
+                    {
+                        changeTitle("Updating Metadata...");
+                        SideloaderRCLONE.UpdateMetadataFromPublic();
 
-                    changeTitle("Processing Metadata...");
-                    SideloaderRCLONE.ProcessMetadataFromPublic();
+                        changeTitle("Processing Metadata...");
+                        SideloaderRCLONE.ProcessMetadataFromPublic();
+                    }
 
                     if (!UsingPublicConfig)
                     {
@@ -839,6 +868,15 @@ namespace AndroidSideloader
             if (tasksToWait.Count > 0)
             {
                 await Task.WhenAll(tasksToWait);
+            }
+
+            // For non-Public mirrors, load the game list AFTER metadata processing
+            // completes. ProcessMetadataFromPublic() overwrites the game list with
+            // public data, so initGames must run afterwards to get the final word.
+            if (!isOffline && !UsingPublicConfig)
+            {
+                changeTitle("Grabbing the Games List...");
+                await Task.Run(() => SideloaderRCLONE.initGames(currentRemote));
             }
 
             string uploadConfigPath = Path.Combine(Environment.CurrentDirectory, "rclone", "upload.config");
@@ -3476,7 +3514,7 @@ namespace AndroidSideloader
                     _ = Logger.Log(mirror.Remove(mirror.Length - 1));
                     await Task.Run(() => remotesList.Invoke(() =>
                     {
-                        _ = remotesList.Items.Add(mirror.Remove(mirror.Length - 1).Replace("mirror", ""));
+                        _ = remotesList.Items.Add(mirror.Remove(mirror.Length - 1));
                     }));
                     itemsCount++;
                 }
@@ -3486,28 +3524,39 @@ namespace AndroidSideloader
             {
                 await Task.Run(() => remotesList.Invoke(() =>
                 {
-                    if (!string.IsNullOrWhiteSpace(settings.selectedMirror))
+                    // Suppress SelectedIndexChanged — we set currentRemote ourselves below
+                    _suppressMirrorRefresh = true;
+                    try
                     {
-                        int i = remotesList.Items.IndexOf(settings.selectedMirror);
-                        if (i >= 0)
-                            remotesList.SelectedIndex = i;
-                        else
+                        if (!string.IsNullOrWhiteSpace(settings.selectedMirror))
+                        {
+                            int i = remotesList.Items.IndexOf(settings.selectedMirror);
+                            if (i >= 0)
+                                remotesList.SelectedIndex = i;
+                            else
+                                remotesList.SelectedIndex = 0;
+                        }
+
+                        if (remotesList.SelectedIndex < 0 && remotesList.Items.Count > 0)
+                        {
                             remotesList.SelectedIndex = 0;
-                    }
+                        }
 
-                    if (remotesList.SelectedIndex < 0 && remotesList.Items.Count > 0)
+                        string selectedRemote = remotesList.SelectedItem.ToString();
+                        if (selectedRemote == "Public")
+                        {
+                            UsingPublicConfig = true;
+                        }
+                        else
+                        {
+                            UsingPublicConfig = false;
+                            currentRemote = selectedRemote;
+                        }
+                    }
+                    finally
                     {
-                        remotesList.SelectedIndex = 0;
+                        _suppressMirrorRefresh = false;
                     }
-
-                    string selectedRemote = remotesList.SelectedItem.ToString();
-                    currentRemote = "";
-
-                    if (selectedRemote != "Public")
-                    {
-                        currentRemote = "mirror";
-                    }
-                    currentRemote = string.Concat(currentRemote, selectedRemote);
                 }));
             }
         }
@@ -3799,7 +3848,7 @@ namespace AndroidSideloader
                         else
                         {
                             UsingPublicConfig = false;
-                            currentRemote = "mirror" + selected;
+                            currentRemote = selected;
                         }
                     }
                     finally
@@ -3841,6 +3890,13 @@ namespace AndroidSideloader
                 if (startupDialog.Choice == StartupDialog.StartupChoice.Offline)
                 {
                     // User explicitly chose offline — caller will set isOffline = true
+                    return;
+                }
+
+                if (startupDialog.Choice == StartupDialog.StartupChoice.RcloneConfig)
+                {
+                    // User provided rclone config — will be picked up on next mirror init
+                    quotaTries = 0;
                     return;
                 }
 
@@ -5790,7 +5846,7 @@ namespace AndroidSideloader
                 else
                 {
                     UsingPublicConfig = false;
-                    remotesList.Invoke(() => { currentRemote = "mirror" + selectedRemote; });
+                    remotesList.Invoke(() => { currentRemote = selectedRemote; });
                 }
 
                 settings.selectedMirror = selectedRemote;
@@ -7317,39 +7373,48 @@ function onYouTubeIframeAPIReady() {
 
                     isOffline = false;
 
-                    // Load the config that the startup dialog wrote
-                    try
+                    if (startupDialog.Choice == StartupDialog.StartupChoice.Online)
                     {
-                        string configFilePath = Path.Combine(Environment.CurrentDirectory, "public.json");
-                        if (File.Exists(configFilePath))
+                        // Load the config that the startup dialog wrote
+                        try
                         {
-                            string configFileData = File.ReadAllText(configFilePath);
-                            PublicConfig config = JsonConvert.DeserializeObject<PublicConfig>(configFileData);
-
-                            if (config != null &&
-                                !string.IsNullOrWhiteSpace(config.BaseUri) &&
-                                !string.IsNullOrWhiteSpace(config.Password))
+                            string configFilePath = Path.Combine(Environment.CurrentDirectory, "public.json");
+                            if (File.Exists(configFilePath))
                             {
-                                PublicConfigFile = config;
-                                hasPublicConfig = true;
-                                DnsHelper.TestPublicConfigDns();
+                                string configFileData = File.ReadAllText(configFilePath);
+                                PublicConfig config = JsonConvert.DeserializeObject<PublicConfig>(configFileData);
+
+                                if (config != null &&
+                                    !string.IsNullOrWhiteSpace(config.BaseUri) &&
+                                    !string.IsNullOrWhiteSpace(config.Password))
+                                {
+                                    PublicConfigFile = config;
+                                    hasPublicConfig = true;
+                                    DnsHelper.TestPublicConfigDns();
+                                }
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"Failed to load config: {ex.Message}", LogLevel.ERROR);
-                    }
+                        catch (Exception ex)
+                        {
+                            Logger.Log($"Failed to load config: {ex.Message}", LogLevel.ERROR);
+                        }
 
-                    if (!hasPublicConfig)
-                    {
-                        isOffline = true;
-                        progressBar.IsIndeterminate = false;
-                        changeTitle("Config invalid — still in offline mode");
-                        return;
-                    }
+                        if (!hasPublicConfig)
+                        {
+                            isOffline = true;
+                            progressBar.IsIndeterminate = false;
+                            changeTitle("Config invalid — still in offline mode");
+                            return;
+                        }
 
-                    UsingPublicConfig = true;
+                        UsingPublicConfig = true;
+                    }
+                    else
+                    {
+                        // RcloneConfig — no public.json needed
+                        UsingPublicConfig = false;
+                        Logger.Log("Reconnecting with rclone download.config");
+                    }
 
                     // Ensure dependencies are available
                     await Task.Run(() =>
@@ -8629,7 +8694,7 @@ function onYouTubeIframeAPIReady() {
             else
             {
                 UsingPublicConfig = false;
-                currentRemote = "mirror" + selected;
+                currentRemote = selected;
             }
 
             settings.selectedMirror = selected;
