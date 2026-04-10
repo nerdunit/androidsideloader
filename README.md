@@ -14,7 +14,7 @@ Rookie is a legitimate, legal tool built around standard Android Debug Bridge (A
 - **Online & Offline Modes** — On first launch, a startup dialog lets you choose how to operate:
   - **Online Mode** — Connect to a remote library using a public config or your own rclone config file. Configs can be loaded from a local file, a URL, or pasted directly.
   - **Offline / Local Library Mode** — Point Rookie at a local directory of APKs and OBBs. It scans the folder, calculates sizes, fetches version codes, and caches results — no server required.
-- **Gallery & List Views** — Browse apps in a visual gallery with adjustable tile sizes or a detailed sortable list. Both views support search, filters (Installed, Update Available, Downloaded, Ahead of Server), favorites, one-click install and one-click uninstall.
+- **Gallery & List Views** — Browse apps in a visual gallery with adjustable tile sizes or a detailed sortable list. Both views support search, filters (Installed, Update Available, Downloaded, Ahead of List), favorites, one-click install and one-click uninstall.
 - **Drag & Drop Installation** — Drag APK files or folders directly onto Rookie to install them to your device.
 - **Download Queue** — Queue multiple downloads with real-time progress, bandwidth limiting, and the option to resume interrupted transfers.
 - **Device Management** — Detect and switch between multiple connected Android devices, monitor connection status, and run custom ADB commands.
