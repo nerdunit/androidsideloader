@@ -1561,7 +1561,7 @@ namespace AndroidSideloader
             this.btnNewerThanList.Stroke = true;
             this.btnNewerThanList.StrokeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(74)))), ((int)(((byte)(74)))));
             this.btnNewerThanList.TabIndex = 92;
-            this.btnNewerThanList.Text = "AHEAD OF SERVER";
+            this.btnNewerThanList.Text = "AHEAD OF LIST";
             this.btnNewerThanList.TextXOffset = 0;
             this.btnNewerThanList.Transparency = false;
             this.btnNewerThanList.Click += new System.EventHandler(this.btnNewerThanList_Click);

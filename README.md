@@ -1,29 +1,54 @@
-# AndroidSideloader
+# Rookie Sideloader (AndroidSideloader)
 
-![GitHub last commit](https://img.shields.io/github/last-commit/VRPirates/rookie)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/VRPirates/rookie)
-[![Downloads](https://img.shields.io/github/downloads/VRPirates/rookie/total.svg)](https://github.com/VRPirates/rookie/releases)
-![Issues](https://img.shields.io/github/issues/VRPirates/rookie)
+![GitHub last commit](https://img.shields.io/github/last-commit/nerdunit/androidsideloader)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/nerdunit/androidsideloader)
+[![Downloads](https://img.shields.io/github/downloads/nerdunit/androidsideloader/total.svg)](https://github.com/nerdunit/androidsideloader/releases)
+![Issues](https://img.shields.io/github/issues/nerdunit/androidsideloader)
 
-## Disclaimer
-This application might get flagged as malware by some antivirus software; however, both the Sideloader and the Sideloader Launcher are open source.
+**Rookie Sideloader** (also known as **Rookie** or **RSL**) is a free, open-source, general-purpose Android sideloading tool for Windows. It provides a user-friendly interface for installing, managing, and updating Android applications on your devices — with a particular focus on standalone VR headsets such as Meta Quest.
 
-To run properly, Rookie must be extracted to a non-Protected folder on your drive. We recommend running Rookie from C:\RSL\Rookie
-Do Not use folders such as- C:\Users; C:\Users\Desktop; C:\Program Files; OneDrive; Google Drive; etc...
-Rookie will cleanup its own folder. We are not responsible if you run Rookie from a folder containing other files as Rookie may delete them.
+Rookie is a legitimate, legal tool built around standard Android Debug Bridge (ADB) functionality. It does not modify, crack, or bypass any software protections. Intended use cases include developer testing, installing applications not available through official storefronts, personal backups, and managing your own app libraries. Users are solely responsible for ensuring that their use of this tool complies with all applicable laws and the terms of service of their devices.
+
+## Features
+
+- **Online & Offline Modes** — On first launch, a startup dialog lets you choose how to operate:
+  - **Online Mode** — Connect to a remote library using a public config or your own rclone config file. Configs can be loaded from a local file, a URL, or pasted directly.
+  - **Offline / Local Library Mode** — Point Rookie at a local directory of APKs and OBBs. It scans the folder, calculates sizes, fetches version codes, and caches results — no server required.
+- **Gallery & List Views** — Browse apps in a visual gallery with adjustable tile sizes or a detailed sortable list. Both views support search, filters (Installed, Update Available, Downloaded, Ahead of List), favorites, one-click install and one-click uninstall.
+- **Drag & Drop Installation** — Drag APK files or folders directly onto Rookie to install them to your device.
+- **Download Queue** — Queue multiple downloads with real-time progress, bandwidth limiting, and the option to resume interrupted transfers.
+- **Device Management** — Detect and switch between multiple connected Android devices, monitor connection status, and run custom ADB commands.
+- **Backup & Restore** — Create and restore save states of installed applications.
+- **YouTube Trailers** — Preview app trailers directly inside Rookie.
+- **Automatic Updates** — Rookie checks for new versions on startup and can update itself from GitHub Releases.
+
+## Download
+
+Grab the latest release from the [Releases](https://github.com/nerdunit/androidsideloader/releases) page.
+
+## Important Notes
+
+> **Antivirus False Positives** — Some antivirus software may flag Rookie due to its use of ADB, archive extraction, and runtime downloads. Both the Sideloader and the Sideloader Launcher are fully open source — you can inspect and build the code yourself.
+
+> **Folder Placement** — Rookie must be extracted to an unprotected folder on your drive. We recommend `C:\RSL\Rookie`. **Do not** use protected or cloud-synced paths such as `C:\Users\Desktop`, `C:\Program Files`, OneDrive, or Google Drive. Rookie manages its own working directory and may clean up files within it — do not place it in a folder that contains other important files.
 
 ## Build Instructions
-This project is developed using C# with WinForms targeting the .NET Framework 4.5.2. To build the project successfully in Visual Studio 2022, follow these steps:
 
-1. Clone this repository to your local machine.
-2. Ensure you have the .NET Framework 4.5.2 installed on your machine.
-3. Open the solution file (`*.sln`) in Visual Studio 2026.
-4. Sometimes the building process can fail due to the packages.config, you should migrate it to PackageReference, do this by right clicking on References in the Solution Explorer, and pressing "Migrate packages.config to PackageReference"
-5. Build the solution by selecting "Build" > "Build Solution" from the Visual Studio menu or pressing `Ctrl + Shift + B`. (or right click the solution in the solution explorer, then press Build)
-6. Run the application.
+This project is built with C# / WinForms targeting **.NET Framework 4.5.2**.
+
+1. Clone this repository.
+2. Install the [.NET Framework 4.5.2 Developer Pack](https://dotnet.microsoft.com/download/dotnet-framework) if you don't already have it.
+3. Open `AndroidSideloader.sln` in Visual Studio 2022 or later.
+
+   > **Note:** If the build fails due to `packages.config`, migrate to PackageReference by right-clicking **References** in Solution Explorer and selecting **Migrate packages.config to PackageReference**.
+
+4. Build the solution (`Ctrl + Shift + B`).
+5. Run the application.
 
 ## Contributing
-We welcome contributions from the community. If you would like to contribute, please fork the repository, branch from the newest beta branch from this repository, make your changes, and submit a pull request.
+
+We welcome contributions from the community. Please fork the repository, branch from the newest beta branch, make your changes, and submit a pull request.
 
 ## License
-AndroidSideloader is distributed under the GPL license, meaning any forks of it must have their source code made public on the internet. See the [LICENSE](LICENSE) file for details.
+
+Rookie Sideloader is distributed under the **GNU General Public License v3.0** — any derivative work must also be made available as open source. See the [LICENSE](LICENSE) file for full details.
