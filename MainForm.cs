@@ -3075,7 +3075,7 @@ namespace AndroidSideloader
                 if (updateAvailableCount != 1) btnUpdateAvailable.Text = $"{updateAvailableCount} UPDATES";
                 else btnUpdateAvailable.Text = $"{updateAvailableCount} UPDATE";
                 btnUpdateAvailable.ForeColor = ColorUpdateAvailable;
-                btnNewerThanList.Text = $"{newerThanListCount} AHEAD OF SERVER";
+                btnNewerThanList.Text = $"{newerThanListCount} AHEAD OF LIST";
                 btnNewerThanList.ForeColor = ColorDonateGame;
                 btnDownloaded.Text = $"{downloadedCount} DOWNLOADED";
                 btnDownloaded.ForeColor = ColorDownloaded;
@@ -7009,7 +7009,7 @@ function onYouTubeIframeAPIReady() {
             if (!upToDate_Clicked)
             {
                 upToDate_Clicked = true;
-                // Filter to show installed, update available and ahead of server entries
+                // Filter to show installed, update available and ahead of list entries
                 FilterListByColors(new[] { ColorInstalled, ColorUpdateAvailable, ColorDonateGame });
             }
             else
