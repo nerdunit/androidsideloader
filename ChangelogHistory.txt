@@ -1,4 +1,25 @@
-﻿RSL 3.0.1
+﻿RSL 3.1
+
+- Introduced startup dialog to choose between online (public config or rclone config) or offline (local library) mode, also accessible anytime via dedicated 'SETUP' button; configs can be provided via local file, URL, or paste
+- Local library mode (serverless): Scans your directory, calculates sizes, fetches APK version codes, and caches results per directory (allowing multiple caches for different directories)
+- Necessary dependencies are downloaded early on startup; rclone is only initialized when online
+- Gallery View: Visual refinements to badges, sizing, and grouped tiles; new slider to dynamically adjust tile size
+- Added 'DOWNLOADED' filter to browse and install locally saved apps
+- Added folder button in 'DOWNLOADED' filter for quick access to your download directory
+- Added 'Open Folder' right-click context menu action when right-clicking apps in 'DOWNLOADED' view
+- Renamed 'NEWER THAN LIST' filter to 'AHEAD OF SERVER'
+- Reworked left-side menu, window layout, controls, labels, and tooltips
+- Device and mirror switching now via dropdowns for faster access
+- Dedicated 'SETTINGS' button for quicker access to rookie settings
+- Device settings moved to device category
+- Added 'RESET ADB AUTH' button to fix rare ADB connection issues
+- Improved error handling for runtimes, configs, mirrors, and ADB connections
+- Added support for alternative repos and branches
+- Moved runtimes.7z hosting to GitHub
+- Removed crashlog upload functionality
+- Removed deprecated Metrics utility and autoUpdateConfig setting
+
+RSL 3.0.1
 
 - Fixed popularity ranking not working on some systems
 - Fixed favorites not updating immediately when removing items
