@@ -136,6 +136,7 @@ namespace AndroidSideloader.Utilities
         public string ProxyPort { get; set; } = string.Empty;
         public string selectedMirror { get; set; } = string.Empty;
         public bool TrailersEnabled { get; set; } = true;
+        public bool ShowAdultContent { get; set; } = false;
         public bool UseGalleryView { get; set; } = true;
         public int GalleryTileSize { get; set; } = 100;
         public string ConfigUrl { get; set; } = string.Empty;
@@ -280,6 +281,7 @@ namespace AndroidSideloader.Utilities
             ProxyPort = string.Empty;
             selectedMirror = string.Empty;
             TrailersEnabled = true;
+            ShowAdultContent = false;
             UseGalleryView = true;
             GalleryTileSize = 100;
             ConfigUrl = string.Empty;

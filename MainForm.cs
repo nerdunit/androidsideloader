@@ -113,6 +113,7 @@ namespace AndroidSideloader
         private System.Windows.Forms.Timer _debounceTimer;
         private CancellationTokenSource _cts;
         private List<ListViewItem> _allItems;
+        private List<ListViewItem> _allItemsUnfiltered;
         private Dictionary<string, List<ListViewItem>> _searchIndex;
 
         public MainForm()
@@ -3094,30 +3095,19 @@ namespace AndroidSideloader
 
             if (!_allItemsInitialized)
             {
-                _allItems = gamesListView.Items.Cast<ListViewItem>().ToList();
+                _allItemsUnfiltered = gamesListView.Items.Cast<ListViewItem>().ToList();
+                RebuildAllItemsFromUnfiltered();
 
-                _searchIndex = new Dictionary<string, List<ListViewItem>>(_allItems.Count * 2, StringComparer.OrdinalIgnoreCase);
-
-                foreach (var item in _allItems)
+                // Update the ListView to reflect the filtered list
+                if (!settings.ShowAdultContent)
                 {
-                    string gameNameKey = item.Text;
-                    if (!_searchIndex.TryGetValue(gameNameKey, out var list))
+                    this.Invoke(() =>
                     {
-                        list = new List<ListViewItem>(1);
-                        _searchIndex[gameNameKey] = list;
-                    }
-                    list.Add(item);
-
-                    if (item.SubItems.Count > 1)
-                    {
-                        string releaseName = item.SubItems[1].Text;
-                        if (!_searchIndex.TryGetValue(releaseName, out var releaseList))
-                        {
-                            releaseList = new List<ListViewItem>(1);
-                            _searchIndex[releaseName] = releaseList;
-                        }
-                        releaseList.Add(item);
-                    }
+                        gamesListView.BeginUpdate();
+                        gamesListView.Items.Clear();
+                        gamesListView.Items.AddRange(_allItems.ToArray());
+                        gamesListView.EndUpdate();
+                    });
                 }
 
                 _allItemsInitialized = true;
@@ -7302,6 +7292,108 @@ function onYouTubeIframeAPIReady() {
             }
 
             changeTitle("");
+        }
+
+        private List<ListViewItem> ApplyAdultContentFilter(List<ListViewItem> items)
+        {
+            if (settings.ShowAdultContent)
+                return items.ToList();
+
+            return items.Where(item => item.Text.IndexOf("(18+)", StringComparison.OrdinalIgnoreCase) < 0).ToList();
+        }
+
+        private void RebuildAllItemsFromUnfiltered()
+        {
+            if (_allItemsUnfiltered == null) return;
+
+            _allItems = ApplyAdultContentFilter(_allItemsUnfiltered);
+            RebuildSearchIndex();
+        }
+
+        private void RebuildSearchIndex()
+        {
+            _searchIndex = new Dictionary<string, List<ListViewItem>>(_allItems.Count * 2, StringComparer.OrdinalIgnoreCase);
+            foreach (var item in _allItems)
+            {
+                string gameNameKey = item.Text;
+                if (!_searchIndex.TryGetValue(gameNameKey, out var list))
+                {
+                    list = new List<ListViewItem>(1);
+                    _searchIndex[gameNameKey] = list;
+                }
+                list.Add(item);
+
+                if (item.SubItems.Count > 1)
+                {
+                    string releaseName = item.SubItems[1].Text;
+                    if (!_searchIndex.TryGetValue(releaseName, out var releaseList))
+                    {
+                        releaseList = new List<ListViewItem>(1);
+                        _searchIndex[releaseName] = releaseList;
+                    }
+                    releaseList.Add(item);
+                }
+            }
+        }
+
+        public void RefreshAdultContentFilter()
+        {
+            if (_allItemsUnfiltered == null || _allItemsUnfiltered.Count == 0)
+                return;
+
+            RebuildAllItemsFromUnfiltered();
+
+            // Re-apply the currently active filter on the updated _allItems
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+                btnDownloaded_Click(null, EventArgs.Empty);
+            }
+            else if (upToDate_Clicked)
+            {
+                FilterListByColors(new[] { ColorInstalled, ColorUpdateAvailable, ColorDonateGame });
+            }
+            else if (updateAvailableClicked)
+            {
+                FilterListByColor(ColorUpdateAvailable);
+            }
+            else if (NeedsDonation_Clicked)
+            {
+                FilterListByColor(ColorDonateGame);
+            }
+            else if (favoriteSwitcher.Text == "ALL")
+            {
+                var favSet = new HashSet<string>(settings.FavoritedGames, StringComparer.OrdinalIgnoreCase);
+                var favoriteItems = _allItems
+                    .Where(item => item.SubItems.Count > 1 && favSet.Contains(item.SubItems[1].Text))
+                    .ToList();
+
+                gamesListView.BeginUpdate();
+                gamesListView.Items.Clear();
+                gamesListView.Items.AddRange(favoriteItems.ToArray());
+                gamesListView.EndUpdate();
+
+                _galleryDataSource = favoriteItems;
+                if (isGalleryView && _fastGallery != null)
+                {
+                    _fastGallery.RefreshFavoritesCache();
+                    _fastGallery.UpdateItems(favoriteItems);
+                }
+            }
+            else
+            {
+                string searchTerm = searchTextBox.Text;
+                if (searchTerm != "Search..." && !string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    _ = RunSearch();
+                }
+                else
+                {
+                    RestoreFullList();
+                }
+            }
+
+            UpdateFilterButtonStates();
         }
 
         public static void OpenDirectory(string directoryPath)

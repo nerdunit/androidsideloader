@@ -80,6 +80,8 @@
             this.proxyAddressTextBox = new System.Windows.Forms.TextBox();
             this.lblProxyPort = new System.Windows.Forms.Label();
             this.proxyPortTextBox = new System.Windows.Forms.TextBox();
+            this.toggleShowAdultContent = new AndroidSideloader.ToggleSwitch();
+            this.lblShowAdultContent = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // downloadDirectorySetter
@@ -275,6 +277,29 @@
             this.lblTrailers.TabIndex = 8;
             this.lblTrailers.Text = "Show Game Trailers";
             // 
+            // toggleShowAdultContent
+            // 
+            this.toggleShowAdultContent.BackColor = System.Drawing.Color.Transparent;
+            this.toggleShowAdultContent.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.toggleShowAdultContent.Location = new System.Drawing.Point(306, 48);
+            this.toggleShowAdultContent.Name = "toggleShowAdultContent";
+            this.toggleShowAdultContent.OffColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(65)))), ((int)(((byte)(75)))));
+            this.toggleShowAdultContent.OnColor = System.Drawing.Color.FromArgb(((int)(((byte)(93)))), ((int)(((byte)(203)))), ((int)(((byte)(173)))));
+            this.toggleShowAdultContent.Size = new System.Drawing.Size(36, 18);
+            this.toggleShowAdultContent.TabIndex = 43;
+            this.toggleShowAdultContent.ThumbColor = System.Drawing.Color.White;
+            // 
+            // lblShowAdultContent
+            // 
+            this.lblShowAdultContent.AutoSize = true;
+            this.lblShowAdultContent.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblShowAdultContent.ForeColor = System.Drawing.Color.White;
+            this.lblShowAdultContent.Location = new System.Drawing.Point(348, 49);
+            this.lblShowAdultContent.Name = "lblShowAdultContent";
+            this.lblShowAdultContent.Size = new System.Drawing.Size(107, 15);
+            this.lblShowAdultContent.TabIndex = 44;
+            this.lblShowAdultContent.Text = "Show Adult (18+) Content";
+            // 
             // bandwidthLabel
             // 
             this.bandwidthLabel.AutoSize = true;
@@ -353,7 +378,6 @@
             this.toggleCheckForUpdates.Size = new System.Drawing.Size(36, 18);
             this.toggleCheckForUpdates.TabIndex = 1;
             this.toggleCheckForUpdates.ThumbColor = System.Drawing.Color.White;
-            this.toggleCheckForUpdates.CheckedChanged += new System.EventHandler(this.toggleCheckForUpdates_CheckedChanged);
             // 
             // toggleMessageBoxes
             // 
@@ -366,7 +390,6 @@
             this.toggleMessageBoxes.Size = new System.Drawing.Size(36, 18);
             this.toggleMessageBoxes.TabIndex = 5;
             this.toggleMessageBoxes.ThumbColor = System.Drawing.Color.White;
-            this.toggleMessageBoxes.CheckedChanged += new System.EventHandler(this.toggleMessageBoxes_CheckedChanged);
             // 
             // toggleTrailers
             // 
@@ -379,7 +402,6 @@
             this.toggleTrailers.Size = new System.Drawing.Size(36, 18);
             this.toggleTrailers.TabIndex = 7;
             this.toggleTrailers.ThumbColor = System.Drawing.Color.White;
-            this.toggleTrailers.CheckedChanged += new System.EventHandler(this.toggleTrailers_CheckedChanged);
             // 
             // toggleNoDeviceMode
             // 
@@ -405,7 +427,6 @@
             this.toggleDeleteAfterInstall.Size = new System.Drawing.Size(36, 18);
             this.toggleDeleteAfterInstall.TabIndex = 13;
             this.toggleDeleteAfterInstall.ThumbColor = System.Drawing.Color.White;
-            this.toggleDeleteAfterInstall.CheckedChanged += new System.EventHandler(this.toggleDeleteAfterInstall_CheckedChanged);
             // 
             // toggleUseDownloadedFiles
             // 
@@ -418,7 +439,6 @@
             this.toggleUseDownloadedFiles.Size = new System.Drawing.Size(36, 18);
             this.toggleUseDownloadedFiles.TabIndex = 15;
             this.toggleUseDownloadedFiles.ThumbColor = System.Drawing.Color.White;
-            this.toggleUseDownloadedFiles.CheckedChanged += new System.EventHandler(this.toggleUseDownloadedFiles_CheckedChanged);
             // 
             // toggleAutoReinstall
             // 
@@ -431,7 +451,6 @@
             this.toggleAutoReinstall.Size = new System.Drawing.Size(36, 18);
             this.toggleAutoReinstall.TabIndex = 17;
             this.toggleAutoReinstall.ThumbColor = System.Drawing.Color.White;
-            this.toggleAutoReinstall.CheckedChanged += new System.EventHandler(this.toggleAutoReinstall_CheckedChanged);
             this.toggleAutoReinstall.Click += new System.EventHandler(this.toggleAutoReinstall_Click);
             // 
             // toggleSingleThread
@@ -445,7 +464,6 @@
             this.toggleSingleThread.Size = new System.Drawing.Size(36, 18);
             this.toggleSingleThread.TabIndex = 24;
             this.toggleSingleThread.ThumbColor = System.Drawing.Color.White;
-            this.toggleSingleThread.CheckedChanged += new System.EventHandler(this.toggleSingleThread_CheckedChanged);
             // 
             // toggleUserJson
             // 
@@ -458,7 +476,6 @@
             this.toggleUserJson.Size = new System.Drawing.Size(36, 18);
             this.toggleUserJson.TabIndex = 26;
             this.toggleUserJson.ThumbColor = System.Drawing.Color.White;
-            this.toggleUserJson.CheckedChanged += new System.EventHandler(this.toggleUserJson_CheckedChanged);
             // 
             // toggleBMBF
             // 
@@ -471,7 +488,6 @@
             this.toggleBMBF.Size = new System.Drawing.Size(36, 18);
             this.toggleBMBF.TabIndex = 28;
             this.toggleBMBF.ThumbColor = System.Drawing.Color.White;
-            this.toggleBMBF.CheckedChanged += new System.EventHandler(this.toggleBMBF_CheckedChanged);
             // 
             // toggleVirtualFilesystem
             // 
@@ -484,7 +500,6 @@
             this.toggleVirtualFilesystem.Size = new System.Drawing.Size(36, 18);
             this.toggleVirtualFilesystem.TabIndex = 30;
             this.toggleVirtualFilesystem.ThumbColor = System.Drawing.Color.White;
-            this.toggleVirtualFilesystem.CheckedChanged += new System.EventHandler(this.toggleVirtualFilesystem_CheckedChanged);
             // 
             // setDownloadDirectory
             // 
@@ -731,7 +746,6 @@
             this.toggleProxy.Size = new System.Drawing.Size(36, 18);
             this.toggleProxy.TabIndex = 37;
             this.toggleProxy.ThumbColor = System.Drawing.Color.White;
-            this.toggleProxy.CheckedChanged += new System.EventHandler(this.toggleProxy_CheckedChanged);
             // 
             // lblProxy
             // 
@@ -794,6 +808,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(24)))), ((int)(((byte)(29)))));
             this.ClientSize = new System.Drawing.Size(550, 661);
+            this.Controls.Add(this.toggleShowAdultContent);
+            this.Controls.Add(this.lblShowAdultContent);
             this.Controls.Add(this.lblProxyPort);
             this.Controls.Add(this.proxyPortTextBox);
             this.Controls.Add(this.lblProxyAddress);
@@ -880,6 +896,7 @@
         private ToggleSwitch toggleBMBF;
         private ToggleSwitch toggleVirtualFilesystem;
         private ToggleSwitch toggleTrailers;
+        private ToggleSwitch toggleShowAdultContent;
 
         // Toggle Labels
         private System.Windows.Forms.Label lblCheckForUpdates;
@@ -893,6 +910,7 @@
         private System.Windows.Forms.Label lblBMBF;
         private System.Windows.Forms.Label lblVirtualFilesystem;
         private System.Windows.Forms.Label lblTrailers;
+        private System.Windows.Forms.Label lblShowAdultContent;
 
         // Bandwidth
         private System.Windows.Forms.Label bandwidthLabel;
