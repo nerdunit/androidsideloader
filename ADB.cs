@@ -336,34 +336,37 @@ namespace AndroidSideloader
 
                     try
                     {
-                        var device = GetCurrentDevice();
-                        var client = GetAdbClient();
-                        var packageManager = new PackageManager(client, device);
-
-                        statusCallback?.Invoke("Backing up save data...");
-                        _ = RunAdbCommandToString($"pull \"/sdcard/Android/data/{packagename}\" \"{Environment.CurrentDirectory}\"");
-
-                        statusCallback?.Invoke("Uninstalling old version...");
-                        packageManager.UninstallPackage(packagename);
-
-                        statusCallback?.Invoke("Reinstalling game...");
-                        Action<InstallProgressEventArgs> reinstallProgress = (args) =>
+                        await Task.Run(() =>
                         {
-                            if (args.State == PackageInstallProgressState.Uploading)
+                            var device = GetCurrentDevice();
+                            var client = GetAdbClient();
+                            var packageManager = new PackageManager(client, device);
+
+                            statusCallback?.Invoke("Backing up save data...");
+                            _ = RunAdbCommandToString($"pull \"/sdcard/Android/data/{packagename}\" \"{Environment.CurrentDirectory}\"");
+
+                            statusCallback?.Invoke("Uninstalling old version...");
+                            packageManager.UninstallPackage(packagename);
+
+                            statusCallback?.Invoke("Reinstalling game...");
+                            Action<InstallProgressEventArgs> reinstallProgress = (args) =>
                             {
-                                progressCallback?.Invoke((float)args.UploadProgress, null);
+                                if (args.State == PackageInstallProgressState.Uploading)
+                                {
+                                    progressCallback?.Invoke((float)args.UploadProgress, null);
+                                }
+                            };
+                            packageManager.InstallPackage(path, reinstallProgress);
+
+                            statusCallback?.Invoke("Restoring save data...");
+                            _ = RunAdbCommandToString($"push \"{Environment.CurrentDirectory}\\{packagename}\" /sdcard/Android/data/");
+
+                            string directoryToDelete = Path.Combine(Environment.CurrentDirectory, packagename);
+                            if (Directory.Exists(directoryToDelete) && directoryToDelete != Environment.CurrentDirectory)
+                            {
+                                FileSystemUtilities.TryDeleteDirectory(directoryToDelete);
                             }
-                        };
-                        packageManager.InstallPackage(path, reinstallProgress);
-
-                        statusCallback?.Invoke("Restoring save data...");
-                        _ = RunAdbCommandToString($"push \"{Environment.CurrentDirectory}\\{packagename}\" /sdcard/Android/data/");
-
-                        string directoryToDelete = Path.Combine(Environment.CurrentDirectory, packagename);
-                        if (Directory.Exists(directoryToDelete) && directoryToDelete != Environment.CurrentDirectory)
-                        {
-                            FileSystemUtilities.TryDeleteDirectory(directoryToDelete);
-                        }
+                        });
 
                         progressCallback?.Invoke(100, null);
                         return new ProcessOutput($"{gameName}: Reinstall: Success\n", "");
