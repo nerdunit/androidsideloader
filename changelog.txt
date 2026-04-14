@@ -1,3 +1,4 @@
 RSL 3.2
 
 - Added download pause/resume feature with cross-session progress persistence
+- Added setting to show/hide adult (18+) content (off by default)
