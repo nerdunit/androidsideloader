@@ -11,7 +11,7 @@ namespace AndroidSideloader
         public static string AppName { get; set; }
         public static string Repository { get; set; }
 
-        public static readonly string LocalVersion = "3.1";
+        public static readonly string LocalVersion = "3.11";
         public static string currentVersion = string.Empty;
         public static string changelog = string.Empty;
 
