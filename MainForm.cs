@@ -4021,6 +4021,9 @@ namespace AndroidSideloader
         {
             speedLabel.Text = String.Empty;
             progressBar.Value = 0;
+            _pausedProgressPercent = 0;
+            _pausedTransfersComplete = 0;
+            _pausedFileCount = 0;
 
             if (gamesQueueList.Count > 0)
             {
@@ -4059,6 +4062,11 @@ namespace AndroidSideloader
         public bool isinstalling = false;
         public static bool isInDownloadExtract = false;
         public static bool removedownloading = false;
+        private bool _downloadPaused;
+        private float _pausedProgressPercent;
+        private long _pausedTransfersComplete;
+        private long _pausedFileCount;
+        private TaskCompletionSource<bool> _pauseTcs;
         public async void downloadInstallGameButton_Click(object sender, EventArgs e)
         {
             // Helper to format sizes
@@ -4633,8 +4641,9 @@ namespace AndroidSideloader
 
                 if (!downloadedFilter_Clicked && !isOffline)
                 {
-                    changeTitle("Downloading game " + gameName);
-                    speedLabel.Text = "Starting download...";
+                    bool isResume = _pausedProgressPercent > 0;
+                    changeTitle((isResume ? "Resuming download " : "Downloading game ") + gameName);
+                    speedLabel.Text = isResume ? "Resuming download..." : "Starting download...";
                 }
                 else
                 {
@@ -4642,8 +4651,18 @@ namespace AndroidSideloader
                     speedLabel.Text = "";
                 }
 
+                // Snapshot pause offsets for resume formulas (local copies prevent feedback loops)
+                float progressOffset = _pausedProgressPercent;
+                long transfersOffset = _pausedTransfersComplete;
+                long totalOverride = _pausedFileCount;
+
                 // Track the highest valid progress to prevent brief progress bar flashes during multi-file transfers
-                float highestValidPercent = 0;
+                float highestValidPercent = progressOffset;
+
+                if (progressOffset > 0)
+                {
+                    progressBar.Value = progressOffset;
+                }
 
                 // Download
                 while (t1.IsAlive)
@@ -4694,6 +4713,10 @@ namespace AndroidSideloader
                             if (totalSize > 0)
                             {
                                 percent = (float)(downloadedSize / totalSize * 100);
+                                // After resume, rclone reports 0-100% of remaining work.
+                                // Map that onto [pausedPercent → 100%] so the bar continues from where it was.
+                                if (progressOffset > 0)
+                                    percent = progressOffset + (100f - progressOffset) * percent / 100f;
                             }
 
                             // Clamp to 0-99 while download is in progress to prevent brief 100% flashes
@@ -4714,13 +4737,22 @@ namespace AndroidSideloader
 
                             TimeSpan time = TimeSpan.FromSeconds(globalEta);
 
+                            // Offset transfer counts for pause/resume continuity
+                            long displayCurrent = transfersComplete + transfersOffset;
+                            long displayTotal = totalOverride > 0 ? totalOverride : fileCount;
+
                             UpdateProgressStatus(
                                 "Downloading",
-                                (int)transfersComplete + 1,
-                                (int)fileCount,
+                                (int)Math.Min(displayCurrent + 1, displayTotal),
+                                (int)displayTotal,
                                 (int)Math.Round(percent),
                                 time,
                                 downloadSpeed);
+
+                            // Update fields with effective values for cross-session persistence
+                            _pausedProgressPercent = highestValidPercent;
+                            _pausedTransfersComplete = displayCurrent;
+                            _pausedFileCount = displayTotal;
                         }
                     }
                     catch
@@ -4729,9 +4761,26 @@ namespace AndroidSideloader
                     await Task.Delay(100);
                 }
 
+                // Handle pause: wait for resume, then re-run the same download
+                if (_downloadPaused)
+                {
+                    SaveQueueToSettings();
+                    changeTitle($"Paused: {gameDisplayName}");
+                    speedLabel.Text = "Download paused";
+                    UpdateProgressStatus("Paused", 0, 0, (int)Math.Round(_pausedProgressPercent));
+                    _pauseTcs = new TaskCompletionSource<bool>();
+                    await _pauseTcs.Task;
+                    _pauseTcs = null;
+                    changeTitle($"Resuming: {gameDisplayName}");
+                    continue; // Re-enter loop; same game is still at index 0, rclone resumes partial files
+                }
+
                 if (removedownloading)
                 {
                     removedownloading = false;
+                    _pausedProgressPercent = 0;
+                    _pausedTransfersComplete = 0;
+                    _pausedFileCount = 0;
 
                     // Store game info before removing from queue
                     string cancelledGame = gameName;
@@ -5090,7 +5139,11 @@ namespace AndroidSideloader
 
                 progressBar.IsIndeterminate = false;
                 gamesAreDownloading = false;
-                if (_queuePanel != null) _queuePanel.IsDownloading = false;
+                _downloadPaused = false;
+                _pausedProgressPercent = 0;
+                _pausedTransfersComplete = 0;
+                _pausedFileCount = 0;
+                if (_queuePanel != null) { _queuePanel.IsDownloading = false; _queuePanel.IsPaused = false; }
                 isinstalling = false;
 
                 changeTitle("");
@@ -5205,7 +5258,11 @@ namespace AndroidSideloader
             }
             progressBar.IsIndeterminate = false;
             gamesAreDownloading = false;
-            if (_queuePanel != null) _queuePanel.IsDownloading = false;
+            _downloadPaused = false;
+            _pausedProgressPercent = 0;
+            _pausedTransfersComplete = 0;
+            _pausedFileCount = 0;
+            if (_queuePanel != null) { _queuePanel.IsDownloading = false; _queuePanel.IsPaused = false; }
             isinstalling = false;
 
             changeTitle("");
@@ -5304,6 +5361,9 @@ namespace AndroidSideloader
         {
             // Save window state before closing
             SaveWindowState();
+
+            // Persist download progress for cross-session resume
+            SaveQueueToSettings();
 
             // Cleanup DNS helper (stops proxy)
             DnsHelper.Cleanup();
@@ -9437,6 +9497,7 @@ function onYouTubeIframeAPIReady() {
             };
             _queuePanel.ItemRemoved += QueuePanel_ItemRemoved;
             _queuePanel.ItemReordered += QueuePanel_ItemReordered;
+            _queuePanel.ItemPauseToggled += QueuePanel_ItemPauseToggled;
 
             // Sync with binding list
             gamesQueueList.ListChanged += (s, e) => SyncQueuePanel();
@@ -9510,6 +9571,7 @@ function onYouTubeIframeAPIReady() {
             if (_queuePanel == null) return;
             _queuePanel.SetItems(gamesQueueList);
             _queuePanel.IsDownloading = gamesAreDownloading && gamesQueueList.Count > 0;
+            _queuePanel.IsPaused = _downloadPaused;
 
             UpdateQueueLabel();
 
@@ -9562,6 +9624,9 @@ function onYouTubeIframeAPIReady() {
         private void SaveQueueToSettings()
         {
             settings.QueuedGames = gamesQueueList.ToArray();
+            settings.QueuedProgressPercent = _pausedProgressPercent;
+            settings.QueuedTransfersComplete = _pausedTransfersComplete;
+            settings.QueuedFileCount = _pausedFileCount;
             settings.Save();
         }
 
@@ -9569,6 +9634,13 @@ function onYouTubeIframeAPIReady() {
         {
             if (settings.QueuedGames == null || settings.QueuedGames.Length == 0)
                 return;
+
+            // Restore progress state BEFORE adding items to queue.
+            // Adding items triggers ListChanged → SyncQueuePanel → SaveQueueToSettings,
+            // which would overwrite settings with zeros if fields aren't restored first.
+            _pausedProgressPercent = settings.QueuedProgressPercent;
+            _pausedTransfersComplete = settings.QueuedTransfersComplete;
+            _pausedFileCount = settings.QueuedFileCount;
 
             foreach (string game in settings.QueuedGames)
             {
@@ -9600,6 +9672,9 @@ function onYouTubeIframeAPIReady() {
             {
                 // Clear the queue if user doesn't want to resume
                 gamesQueueList.Clear();
+                _pausedProgressPercent = 0;
+                _pausedTransfersComplete = 0;
+                _pausedFileCount = 0;
                 SaveQueueToSettings();
             }
         }
@@ -9608,8 +9683,21 @@ function onYouTubeIframeAPIReady() {
         {
             if (index == 0 && gamesQueueList.Count >= 1)
             {
+                // If paused, clear pause state and wake up the download loop
+                if (_downloadPaused)
+                {
+                    _downloadPaused = false;
+                    _queuePanel.IsPaused = false;
+                    _queuePanel.Invalidate();
+                }
                 removedownloading = true;
                 RCLONE.killRclone();
+                // Wake up the pause wait if it's active
+                if (_pauseTcs != null)
+                {
+                    _pauseTcs.TrySetResult(true);
+                    _pauseTcs = null;
+                }
             }
             else if (index > 0 && index < gamesQueueList.Count)
             {
@@ -9638,6 +9726,25 @@ function onYouTubeIframeAPIReady() {
             gamesQueueList.Insert(insertAt, item);
 
             SaveQueueToSettings();
+        }
+
+        private void QueuePanel_ItemPauseToggled(object sender, bool paused)
+        {
+            _downloadPaused = paused;
+            if (paused)
+            {
+                RCLONE.killRclone();
+            }
+            else
+            {
+                if (_pauseTcs != null)
+                {
+                    _pauseTcs.TrySetResult(true);
+                    _pauseTcs = null;
+                }
+            }
+            _queuePanel.IsPaused = paused;
+            _queuePanel.Invalidate();
         }
 
         private void notesRichTextBox_LinkClicked(object sender, LinkClickedEventArgs e)

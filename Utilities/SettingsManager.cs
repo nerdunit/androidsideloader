@@ -153,6 +153,9 @@ namespace AndroidSideloader.Utilities
 
         // Download queue persistence
         public string[] QueuedGames { get; set; } = new string[0];
+        public float QueuedProgressPercent { get; set; }
+        public long QueuedTransfersComplete { get; set; }
+        public long QueuedFileCount { get; set; }
 
         private SettingsManager()
         {
@@ -288,6 +291,9 @@ namespace AndroidSideloader.Utilities
             SortColumn = 0;
             SortAscending = true;
             QueuedGames = new string[0];
+            QueuedProgressPercent = 0;
+            QueuedTransfersComplete = 0;
+            QueuedFileCount = 0;
 
             Save();
             Debug.WriteLine("Default settings created.");
