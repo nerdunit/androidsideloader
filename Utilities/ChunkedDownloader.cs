@@ -40,14 +40,6 @@ namespace AndroidSideloader.Utilities
         private int _completedFiles;
         private const int MaxRetries = 3;
         private const int BufferSize = 81920;
-        private const long FallbackPartSize = 500L * 1024 * 1024;
-
-        private long _resolvedTotalBytes;
-        private int _resolvedFileCount;
-        private long _globalDownloaded;
-
-        private static readonly string RcloneDir = Path.Combine(Environment.CurrentDirectory, "rclone");
-        private static readonly string RclonePath = Path.Combine(RcloneDir, "rclone.exe");
 
         private static readonly Regex HrefRegex = new Regex(
             @"href=""([^""]+)""",
@@ -58,72 +50,94 @@ namespace AndroidSideloader.Utilities
             RegexOptions.Compiled);
 
         /// <summary>
-        /// Public mirror constructor — starts rclone serve http with --http-no-head
-        /// so downloads go through a local proxy with byte-level resume (Range headers)
-        /// and zero upstream HEAD requests.
+        /// Creates a ChunkedDownloader for public mirrors.
+        /// Starts an rclone serve http proxy targeting the <c>:http:</c> backend.
         /// </summary>
         public ChunkedDownloader(string baseUrl, string destinationDir)
         {
             _destinationDir = destinationDir;
             _settings = SettingsManager.Instance;
+
             var uri = new Uri(baseUrl.TrimEnd('/'));
-            string origin = uri.GetLeftPart(UriPartial.Authority);
+            string baseOrigin = uri.GetLeftPart(UriPartial.Authority);
             string remotePath = uri.AbsolutePath.TrimStart('/');
-            string extraArgs = (MainForm.PublicMirrorExtraArgs ?? "").Trim();
-            _baseUrl = StartRcloneProxy(
-                $"serve http \":http:/{remotePath}/\" --http-url {origin} --http-no-head " +
-                $"--addr 127.0.0.1:0 --read-only {extraArgs}", null);
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(30) };
+
+            string extraArgs = MainForm.PublicMirrorExtraArgs ?? "";
+            string rcloneArgs = $"serve http \":http:/{remotePath}\" --http-url {baseOrigin} --addr 127.0.0.1:0 --read-only {extraArgs}";
+
+            _baseUrl = StartRcloneProxy(rcloneArgs, null);
+
+            _httpClient = new HttpClient();
+            _httpClient.Timeout = TimeSpan.FromMinutes(30);
         }
 
-        /// <summary>Private mirror constructor — starts rclone serve http proxy via config.</summary>
+        /// <summary>
+        /// Creates a ChunkedDownloader for config-based mirrors (private mirrors).
+        /// Starts an rclone serve http proxy targeting the named remote via the given config file.
+        /// </summary>
         public ChunkedDownloader(string remotePath, string destinationDir, string configPath, string password = null)
         {
             _destinationDir = destinationDir;
             _settings = SettingsManager.Instance;
+
             string configArg = !string.IsNullOrEmpty(configPath) ? $"--config \"{configPath}\"" : "";
             string pwArg = !string.IsNullOrEmpty(password) ? "--ask-password=false" : "";
-            _baseUrl = StartRcloneProxy(
-                $"serve http \"{remotePath}\" --addr 127.0.0.1:0 --read-only {configArg} {pwArg}", password);
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(30) };
+            string rcloneArgs = $"serve http \"{remotePath}\" --addr 127.0.0.1:0 --read-only {configArg} {pwArg}";
+
+            _baseUrl = StartRcloneProxy(rcloneArgs, password);
+
+            _httpClient = new HttpClient();
+            _httpClient.Timeout = TimeSpan.FromMinutes(30);
         }
 
-        private ProcessStartInfo CreateRclonePsi(string args)
+        /// <summary>
+        /// Starts <c>rclone serve http</c> on a random localhost port.
+        /// Returns the local base URL (e.g. <c>http://127.0.0.1:12345</c>).
+        /// rclone handles TLS and proxy.
+        /// </summary>
+        private string StartRcloneProxy(string rcloneArgs, string rclonePassword)
         {
-            if (!File.Exists(RclonePath))
-                throw new FileNotFoundException("rclone.exe not found at: " + RclonePath);
+            string rclonePath = Path.Combine(Environment.CurrentDirectory, "rclone", "rclone.exe");
+            if (!File.Exists(rclonePath))
+                throw new FileNotFoundException("rclone.exe not found at: " + rclonePath);
 
             var psi = new ProcessStartInfo
             {
-                FileName = RclonePath,
-                Arguments = args,
+                FileName = rclonePath,
+                Arguments = rcloneArgs,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardError = true,
-                WorkingDirectory = RcloneDir
+                WorkingDirectory = Path.Combine(Environment.CurrentDirectory, "rclone")
             };
-            ApplyProxyEnv(psi);
-            return psi;
-        }
 
-        private void ApplyProxyEnv(ProcessStartInfo psi)
-        {
-            string proxy = (_settings.useProxy
-                && !string.IsNullOrEmpty(_settings.ProxyAddress)
-                && !string.IsNullOrEmpty(_settings.ProxyPort))
-                    ? $"http://{_settings.ProxyAddress}:{_settings.ProxyPort}"
-                    : DnsHelper.ProxyUrl;
-
-            if (!string.IsNullOrEmpty(proxy))
-                foreach (var key in new[] { "HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy" })
-                    psi.EnvironmentVariables[key] = proxy;
-        }
-
-        private string StartRcloneProxy(string rcloneArgs, string rclonePassword)
-        {
-            var psi = CreateRclonePsi(rcloneArgs);
             if (!string.IsNullOrEmpty(rclonePassword))
+            {
                 psi.EnvironmentVariables["RCLONE_CONFIG_PASS"] = rclonePassword;
+            }
+
+            // Mirror rclone proxy setup from RCLONE.setRcloneProxy
+            if (_settings.useProxy &&
+                !string.IsNullOrEmpty(_settings.ProxyAddress) &&
+                !string.IsNullOrEmpty(_settings.ProxyPort))
+            {
+                string proxyUrl = $"http://{_settings.ProxyAddress}:{_settings.ProxyPort}";
+                psi.EnvironmentVariables["HTTP_PROXY"] = proxyUrl;
+                psi.EnvironmentVariables["HTTPS_PROXY"] = proxyUrl;
+                psi.EnvironmentVariables["http_proxy"] = proxyUrl;
+                psi.EnvironmentVariables["https_proxy"] = proxyUrl;
+            }
+            else
+            {
+                string dnsProxy = DnsHelper.ProxyUrl;
+                if (!string.IsNullOrEmpty(dnsProxy))
+                {
+                    psi.EnvironmentVariables["HTTP_PROXY"] = dnsProxy;
+                    psi.EnvironmentVariables["HTTPS_PROXY"] = dnsProxy;
+                    psi.EnvironmentVariables["http_proxy"] = dnsProxy;
+                    psi.EnvironmentVariables["https_proxy"] = dnsProxy;
+                }
+            }
 
             string localUrl = null;
             var portFound = new ManualResetEventSlim(false);
@@ -132,6 +146,7 @@ namespace AndroidSideloader.Utilities
             _rcloneProxyProcess.ErrorDataReceived += (s, e) =>
             {
                 if (e.Data == null) return;
+
                 var match = ProxyPortRegex.Match(e.Data);
                 if (match.Success)
                 {
@@ -148,6 +163,7 @@ namespace AndroidSideloader.Utilities
                 StopRcloneProxy();
                 throw new TimeoutException("rclone local proxy failed to start within 15 seconds");
             }
+
             return localUrl;
         }
 
@@ -161,7 +177,10 @@ namespace AndroidSideloader.Utilities
                     _rcloneProxyProcess.WaitForExit(3000);
                 }
             }
-            catch (Exception ex) { Logger.Log($"Error stopping rclone proxy: {ex.Message}", LogLevel.WARNING); }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error stopping rclone proxy: {ex.Message}", LogLevel.WARNING);
+            }
             finally
             {
                 _rcloneProxyProcess?.Dispose();
@@ -169,29 +188,96 @@ namespace AndroidSideloader.Utilities
             }
         }
 
+        /// <summary>
+        /// Lists files available at the remote URL by parsing the HTML directory listing.
+        /// Resolves file sizes via HEAD requests.
+        /// </summary>
         public async Task<List<RemoteFileInfo>> ListRemoteFilesAsync(CancellationToken ct)
         {
             var files = new List<RemoteFileInfo>();
-            string html = await _httpClient.GetStringAsync(_baseUrl + "/").ConfigureAwait(false);
+            string listUrl = _baseUrl + "/";
+
+            string html = await _httpClient.GetStringAsync(listUrl).ConfigureAwait(false);
             ct.ThrowIfCancellationRequested();
 
-            foreach (Match m in HrefRegex.Matches(html))
+            // Build the base URI for resolving absolute hrefs
+            var baseUri = new Uri(listUrl);
+
+            var matches = HrefRegex.Matches(html);
+            foreach (Match m in matches)
             {
                 string href = m.Groups[1].Value;
-                if (href == "../" || href == ".." || href.StartsWith("?") || href.StartsWith("#") || href.EndsWith("/"))
+
+                // Skip parent directory links, query strings, directory entries,
+                // fragment-only anchors (rclone serve HTML icons like #file, #zip-folder),
+                // and bare ".." entries.
+                if (href == "../" || href == ".." ||
+                    href.StartsWith("?") || href.StartsWith("#") ||
+                    href.EndsWith("/"))
                     continue;
 
-                string encodedName = href.Contains("/") ? href.Substring(href.LastIndexOf('/') + 1) : href;
-                if (string.IsNullOrEmpty(encodedName)) continue;
+                string fileName;
+                string fileUrl;
 
-                string fileName = Uri.UnescapeDataString(encodedName);
-                if (string.IsNullOrEmpty(fileName) || fileName == "/") continue;
+                if (href.StartsWith("http://") || href.StartsWith("https://"))
+                {
+                    // Fully qualified URL
+                    fileUrl = href;
+                    fileName = Uri.UnescapeDataString(href.Substring(href.LastIndexOf('/') + 1));
+                }
+                else if (href.StartsWith("/"))
+                {
+                    // Absolute path — resolve against the server origin
+                    var resolved = new Uri(baseUri, href);
+                    fileUrl = resolved.AbsoluteUri;
+                    fileName = Uri.UnescapeDataString(resolved.Segments[resolved.Segments.Length - 1]);
+                }
+                else
+                {
+                    // Relative path (most common)
+                    fileName = Uri.UnescapeDataString(href);
+                    fileUrl = _baseUrl + "/" + href;
+                }
 
-                files.Add(new RemoteFileInfo { Name = fileName, Url = _baseUrl + "/" + encodedName, Size = 0 });
+                if (string.IsNullOrEmpty(fileName) || fileName == "/")
+                    continue;
+
+                files.Add(new RemoteFileInfo
+                {
+                    Name = fileName,
+                    Url = fileUrl,
+                    Size = 0
+                });
             }
+
+            // Resolve sizes via HEAD requests
+            foreach (var file in files)
+            {
+                ct.ThrowIfCancellationRequested();
+                try
+                {
+                    using (var request = new HttpRequestMessage(HttpMethod.Head, file.Url))
+                    using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
+                    {
+                        if (response.Content.Headers.ContentLength.HasValue)
+                        {
+                            file.Size = response.Content.Headers.ContentLength.Value;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"HEAD request failed for {file.Name}: {ex.Message}", LogLevel.WARNING);
+                }
+            }
+
             return files;
         }
 
+        /// <summary>
+        /// Downloads all remote files to the destination directory with byte-level resume support.
+        /// Returns a ProcessOutput compatible with the existing error-handling pipeline.
+        /// </summary>
         public async Task<ProcessOutput> DownloadAllAsync(
             Action<DownloadProgressInfo> onProgress,
             CancellationToken ct)
@@ -199,6 +285,7 @@ namespace AndroidSideloader.Utilities
             try
             {
                 Directory.CreateDirectory(_destinationDir);
+
                 var files = await ListRemoteFilesAsync(ct).ConfigureAwait(false);
                 if (files.Count == 0)
                 {
@@ -206,70 +293,72 @@ namespace AndroidSideloader.Utilities
                     return new ProcessOutput("", "directory not found");
                 }
 
-                int totalFileCount = files.Count;
-                _resolvedTotalBytes = 0;
-                _resolvedFileCount = 0;
-                _completedFiles = 0;
+                long totalBytes = files.Sum(f => f.Size);
+                long alreadyDownloaded = 0;
 
-                long initialExisting = files
-                    .Select(f => Path.Combine(_destinationDir, f.Name))
-                    .Where(File.Exists)
-                    .Sum(p => new FileInfo(p).Length);
-                _globalDownloaded = initialExisting;
-
-                // Finish existing partial files first, then start new ones
-                files.Sort((a, b) =>
+                // Calculate already-downloaded bytes for resume
+                foreach (var file in files)
                 {
-                    bool ea = File.Exists(Path.Combine(_destinationDir, a.Name));
-                    bool eb = File.Exists(Path.Combine(_destinationDir, b.Name));
-                    return ea == eb ? 0 : ea ? -1 : 1;
-                });
+                    string destPath = Path.Combine(_destinationDir, file.Name);
+                    if (File.Exists(destPath))
+                    {
+                        long existingSize = new FileInfo(destPath).Length;
+                        if (file.Size > 0 && existingSize >= file.Size)
+                        {
+                            alreadyDownloaded += file.Size;
+                        }
+                        else
+                        {
+                            alreadyDownloaded += existingSize;
+                        }
+                    }
+                }
+
+                long globalDownloaded = alreadyDownloaded;
+
+                // Count already-complete files for accurate progress on resume
+                _completedFiles = 0;
+                foreach (var file in files)
+                {
+                    string destPath = Path.Combine(_destinationDir, file.Name);
+                    if (File.Exists(destPath) && file.Size > 0 && new FileInfo(destPath).Length >= file.Size)
+                        _completedFiles++;
+                }
 
                 // EWMA speed tracking
-                var progressLock = new object();
                 double ewmaSpeed = 0;
                 const double alpha = 0.3;
                 DateTime lastProgressTime = DateTime.UtcNow;
-                long lastReportedDownloaded = initialExisting;
+                long bytesSinceLastReport = 0;
 
                 Action<long> bytesCallback = (bytesJustWritten) =>
                 {
-                    if (bytesJustWritten > 0)
-                        Interlocked.Add(ref _globalDownloaded, bytesJustWritten);
+                    globalDownloaded += bytesJustWritten;
+                    bytesSinceLastReport += bytesJustWritten;
+                    DateTime now = DateTime.UtcNow;
+                    double elapsed = (now - lastProgressTime).TotalSeconds;
 
-                    if ((DateTime.UtcNow - lastProgressTime).TotalSeconds < 0.25) return;
-
-                    lock (progressLock)
+                    if (elapsed >= 0.25) // Throttle to ~4 updates/sec
                     {
-                        DateTime now = DateTime.UtcNow;
-                        double elapsed = (now - lastProgressTime).TotalSeconds;
-                        if (elapsed < 0.25) return;
-
-                        long downloaded = Interlocked.Read(ref _globalDownloaded);
-                        double instantSpeed = elapsed > 0 ? (downloaded - lastReportedDownloaded) / elapsed : 0;
+                        double instantSpeed = bytesSinceLastReport / elapsed;
                         ewmaSpeed = ewmaSpeed < 1 ? instantSpeed : (alpha * instantSpeed) + ((1 - alpha) * ewmaSpeed);
                         lastProgressTime = now;
-                        lastReportedDownloaded = downloaded;
+                        bytesSinceLastReport = 0;
 
-                        int resolvedCount = Thread.VolatileRead(ref _resolvedFileCount);
-                        long resolvedTotal = Interlocked.Read(ref _resolvedTotalBytes);
+                        float percent = totalBytes > 0
+                            ? Math.Min(99f, (float)globalDownloaded / totalBytes * 100f)
+                            : 0f;
 
-                        long estimatedTotal = resolvedCount >= totalFileCount ? resolvedTotal
-                            : resolvedCount > 0 ? resolvedTotal * totalFileCount / resolvedCount
-                            : (long)totalFileCount * FallbackPartSize;
-
-                        float percent = estimatedTotal > 0
-                            ? Math.Min(99f, (float)downloaded / estimatedTotal * 100f) : 0f;
-
-                        TimeSpan eta = ewmaSpeed > 0 && estimatedTotal > downloaded
-                            ? TimeSpan.FromSeconds((estimatedTotal - downloaded) / ewmaSpeed) : TimeSpan.Zero;
+                        TimeSpan eta = ewmaSpeed > 0
+                            ? TimeSpan.FromSeconds((totalBytes - globalDownloaded) / ewmaSpeed)
+                            : TimeSpan.Zero;
 
                         onProgress?.Invoke(new DownloadProgressInfo
                         {
-                            TotalBytes = estimatedTotal,
-                            DownloadedBytes = downloaded,
-                            CurrentFileIndex = Math.Min(Thread.VolatileRead(ref _completedFiles) + 1, totalFileCount),
-                            TotalFiles = totalFileCount,
+                            TotalBytes = totalBytes,
+                            DownloadedBytes = globalDownloaded,
+                            CurrentFileIndex = _completedFiles + 1,
+                            TotalFiles = files.Count,
                             SpeedBytesPerSecond = ewmaSpeed,
                             OverallPercent = percent,
                             Eta = eta
@@ -277,32 +366,57 @@ namespace AndroidSideloader.Utilities
                     }
                 };
 
+                // Determine concurrency
                 int maxConcurrency = _settings.SingleThreadMode ? 1 : Math.Min(4, files.Count);
                 var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
-                var tasks = files.Select(f => DownloadFileParallelAsync(f, semaphore, bytesCallback, ct)).ToList();
+
+                var tasks = new List<Task<string>>();
+                foreach (var file in files)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    string destPath = Path.Combine(_destinationDir, file.Name);
+                    if (File.Exists(destPath) && file.Size > 0 && new FileInfo(destPath).Length >= file.Size)
+                        continue;
+                    tasks.Add(DownloadFileParallelAsync(file, semaphore, bytesCallback, ct));
+                }
+
                 string[] results = await Task.WhenAll(tasks).ConfigureAwait(false);
 
+                // Collect errors
                 var errors = results.Where(r => r != null).ToList();
                 if (errors.Count > 0)
-                    return new ProcessOutput("", string.Join("\n", errors));
+                {
+                    string combinedError = string.Join("\n", errors);
+                    return new ProcessOutput("", combinedError);
+                }
 
-                long finalTotal = Interlocked.Read(ref _resolvedTotalBytes);
+                // Final 100% progress
                 onProgress?.Invoke(new DownloadProgressInfo
                 {
-                    TotalBytes = finalTotal, DownloadedBytes = finalTotal,
-                    CurrentFileIndex = totalFileCount, TotalFiles = totalFileCount,
-                    SpeedBytesPerSecond = ewmaSpeed, OverallPercent = 100f, Eta = TimeSpan.Zero
+                    TotalBytes = totalBytes,
+                    DownloadedBytes = totalBytes,
+                    CurrentFileIndex = files.Count,
+                    TotalFiles = files.Count,
+                    SpeedBytesPerSecond = ewmaSpeed,
+                    OverallPercent = 100f,
+                    Eta = TimeSpan.Zero
                 });
+
                 return new ProcessOutput("OK", "");
             }
-            catch (OperationCanceledException) { return new ProcessOutput("", "Cancelled"); }
+            catch (OperationCanceledException)
+            {
+                return new ProcessOutput("", "Cancelled");
+            }
             catch (HttpRequestException ex)
             {
                 Logger.Log($"HttpRequestException during download: {ex}", LogLevel.ERROR);
                 string msg = ex.Message.ToLower();
-                return (msg.Contains("403") || msg.Contains("429") || msg.Contains("quota"))
-                    ? new ProcessOutput("", "quota exceeded")
-                    : new ProcessOutput("", $"Download error: {ex.Message}");
+                if (msg.Contains("403") || msg.Contains("429") || msg.Contains("quota"))
+                {
+                    return new ProcessOutput("", "quota exceeded");
+                }
+                return new ProcessOutput("", $"Download error: {ex.Message}");
             }
             catch (Exception ex)
             {
@@ -312,144 +426,147 @@ namespace AndroidSideloader.Utilities
         }
 
         private async Task<string> DownloadFileParallelAsync(
-            RemoteFileInfo file, SemaphoreSlim semaphore, Action<long> bytesCallback, CancellationToken ct)
+            RemoteFileInfo file,
+            SemaphoreSlim semaphore,
+            Action<long> bytesCallback,
+            CancellationToken ct)
         {
             await semaphore.WaitAsync(ct).ConfigureAwait(false);
             try
             {
                 string result = await DownloadFileWithRetryAsync(file, bytesCallback, ct).ConfigureAwait(false);
-                if (result == null) Interlocked.Increment(ref _completedFiles);
+                if (result == null)
+                    Interlocked.Increment(ref _completedFiles);
                 return result;
             }
-            finally { semaphore.Release(); }
+            finally
+            {
+                semaphore.Release();
+            }
         }
 
         private async Task<string> DownloadFileWithRetryAsync(
-            RemoteFileInfo file, Action<long> bytesCallback, CancellationToken ct)
+            RemoteFileInfo file,
+            Action<long> bytesCallback,
+            CancellationToken ct)
         {
             string destPath = Path.Combine(_destinationDir, file.Name);
+
             for (int attempt = 0; attempt <= MaxRetries; attempt++)
             {
                 ct.ThrowIfCancellationRequested();
                 try
                 {
                     await DownloadFileWithResumeAsync(file, destPath, bytesCallback, ct).ConfigureAwait(false);
-                    return null;
+                    return null; // success
                 }
-                catch (OperationCanceledException) { throw; }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     Logger.Log($"Download attempt {attempt + 1}/{MaxRetries + 1} failed for {file.Name}: {ex.Message}", LogLevel.WARNING);
+
                     if (attempt >= MaxRetries)
+                    {
                         return $"Failed to download {file.Name} after {MaxRetries + 1} attempts: {ex.Message}";
-                    await Task.Delay((int)Math.Pow(2, attempt) * 1000, ct).ConfigureAwait(false);
+                    }
+
+                    // Exponential backoff: 1s, 2s, 4s
+                    int delayMs = (int)Math.Pow(2, attempt) * 1000;
+                    await Task.Delay(delayMs, ct).ConfigureAwait(false);
                 }
             }
+
             return null;
         }
 
         private async Task DownloadFileWithResumeAsync(
-            RemoteFileInfo file, string destPath, Action<long> bytesCallback, CancellationToken ct)
+            RemoteFileInfo file,
+            string destPath,
+            Action<long> bytesCallback,
+            CancellationToken ct)
         {
-            long existingSize = File.Exists(destPath) ? new FileInfo(destPath).Length : 0;
-            if (file.Size > 0 && existingSize >= file.Size) return;
-
-            using (var request = new HttpRequestMessage(HttpMethod.Get, file.Url))
+            long existingSize = 0;
+            if (File.Exists(destPath))
             {
-                if (existingSize > 0)
-                    request.Headers.Range = new RangeHeaderValue(existingSize, null);
+                existingSize = new FileInfo(destPath).Length;
 
-                using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false))
+                // File already complete
+                if (file.Size > 0 && existingSize >= file.Size)
+                    return;
+            }
+
+            var request = new HttpRequestMessage(HttpMethod.Get, file.Url);
+            if (existingSize > 0)
+            {
+                request.Headers.Range = new RangeHeaderValue(existingSize, null);
+            }
+
+            using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false))
+            {
+                if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+                    return;
+
+                response.EnsureSuccessStatusCode();
+
+                bool isPartialContent = response.StatusCode == HttpStatusCode.PartialContent;
+
+                // If server doesn't support Range and we had partial data, restart from scratch
+                if (existingSize > 0 && !isPartialContent)
                 {
-                    if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+                    existingSize = 0;
+                }
+
+                FileMode fileMode = isPartialContent ? FileMode.Append : FileMode.Create;
+
+                // Bandwidth throttle setup
+                double bandwidthLimitBps = _settings.BandwidthLimit > 0
+                    ? _settings.BandwidthLimit * 1024.0 * 1024.0 // MB/s to bytes/s
+                    : 0;
+
+                using (var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                using (var fileStream = new FileStream(destPath, fileMode, FileAccess.Write, FileShare.None, BufferSize, true))
+                {
+                    var buffer = new byte[BufferSize];
+                    int bytesRead;
+                    long tokenBucket = 0;
+                    DateTime lastTokenRefill = DateTime.UtcNow;
+
+                    while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
                     {
-                        if (file.Size == 0)
+                        ct.ThrowIfCancellationRequested();
+
+                        await fileStream.WriteAsync(buffer, 0, bytesRead, ct).ConfigureAwait(false);
+                        bytesCallback?.Invoke(bytesRead);
+
+                        // Token bucket bandwidth throttling
+                        if (bandwidthLimitBps > 0)
                         {
-                            file.Size = existingSize;
-                            Interlocked.Add(ref _resolvedTotalBytes, existingSize);
-                            Interlocked.Increment(ref _resolvedFileCount);
-                        }
-                        bytesCallback?.Invoke(0);
-                        return;
-                    }
+                            tokenBucket += bytesRead;
+                            DateTime now = DateTime.UtcNow;
+                            double elapsed = (now - lastTokenRefill).TotalSeconds;
 
-                    response.EnsureSuccessStatusCode();
-                    bool isPartial = response.StatusCode == HttpStatusCode.PartialContent;
-                    long contentLength = response.Content.Headers.ContentLength ?? 0;
-
-                    // Server doesn't support Range — restart from scratch
-                    if (existingSize > 0 && !isPartial)
-                    {
-                        Interlocked.Add(ref _globalDownloaded, -existingSize);
-                        existingSize = 0;
-                    }
-
-                    // Resolve file size from GET response if Content-Length is known
-                    if (file.Size == 0)
-                    {
-                        var cr = response.Content.Headers.ContentRange;
-                        if (isPartial && cr?.Length.HasValue == true)
-                            file.Size = cr.Length.Value;
-                        else if (isPartial && contentLength > 0)
-                            file.Size = existingSize + contentLength;
-                        else if (contentLength > 0)
-                            file.Size = contentLength;
-
-                        if (file.Size > 0)
-                        {
-                            Interlocked.Add(ref _resolvedTotalBytes, file.Size);
-                            Interlocked.Increment(ref _resolvedFileCount);
-                        }
-                    }
-
-                    double bwLimit = _settings.BandwidthLimit > 0 ? _settings.BandwidthLimit * 1024.0 * 1024.0 : 0;
-
-                    using (var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                    using (var fs = new FileStream(destPath, isPartial ? FileMode.Append : FileMode.Create,
-                        FileAccess.Write, FileShare.None, BufferSize, true))
-                    {
-                        var buffer = new byte[BufferSize];
-                        int bytesRead;
-                        long bytesWritten = 0;
-                        long tokenBucket = 0;
-                        DateTime lastRefill = DateTime.UtcNow;
-
-                        while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
-                        {
-                            ct.ThrowIfCancellationRequested();
-                            await fs.WriteAsync(buffer, 0, bytesRead, ct).ConfigureAwait(false);
-                            bytesWritten += bytesRead;
-                            bytesCallback?.Invoke(bytesRead);
-
-                            if (bwLimit > 0)
+                            if (elapsed > 0)
                             {
-                                tokenBucket += bytesRead;
-                                double elapsed = (DateTime.UtcNow - lastRefill).TotalSeconds;
-                                if (elapsed > 0)
+                                double allowedBytes = bandwidthLimitBps * elapsed;
+                                tokenBucket -= (long)allowedBytes;
+                                lastTokenRefill = now;
+
+                                if (tokenBucket < 0) tokenBucket = 0;
+                            }
+
+                            if (tokenBucket > 0)
+                            {
+                                double sleepSeconds = tokenBucket / bandwidthLimitBps;
+                                if (sleepSeconds > 0.01)
                                 {
-                                    tokenBucket -= (long)(bwLimit * elapsed);
-                                    lastRefill = DateTime.UtcNow;
-                                    if (tokenBucket < 0) tokenBucket = 0;
-                                }
-                                if (tokenBucket > 0)
-                                {
-                                    double sleep = tokenBucket / bwLimit;
-                                    if (sleep > 0.01)
-                                    {
-                                        await Task.Delay(TimeSpan.FromSeconds(sleep), ct).ConfigureAwait(false);
-                                        tokenBucket = 0;
-                                        lastRefill = DateTime.UtcNow;
-                                    }
+                                    await Task.Delay(TimeSpan.FromSeconds(sleepSeconds), ct).ConfigureAwait(false);
+                                    tokenBucket = 0;
+                                    lastTokenRefill = DateTime.UtcNow;
                                 }
                             }
-                        }
-
-                        // Resolve size from actual bytes if headers didn't provide it
-                        if (file.Size == 0 && bytesWritten > 0)
-                        {
-                            file.Size = existingSize + bytesWritten;
-                            Interlocked.Add(ref _resolvedTotalBytes, file.Size);
-                            Interlocked.Increment(ref _resolvedFileCount);
                         }
                     }
                 }
