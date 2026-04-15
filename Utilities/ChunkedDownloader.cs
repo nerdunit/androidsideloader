@@ -256,11 +256,13 @@ namespace AndroidSideloader.Utilities
                 ct.ThrowIfCancellationRequested();
                 try
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Head, file.Url);
-                    var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false);
-                    if (response.Content.Headers.ContentLength.HasValue)
+                    using (var request = new HttpRequestMessage(HttpMethod.Head, file.Url))
+                    using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
                     {
-                        file.Size = response.Content.Headers.ContentLength.Value;
+                        if (response.Content.Headers.ContentLength.HasValue)
+                        {
+                            file.Size = response.Content.Headers.ContentLength.Value;
+                        }
                     }
                 }
                 catch (Exception ex)
