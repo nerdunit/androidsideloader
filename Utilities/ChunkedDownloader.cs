@@ -37,6 +37,7 @@ namespace AndroidSideloader.Utilities
         private readonly HttpClient _httpClient;
         private readonly SettingsManager _settings;
         private Process _rcloneProxyProcess;
+        private int _completedFiles;
         private const int MaxRetries = 3;
         private const int BufferSize = 81920;
 
@@ -312,7 +313,15 @@ namespace AndroidSideloader.Utilities
                 }
 
                 long globalDownloaded = alreadyDownloaded;
-                int completedFiles = 0;
+
+                // Count already-complete files for accurate progress on resume
+                _completedFiles = 0;
+                foreach (var file in files)
+                {
+                    string destPath = Path.Combine(_destinationDir, file.Name);
+                    if (File.Exists(destPath) && file.Size > 0 && new FileInfo(destPath).Length >= file.Size)
+                        _completedFiles++;
+                }
 
                 // EWMA speed tracking
                 double ewmaSpeed = 0;
@@ -346,7 +355,7 @@ namespace AndroidSideloader.Utilities
                         {
                             TotalBytes = totalBytes,
                             DownloadedBytes = globalDownloaded,
-                            CurrentFileIndex = completedFiles + 1,
+                            CurrentFileIndex = _completedFiles + 1,
                             TotalFiles = files.Count,
                             SpeedBytesPerSecond = ewmaSpeed,
                             OverallPercent = percent,
@@ -363,6 +372,9 @@ namespace AndroidSideloader.Utilities
                 foreach (var file in files)
                 {
                     ct.ThrowIfCancellationRequested();
+                    string destPath = Path.Combine(_destinationDir, file.Name);
+                    if (File.Exists(destPath) && file.Size > 0 && new FileInfo(destPath).Length >= file.Size)
+                        continue;
                     tasks.Add(DownloadFileParallelAsync(file, semaphore, bytesCallback, ct));
                 }
 
@@ -420,7 +432,10 @@ namespace AndroidSideloader.Utilities
             await semaphore.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                return await DownloadFileWithRetryAsync(file, bytesCallback, ct).ConfigureAwait(false);
+                string result = await DownloadFileWithRetryAsync(file, bytesCallback, ct).ConfigureAwait(false);
+                if (result == null)
+                    Interlocked.Increment(ref _completedFiles);
+                return result;
             }
             finally
             {
