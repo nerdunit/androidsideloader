@@ -4690,8 +4690,11 @@ namespace AndroidSideloader
                     _pauseTcs = new TaskCompletionSource<bool>();
                     await _pauseTcs.Task;
                     _pauseTcs = null;
-                    changeTitle($"Resuming: {gameDisplayName}");
-                    continue; // Re-enter loop; same game is still at index 0, rclone resumes partial files
+                    if (!removedownloading)
+                    {
+                        changeTitle($"Resuming: {gameDisplayName}");
+                        continue; // Re-enter loop; same game is still at index 0, rclone resumes partial files
+                    }
                 }
 
                 if (removedownloading)
