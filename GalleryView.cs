@@ -1184,11 +1184,19 @@ public class FastGalleryPanel : Control
                 bool isExactInstalled = installedVersionCode > 0 && thisVersionCode == installedVersionCode;
                 bool isNewerThanInstalled = installedVersionCode > 0 && thisVersionCode > installedVersionCode;
                 bool isOlderThanInstalled = installedVersionCode > 0 && thisVersionCode < installedVersionCode;
+                bool isDownloaded = version.SubItems.Count > 1 && MainForm.DownloadedReleaseNames.Contains(version.SubItems[1].Text);
+
+                if (isDownloaded && rowRect.IntersectsWith(contentRect))
+                {
+                    using (var dlPath = CreateRoundedRectangle(rowRect, 6))
+                    using (var dlBrush = new SolidBrush(Color.FromArgb(alpha, 27, 41, 44)))
+                        g.FillPath(dlBrush, dlPath);
+                }
 
                 if (isHovered && rowRect.IntersectsWith(contentRect))
                 {
                     using (var hoverPath = CreateRoundedRectangle(rowRect, 6))
-                    using (var hoverBrush = new SolidBrush(Color.FromArgb(alpha, VersionRowHoverBg)))
+                    using (var hoverBrush = new SolidBrush(Color.FromArgb(alpha, isDownloaded ? Color.FromArgb(45, 64, 68) : VersionRowHoverBg)))
                         g.FillPath(hoverBrush, hoverPath);
                 }
 
