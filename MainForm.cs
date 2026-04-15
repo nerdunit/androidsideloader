@@ -4057,6 +4057,7 @@ namespace AndroidSideloader
         private long _pausedTransfersComplete;
         private long _pausedFileCount;
         private TaskCompletionSource<bool> _pauseTcs;
+        private CancellationTokenSource _downloadCts;
         public async void downloadInstallGameButton_Click(object sender, EventArgs e)
         {
             // Helper to format sizes
@@ -4534,17 +4535,7 @@ namespace AndroidSideloader
 
                 _ = Logger.Log($"Starting Game Download");
 
-                Thread t1;
-                string extraArgs = string.Empty;
-                if (settings.SingleThreadMode)
-                {
-                    extraArgs = "--transfers 1 --multi-thread-streams 0";
-                }
-                string bandwidthLimit = string.Empty;
-                if (settings.BandwidthLimit > 0)
-                {
-                    bandwidthLimit = $"--bwlimit={settings.BandwidthLimit}M";
-                }
+                Thread t1 = null;
                 if (downloadedFilter_Clicked || isOffline)
                 {
                     // Downloaded/Offline View: skip download, install from downloaded files
@@ -4592,13 +4583,6 @@ namespace AndroidSideloader
                     if (doDownload)
                     {
                         downloadDirectory = $"{settings.DownloadDir}\\{gameNameHash}";
-                        _ = Logger.Log($"rclone copy \"Public:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\"");
-                        t1 = new Thread(() =>
-                        {
-                            string rclonecommand =
-                            $"copy \":http:/{gameNameHash}/\" \"{downloadDirectory}\" {extraArgs} --progress --rc {bandwidthLimit}";
-                            gameDownloadOutput = RCLONE.runRcloneCommand_PublicConfig(rclonecommand);
-                        });
                     }
                     else
                     {
@@ -4608,12 +4592,7 @@ namespace AndroidSideloader
                 else
                 {
                     _ = Directory.CreateDirectory(gameDirectory);
-                    downloadDirectory = $"{SideloaderRCLONE.RcloneGamesFolder}/{gameName}";
-                    _ = Logger.Log($"rclone copy \"{currentRemote}:{downloadDirectory}\"");
-                    t1 = new Thread(() =>
-                    {
-                        gameDownloadOutput = RCLONE.runRcloneCommand_DownloadConfig($"copy \"{currentRemote}:{downloadDirectory}\" \"{settings.DownloadDir}\\{gameName}\" {extraArgs} --progress --rc --retries 2 --low-level-retries 1 --check-first {bandwidthLimit}");
-                    });
+                    downloadDirectory = $"{settings.DownloadDir}\\{gameName}";
                 }
 
                 if (Directory.Exists(downloadDirectory))
@@ -4625,9 +4604,6 @@ namespace AndroidSideloader
                         _ = Logger.Log($"Deleted partial file: {file}");
                     }
                 }
-
-                t1.IsBackground = true;
-                t1.Start();
 
                 if (!downloadedFilter_Clicked && !isOffline)
                 {
@@ -4641,114 +4617,67 @@ namespace AndroidSideloader
                     speedLabel.Text = "";
                 }
 
-                // Snapshot pause offsets for resume formulas (local copies prevent feedback loops)
-                float progressOffset = _pausedProgressPercent;
-                long transfersOffset = _pausedTransfersComplete;
-                long totalOverride = _pausedFileCount;
-
-                // Track the highest valid progress to prevent brief progress bar flashes during multi-file transfers
-                float highestValidPercent = progressOffset;
-
-                if (progressOffset > 0)
+                if (t1 == null)
                 {
-                    progressBar.Value = progressOffset;
+                    // Chunked HTTP download path
+                    _downloadCts = new CancellationTokenSource();
+                    var cts = _downloadCts;
+
+                    ChunkedDownloader downloader;
+                    if (UsingPublicConfig)
+                    {
+                        string chunkedUrl = PublicConfigFile.BaseUri.TrimEnd('/') + "/" + gameNameHash;
+                        downloader = new ChunkedDownloader(chunkedUrl, downloadDirectory);
+                    }
+                    else
+                    {
+                        string remotePath = $"{currentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}";
+                        string configPath = Path.Combine(Environment.CurrentDirectory, "rclone", RCLONE.downloadConfigPath);
+                        string password = !string.IsNullOrEmpty(RCLONE.rclonepw) ? RCLONE.rclonepw : null;
+                        downloader = new ChunkedDownloader(remotePath, downloadDirectory, configPath, password);
+                    }
+
+                    using (downloader)
+                    {
+                        gameDownloadOutput = await Task.Run(() => downloader.DownloadAllAsync(
+                            progress =>
+                            {
+                                this.Invoke(() =>
+                                {
+                                    progressBar.IsIndeterminate = false;
+                                    float percent = Math.Max(0, Math.Min(99, progress.OverallPercent));
+                                    progressBar.Value = percent;
+
+                                    double speedMBps = progress.SpeedBytesPerSecond / (1024.0 * 1024.0);
+
+                                    UpdateProgressStatus(
+                                        "Downloading",
+                                        progress.CurrentFileIndex,
+                                        progress.TotalFiles,
+                                        (int)Math.Round(percent),
+                                        progress.Eta,
+                                        speedMBps);
+
+                                    _pausedProgressPercent = percent;
+                                    _pausedTransfersComplete = progress.CurrentFileIndex;
+                                    _pausedFileCount = progress.TotalFiles;
+                                });
+                            },
+                            cts.Token)).ConfigureAwait(true);
+                    }
+
+                    _downloadCts = null;
                 }
-
-                // Download
-                while (t1.IsAlive)
+                else
                 {
-                    try
+                    // Skip / offline path — t1 just produces a "Download skipped." output
+                    t1.IsBackground = true;
+                    t1.Start();
+
+                    while (t1.IsAlive)
                     {
-                        HttpResponseMessage response = await client.PostAsync("http://127.0.0.1:5572/core/stats", null);
-                        string foo = await response.Content.ReadAsStringAsync();
-                        dynamic results = JsonConvert.DeserializeObject<dynamic>(foo);
-
-                        if (results["transferring"] != null)
-                        {
-                            double totalSize = 0;
-                            double downloadedSize = 0;
-                            long fileCount = 0;
-                            long transfersComplete = 0;
-                            long totalChecks = 0;
-                            long globalEta = 0;
-                            float speed = 0;
-                            float downloadSpeed = 0;
-                            double estimatedFileCount = 0;
-
-                            totalSize = results["totalBytes"];
-                            downloadedSize = results["bytes"];
-                            fileCount = results["totalTransfers"];
-                            totalChecks = results["totalChecks"];
-                            transfersComplete = results["transfers"];
-                            globalEta = results["eta"];
-                            speed = results["speed"];
-                            estimatedFileCount = Math.Ceiling(totalSize / 524288000); // maximum part size
-
-                            if (totalChecks > fileCount)
-                            {
-                                fileCount = totalChecks;
-                            }
-                            if (estimatedFileCount > fileCount)
-                            {
-                                fileCount = (long)estimatedFileCount;
-                            }
-
-                            downloadSpeed = speed / 1000000;
-                            totalSize /= 1000000;
-                            downloadedSize /= 1000000;
-
-                            progressBar.IsIndeterminate = false;
-
-                            float percent = 0;
-                            if (totalSize > 0)
-                            {
-                                percent = (float)(downloadedSize / totalSize * 100);
-                                // After resume, rclone reports 0-100% of remaining work.
-                                // Map that onto [pausedPercent → 100%] so the bar continues from where it was.
-                                if (progressOffset > 0)
-                                    percent = progressOffset + (100f - progressOffset) * percent / 100f;
-                            }
-
-                            // Clamp to 0-99 while download is in progress to prevent brief 100% flashes
-                            percent = Math.Max(0, Math.Min(99, percent));
-
-                            // Only allow progress to increase
-                            if (percent >= highestValidPercent)
-                            {
-                                highestValidPercent = percent;
-                            }
-                            else
-                            {
-                                // Progress went backwards? Keep showing the highest valid percent we've seen
-                                percent = highestValidPercent;
-                            }
-
-                            progressBar.Value = percent;
-
-                            TimeSpan time = TimeSpan.FromSeconds(globalEta);
-
-                            // Offset transfer counts for pause/resume continuity
-                            long displayCurrent = transfersComplete + transfersOffset;
-                            long displayTotal = totalOverride > 0 ? totalOverride : fileCount;
-
-                            UpdateProgressStatus(
-                                "Downloading",
-                                (int)Math.Min(displayCurrent + 1, displayTotal),
-                                (int)displayTotal,
-                                (int)Math.Round(percent),
-                                time,
-                                downloadSpeed);
-
-                            // Update fields with effective values for cross-session persistence
-                            _pausedProgressPercent = highestValidPercent;
-                            _pausedTransfersComplete = displayCurrent;
-                            _pausedFileCount = displayTotal;
-                        }
+                        await Task.Delay(100);
                     }
-                    catch
-                    {
-                    }
-                    await Task.Delay(100);
                 }
 
                 // Handle pause: wait for resume, then re-run the same download
@@ -4851,7 +4780,7 @@ namespace AndroidSideloader
 
                             cleanupActiveDownloadStatus();
                         }
-                        else if (!gameDownloadOutput.Error.Contains("Serving remote control on http://127.0.0.1:5572/"))
+                        else if (!string.IsNullOrEmpty(gameDownloadOutput.Error) && gameDownloadOutput.Error != "Cancelled")
                         {
                             otherError = true;
 
@@ -9783,7 +9712,7 @@ function onYouTubeIframeAPIReady() {
                     _queuePanel.Invalidate();
                 }
                 removedownloading = true;
-                RCLONE.killRclone();
+                CancelActiveDownload();
                 // Wake up the pause wait if it's active
                 if (_pauseTcs != null)
                 {
@@ -9820,12 +9749,18 @@ function onYouTubeIframeAPIReady() {
             SaveQueueToSettings();
         }
 
+        private void CancelActiveDownload()
+        {
+            try { _downloadCts?.Cancel(); } catch { }
+            RCLONE.killRclone();
+        }
+
         private void QueuePanel_ItemPauseToggled(object sender, bool paused)
         {
             _downloadPaused = paused;
             if (paused)
             {
-                RCLONE.killRclone();
+                CancelActiveDownload();
             }
             else
             {
