@@ -1,5 +1,7 @@
 RSL 3.2
 
 - Added download pause/resume feature with cross-session progress persistence
+- Added visual indicators for downloaded titles (gallery: badge, list: row tint)
+- Added "Delete from PC" option to right-click context menu for downloaded titles
 - Added setting to show/hide adult (18+) content (off by default)
 - Fixed UI freezing during reinstall operations

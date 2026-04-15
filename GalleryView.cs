@@ -1,5 +1,6 @@
 ﻿using AndroidSideloader;
 using AndroidSideloader.Utilities;
+using JR.Utils.GUI.Forms;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -1888,6 +1889,10 @@ public class FastGalleryPanel : Control
         openFolderItem.Click += ContextMenu_OpenFolderClick;
         _contextMenu.Items.Add(openFolderItem);
 
+        var deleteFolderItem = new ToolStripMenuItem("🗑 Delete from PC");
+        deleteFolderItem.Click += ContextMenu_DeleteFolderClick;
+        _contextMenu.Items.Add(deleteFolderItem);
+
         _contextMenu.Opening += ContextMenu_Opening;
     }
 
@@ -1910,15 +1915,17 @@ public class FastGalleryPanel : Control
         bool isFavorite = _favoritesCache.Contains(packageName);
         ((ToolStripMenuItem)_contextMenu.Items[0]).Text = isFavorite ? "Remove from Favorites" : "★ Add to Favorites";
 
-        // Show "Open Folder" only if the game folder exists locally
-        if (_contextMenu.Items.Count > 1)
+        // Show "Open Folder" / "Delete from PC" if the game folder exists locally
+        if (_contextMenu.Items.Count > 2)
         {
             string releaseName = targetItem.SubItems.Count > SideloaderRCLONE.ReleaseNameIndex
                 ? targetItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text : "";
             var settings = SettingsManager.Instance;
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             string folderPath = Path.Combine(dlDir, releaseName);
-            _contextMenu.Items[1].Visible = !string.IsNullOrEmpty(releaseName) && Directory.Exists(folderPath);
+            bool folderExists = !string.IsNullOrEmpty(releaseName) && Directory.Exists(folderPath);
+            _contextMenu.Items[1].Visible = folderExists;
+            _contextMenu.Items[2].Visible = folderExists;
         }
     }
 
@@ -1979,6 +1986,39 @@ public class FastGalleryPanel : Control
         string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
         string folderPath = Path.Combine(dlDir, releaseName);
         MainForm.OpenDirectory(folderPath);
+    }
+
+    private void ContextMenu_DeleteFolderClick(object sender, EventArgs e)
+    {
+        if (_rightClickedIndex < 0 || _rightClickedIndex >= _displayTiles.Count) return;
+
+        var tile = _displayTiles[_rightClickedIndex];
+        ListViewItem targetItem = (_rightClickedVersionIndex >= 0 && _rightClickedVersionIndex < tile.Versions.Count)
+            ? tile.Versions[_rightClickedVersionIndex] : tile.Primary;
+
+        if (targetItem.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex) return;
+
+        string releaseName = targetItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+        var settings = SettingsManager.Instance;
+        string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+        string folderPath = Path.Combine(dlDir, releaseName);
+
+        if (!Directory.Exists(folderPath)) return;
+
+        DialogResult confirm = FlexibleMessageBox.Show(FindForm(),
+            $"Delete downloaded files for {releaseName}?\n\nFiles will be moved to the Recycle Bin.",
+            "Delete Downloaded Files?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+        if (confirm != DialogResult.Yes) return;
+
+        if (!FileSystemUtilities.MoveToRecycleBin(folderPath))
+        {
+            MessageBox.Show("Failed to move folder to Recycle Bin.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        var mainForm = FindForm() as MainForm;
+        mainForm?.RefreshDownloadedState();
     }
 
     private void RemoveVersionFromDisplay(GroupedTile tile, ListViewItem item, int tileIndex)
