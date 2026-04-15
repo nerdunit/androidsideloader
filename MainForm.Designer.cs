@@ -140,6 +140,7 @@ namespace AndroidSideloader
             this.favoriteGame = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.favoriteButton = new System.Windows.Forms.ToolStripMenuItem();
             this.openFolderButton = new System.Windows.Forms.ToolStripMenuItem();
+            this.deleteFolderButton = new System.Windows.Forms.ToolStripMenuItem();
             this.gamesGalleryView = new System.Windows.Forms.FlowLayoutPanel();
             this.btnViewToggle_Tooltip = new System.Windows.Forms.ToolTip(this.components);
             this.webViewPlaceholderPanel = new System.Windows.Forms.Panel();
@@ -1584,7 +1585,8 @@ namespace AndroidSideloader
             this.favoriteGame.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(42)))), ((int)(((byte)(48)))));
             this.favoriteGame.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.favoriteButton,
-            this.openFolderButton});
+            this.openFolderButton,
+            this.deleteFolderButton});
             this.favoriteGame.Name = "favoriteGame";
             this.favoriteGame.ShowImageMargin = false;
             this.favoriteGame.Size = new System.Drawing.Size(149, 48);
@@ -1606,6 +1608,15 @@ namespace AndroidSideloader
             this.openFolderButton.Size = new System.Drawing.Size(148, 22);
             this.openFolderButton.Text = "📂 Open Folder";
             this.openFolderButton.Click += new System.EventHandler(this.openFolderButton_Click);
+            // 
+            // deleteFolderButton
+            // 
+            this.deleteFolderButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(42)))), ((int)(((byte)(48)))));
+            this.deleteFolderButton.ForeColor = System.Drawing.Color.White;
+            this.deleteFolderButton.Name = "deleteFolderButton";
+            this.deleteFolderButton.Size = new System.Drawing.Size(148, 22);
+            this.deleteFolderButton.Text = "🗑 Delete from PC";
+            this.deleteFolderButton.Click += new System.EventHandler(this.deleteFolderButton_Click);
             // 
             // gamesGalleryView
             // 
@@ -1774,6 +1785,7 @@ namespace AndroidSideloader
         private ContextMenuStrip favoriteGame;
         private ToolStripMenuItem favoriteButton;
         private ToolStripMenuItem openFolderButton;
+        private ToolStripMenuItem deleteFolderButton;
         private RoundButton favoriteSwitcher;
         private Panel questInfoPanel;
         private Panel questStorageProgressBar;

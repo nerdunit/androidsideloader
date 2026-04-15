@@ -7699,13 +7699,16 @@ function onYouTubeIframeAPIReady() {
             if (_rightClickedItem == null || _rightClickedItem.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex)
             {
                 openFolderButton.Visible = false;
+                deleteFolderButton.Visible = false;
                 return;
             }
 
             string releaseName = _rightClickedItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             string folderPath = Path.Combine(dlDir, releaseName);
-            openFolderButton.Visible = Directory.Exists(folderPath);
+            bool exists = Directory.Exists(folderPath);
+            openFolderButton.Visible = exists;
+            deleteFolderButton.Visible = exists;
         }
 
         private void openFolderButton_Click(object sender, EventArgs e)
@@ -7717,6 +7720,32 @@ function onYouTubeIframeAPIReady() {
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             string folderPath = Path.Combine(dlDir, releaseName);
             OpenDirectory(folderPath);
+        }
+
+        private void deleteFolderButton_Click(object sender, EventArgs e)
+        {
+            if (_rightClickedItem == null || _rightClickedItem.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex)
+                return;
+
+            string releaseName = _rightClickedItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+            string folderPath = Path.Combine(dlDir, releaseName);
+
+            if (!Directory.Exists(folderPath)) return;
+
+            DialogResult confirm = FlexibleMessageBox.Show(Program.form,
+                $"Delete downloaded files for {releaseName}?\n\nFiles will be moved to the Recycle Bin.",
+                "Delete Downloaded Files?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (confirm != DialogResult.Yes) return;
+
+            if (!FileSystemUtilities.MoveToRecycleBin(folderPath))
+            {
+                MessageBox.Show($"Failed to move folder to Recycle Bin.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            RefreshDownloadedState();
         }
 
         private void favoriteSwitcher_Click(object sender, EventArgs e)
