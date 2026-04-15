@@ -75,6 +75,7 @@ namespace AndroidSideloader
         public static readonly Color ColorDonateGame = ColorTranslator.FromHtml("#cb9cf2");
         private static readonly Color ColorError = ColorTranslator.FromHtml("#f52f57");
         public static readonly Color ColorDownloaded = ColorTranslator.FromHtml("#67c7b1");
+        public static HashSet<string> DownloadedReleaseNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool downloadedFilter_Clicked = false;
         private Panel _listViewUninstallButton;
         private bool _listViewUninstallButtonHovered = false;
@@ -3044,6 +3045,7 @@ namespace AndroidSideloader
 
             // Count downloaded titles by checking for matching folders in the download directory
             int downloadedCount = 0;
+            var dlSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             if (Directory.Exists(dlDir))
             {
@@ -3060,11 +3062,15 @@ namespace AndroidSideloader
                     try
                     {
                         if (Directory.GetFiles(folderPath, "*.apk").Length > 0)
+                        {
                             downloadedCount++;
+                            dlSet.Add(releaseName);
+                        }
                     }
                     catch { }
                 }
             }
+            DownloadedReleaseNames = dlSet;
 
             // Update UI with computed list
             this.Invoke(() =>
@@ -9383,6 +9389,7 @@ function onYouTubeIframeAPIReady() {
 
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             int downloadedCount = 0;
+            var dlSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (Directory.Exists(dlDir))
             {
@@ -9399,11 +9406,15 @@ function onYouTubeIframeAPIReady() {
                     try
                     {
                         if (Directory.GetFiles(folderPath, "*.apk").Length > 0)
+                        {
                             downloadedCount++;
+                            dlSet.Add(releaseName);
+                        }
                     }
                     catch { }
                 }
             }
+            DownloadedReleaseNames = dlSet;
 
             btnDownloaded.Text = $"{downloadedCount} DOWNLOADED";
 

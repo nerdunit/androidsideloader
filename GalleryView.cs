@@ -114,6 +114,7 @@ public class FastGalleryPanel : Control
     private static readonly Color BadgeFavoriteBg = Color.FromArgb(200, 255, 180, 0);
     private static readonly Color TextColor = Color.FromArgb(245, 255, 255, 255);
     private static readonly Color BadgeInstalledBg = Color.FromArgb(180, 60, 145, 230);
+    private static readonly Color BadgeDownloadedBg = Color.FromArgb(180, 80, 175, 150);
     private static readonly Color DeleteButtonBg = Color.FromArgb(200, 180, 50, 50);
     private static readonly Color DeleteButtonHoverBg = Color.FromArgb(255, 220, 70, 70);
     private static readonly Color SortButtonBg = Color.FromArgb(40, 42, 48);
@@ -1388,10 +1389,12 @@ public class FastGalleryPanel : Control
         bool hasUpdate = tile.Versions.Any(v => v.ForeColor.ToArgb() == MainForm.ColorUpdateAvailable.ToArgb());
         bool installed = IsAnyVersionInstalled(tile);
         bool canDonate = tile.Versions.Any(v => v.ForeColor.ToArgb() == MainForm.ColorDonateGame.ToArgb());
+        bool downloaded = tile.Versions.Any(v => v.SubItems.Count > 1 && MainForm.DownloadedReleaseNames.Contains(v.SubItems[1].Text));
 
         if (hasUpdate) { DrawBadge(g, "UPDATE", x + 4, badgeY, Color.FromArgb(180, MainForm.ColorUpdateAvailable)); badgeY += 15; }
         if (canDonate) { DrawBadge(g, "AHEAD", x + 4, badgeY, Color.FromArgb(180, MainForm.ColorDonateGame)); badgeY += 15; }
-        if (installed) DrawBadge(g, "INSTALLED", x + 4, badgeY, BadgeInstalledBg);
+        if (installed) { DrawBadge(g, "INSTALLED", x + 4, badgeY, BadgeInstalledBg); badgeY += 15; }
+        if (downloaded) DrawBadge(g, "DOWNLOADED", x + 4, badgeY, BadgeDownloadedBg);
 
         // Right-side badges (top)
         int rightBadgeY = y + 4;
