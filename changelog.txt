@@ -1,5 +1,6 @@
 RSL 3.2
 
 - Added download pause/resume feature with cross-session progress persistence
+- Significantly improved download initialization time for large downloads
 - Added setting to show/hide adult (18+) content (off by default)
 - Fixed UI freezing during reinstall operations
