@@ -42,9 +42,9 @@ namespace AndroidSideloader
         private static readonly Color RowNormal = Color.FromArgb(24, 26, 30);
         private static readonly Color RowHover = Color.FromArgb(42, 48, 58);
 
-        private static readonly Color RowDownloadedNormal = Color.FromArgb(27, 43, 42);
-        private static readonly Color RowDownloadedAlt = Color.FromArgb(32, 49, 48);
-        private static readonly Color RowDownloadedHover = Color.FromArgb(45, 67, 65);
+        private static readonly Color RowDownloadedNormal = Color.FromArgb(27, 41, 44);
+        private static readonly Color RowDownloadedAlt = Color.FromArgb(32, 47, 50);
+        private static readonly Color RowDownloadedHover = Color.FromArgb(45, 64, 68);
 
         private static readonly Color RowSelectedActive = Color.FromArgb(50, 65, 85);
         private static readonly Color RowSelectedActiveBorder = Color.FromArgb(93, 203, 173);
