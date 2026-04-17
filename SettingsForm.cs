@@ -43,6 +43,7 @@ namespace AndroidSideloader
             toggleVirtualFilesystem.SetCheckedSilent(_settings.VirtualFilesystemCompatibility);
             toggleUseDownloadedFiles.SetCheckedSilent(_settings.UseDownloadedFiles);
             toggleTrailers.SetCheckedSilent(_settings.TrailersEnabled);
+            toggleShowAdultContent.SetCheckedSilent(_settings.ShowAdultContent);
             bandwidthLimitTextBox.Text = _settings.BandwidthLimit.ToString();
 
             // Handle no device mode disabling delete after install
@@ -94,12 +95,14 @@ namespace AndroidSideloader
             _settings.VirtualFilesystemCompatibility = toggleVirtualFilesystem.Checked;
             _settings.UseDownloadedFiles = toggleUseDownloadedFiles.Checked;
             _settings.TrailersEnabled = toggleTrailers.Checked;
+            _settings.ShowAdultContent = toggleShowAdultContent.Checked;
             _settings.useProxy = toggleProxy.Checked;
 
             if (Program.form != null)
             {
                 Program.form.SetTrailerVisibility(toggleTrailers.Checked);
                 Program.form.UpdateSideloadingUI();
+                Program.form.RefreshAdultContentFilter();
             }
 
             _settings.Save();
@@ -191,39 +194,9 @@ namespace AndroidSideloader
             this.Close();
         }
 
-        private void toggleCheckForUpdates_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
-        }
-
-        private void toggleUseDownloadedFiles_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
-        }
-
-        private void toggleMessageBoxes_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
-        }
-
-        private void toggleTrailers_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
-        }
-
         private void resetSettingsButton_Click(object sender, EventArgs e)
         {
             this.Close();
-        }
-
-        private void toggleDeleteAfterInstall_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
-        }
-
-        private void toggleUserJson_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
         }
 
         private void SettingsForm_KeyPress(object sender, KeyPressEventArgs e)
@@ -272,16 +245,6 @@ namespace AndroidSideloader
                 toggleDeleteAfterInstall.Enabled = false;
                 lblDeleteAfterInstall.ForeColor = System.Drawing.Color.FromArgb(100, 100, 100);
             }
-        }
-
-        private void toggleBMBF_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
-        }
-
-        private void toggleAutoReinstall_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
         }
 
         private void toggleAutoReinstall_Click(object sender, EventArgs e)
@@ -350,16 +313,6 @@ namespace AndroidSideloader
             }
         }
 
-        private void toggleSingleThread_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
-        }
-
-        private void toggleVirtualFilesystem_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
-        }
-
         private void openDownloadDirectory_Click(object sender, EventArgs e)
         {
             string pathToOpen = _settings.CustomDownloadDir ? _settings.DownloadDir : Environment.CurrentDirectory;
@@ -383,11 +336,6 @@ namespace AndroidSideloader
             {
                 e.Handled = true;
             }
-        }
-
-        private void toggleProxy_CheckedChanged(object sender, EventArgs e)
-        {
-            // Settings saved on form close
         }
     }
 }

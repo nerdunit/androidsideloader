@@ -249,6 +249,7 @@
     <Compile Include="Sideloader\ProcessOutput.cs" />
     <Compile Include="Sideloader\RCLONE.cs" />
     <Compile Include="Sideloader\Utilities.cs" />
+    <Compile Include="Utilities\ChunkedDownloader.cs" />
     <Compile Include="Utilities\DnsHelper.cs" />
     <Compile Include="Utilities\FileSystemUtilities.cs" />
     <Compile Include="Utilities\Logger.cs" />

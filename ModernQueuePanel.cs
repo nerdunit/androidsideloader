@@ -12,7 +12,7 @@ namespace AndroidSideloader
     {
         // Layout constants
         private const int ItemHeight = 28, ItemMargin = 4, ItemRadius = 5;
-        private const int XButtonSize = 18, DragHandleWidth = 20, TextPadding = 6;
+        private const int XButtonSize = 18, PauseButtonSize = 18, DragHandleWidth = 20, TextPadding = 6;
         private const int ScrollbarWidth = 6, ScrollbarWidthHover = 8, ScrollbarMargin = 2;
         private const int ScrollbarRadius = 3, MinThumbHeight = 20;
         private const int AutoScrollZoneHeight = 30, AutoScrollSpeed = 3;
@@ -27,6 +27,9 @@ namespace AndroidSideloader
         private static readonly Color AccentColor = Color.FromArgb(93, 203, 173);
         private static readonly Color XButtonBg = Color.FromArgb(55, 60, 70);
         private static readonly Color XButtonHoverBg = Color.FromArgb(200, 60, 60);
+        private static readonly Color PauseButtonBg = Color.FromArgb(55, 60, 70);
+        private static readonly Color PauseButtonHoverBg = Color.FromArgb(70, 140, 130);
+        private static readonly Color PausedAccentColor = Color.FromArgb(220, 180, 60);
         private static readonly Color GripColor = Color.FromArgb(70, 75, 85);
         private static readonly Color ItemDragBorder = Color.FromArgb(55, 65, 80);
         private static readonly Color ScrollTrackColor = Color.FromArgb(35, 38, 45);
@@ -39,12 +42,13 @@ namespace AndroidSideloader
 
         // State tracking
         private int _hoveredIndex = -1, _dragIndex = -1, _dropIndex = -1, _scrollOffset;
-        private bool _hoveringX, _scrollbarHovered, _scrollbarDragging;
+        private bool _hoveringX, _hoveringPause, _scrollbarHovered, _scrollbarDragging;
         private int _scrollDragStartY, _scrollDragStartOffset, _autoScrollDirection;
         private Rectangle _scrollThumbRect, _scrollTrackRect;
 
         public event EventHandler<int> ItemRemoved;
         public event EventHandler<ReorderEventArgs> ItemReordered;
+        public event EventHandler<bool> ItemPauseToggled;
 
         public ModernQueuePanel()
         {
@@ -56,6 +60,7 @@ namespace AndroidSideloader
         }
 
         public bool IsDownloading { get; set; }
+        public bool IsPaused { get; set; }
         public int Count => _items.Count;
         private int ContentHeight => _items.Count * (ItemHeight + ItemMargin) + ItemMargin;
         private int MaxScroll => Math.Max(0, ContentHeight - Height);
@@ -184,22 +189,25 @@ namespace AndroidSideloader
             if (!isFirst)
                 DrawDragHandle(g, rect);
             DrawItemText(g, index, rect, isFirst);
+            if (isFirst && IsDownloading)
+                DrawPauseButton(g, rect, isHovered && _hoveringPause);
             DrawXButton(g, rect, isHovered && _hoveringX);
         }
 
         // Draw gradient accent and border for active download (first item)
         private void DrawFirstItemAccent(Graphics g, Rectangle rect)
         {
+            Color accent = IsPaused ? PausedAccentColor : AccentColor;
             using (var path = CreateRoundedRect(rect, ItemRadius))
             using (var gradBrush = new LinearGradientBrush(rect,
-                Color.FromArgb(60, AccentColor), Color.FromArgb(0, AccentColor), LinearGradientMode.Horizontal))
+                Color.FromArgb(60, accent), Color.FromArgb(0, accent), LinearGradientMode.Horizontal))
             {
                 var oldClip = g.Clip;
                 g.SetClip(path);
                 g.FillRectangle(gradBrush, rect);
                 g.Clip = oldClip;
             }
-            DrawBorder(g, rect, AccentColor, 1.5f);
+            DrawBorder(g, rect, accent, 1.5f);
         }
 
         private void DrawBorder(Graphics g, Rectangle rect, Color color, float width)
@@ -224,7 +232,8 @@ namespace AndroidSideloader
         {
             int textLeft = isFirst ? rect.X + TextPadding : rect.X + DragHandleWidth;
             int rightPad = ScrollbarVisible ? ScrollbarWidthHover + ScrollbarMargin * 2 : 0;
-            var textRect = new Rectangle(textLeft, rect.Y, rect.Right - XButtonSize - 6 - textLeft - rightPad, rect.Height);
+            int rightButtons = XButtonSize + 6 + (isFirst && IsDownloading ? PauseButtonSize + 4 : 0);
+            var textRect = new Rectangle(textLeft, rect.Y, rect.Right - rightButtons - textLeft - rightPad, rect.Height);
 
             using (var brush = new SolidBrush(TextColor))
             using (var font = new Font("Segoe UI", isFirst ? 8.5f : 8f, isFirst ? FontStyle.Bold : FontStyle.Regular))
@@ -252,6 +261,41 @@ namespace AndroidSideloader
                 int p = 4;
                 g.DrawLine(pen, xRect.X + p, xRect.Y + p, xRect.Right - p, xRect.Bottom - p);
                 g.DrawLine(pen, xRect.Right - p, xRect.Y + p, xRect.X + p, xRect.Bottom - p);
+            }
+        }
+
+        private void DrawPauseButton(Graphics g, Rectangle itemRect, bool hovered)
+        {
+            var pRect = GetPauseButtonRect(itemRect);
+            using (var path = CreateRoundedRect(pRect, 3))
+            using (var brush = new SolidBrush(hovered ? PauseButtonHoverBg : PauseButtonBg))
+                g.FillPath(brush, path);
+
+            if (IsPaused)
+            {
+                // Draw play triangle (▶)
+                int pad = 5;
+                var pts = new Point[]
+                {
+                    new Point(pRect.X + pad + 1, pRect.Y + pad),
+                    new Point(pRect.Right - pad, pRect.Y + pRect.Height / 2),
+                    new Point(pRect.X + pad + 1, pRect.Bottom - pad)
+                };
+                using (var brush = new SolidBrush(Color.White))
+                    g.FillPolygon(brush, pts);
+            }
+            else
+            {
+                // Draw pause bars (⏸)
+                int pad = 5;
+                int barWidth = 2;
+                int gap = 3;
+                int cx = pRect.X + pRect.Width / 2;
+                using (var brush = new SolidBrush(Color.White))
+                {
+                    g.FillRectangle(brush, cx - gap / 2 - barWidth, pRect.Y + pad, barWidth, pRect.Height - pad * 2);
+                    g.FillRectangle(brush, cx + gap / 2, pRect.Y + pad, barWidth, pRect.Height - pad * 2);
+                }
             }
         }
 
@@ -304,6 +348,9 @@ namespace AndroidSideloader
         private Rectangle GetXButtonRect(Rectangle itemRect) =>
             new Rectangle(itemRect.Right - XButtonSize - 3, itemRect.Y + (itemRect.Height - XButtonSize) / 2, XButtonSize, XButtonSize);
 
+        private Rectangle GetPauseButtonRect(Rectangle itemRect) =>
+            new Rectangle(itemRect.Right - XButtonSize - 3 - PauseButtonSize - 4, itemRect.Y + (itemRect.Height - PauseButtonSize) / 2, PauseButtonSize, PauseButtonSize);
+
         private int HitTest(Point pt)
         {
             for (int i = 0; i < _items.Count; i++)
@@ -349,12 +396,14 @@ namespace AndroidSideloader
             // Update hover state
             int hit = HitTest(e.Location);
             bool overX = hit >= 0 && GetXButtonRect(GetItemRect(hit)).Contains(e.Location);
+            bool overPause = hit == 0 && IsDownloading && GetPauseButtonRect(GetItemRect(hit)).Contains(e.Location);
 
-            if (hit != _hoveredIndex || overX != _hoveringX)
+            if (hit != _hoveredIndex || overX != _hoveringX || overPause != _hoveringPause)
             {
                 _hoveredIndex = hit;
                 _hoveringX = overX;
-                Cursor = overX ? Cursors.Hand : hit > 0 ? Cursors.SizeNS : Cursors.Default;
+                _hoveringPause = overPause;
+                Cursor = (overX || overPause) ? Cursors.Hand : hit > 0 ? Cursors.SizeNS : Cursors.Default;
                 Invalidate();
             }
         }
@@ -400,6 +449,15 @@ namespace AndroidSideloader
 
             int hit = HitTest(e.Location);
             if (hit < 0) return;
+
+            // Handle pause button click (first item only)
+            if (hit == 0 && IsDownloading && GetPauseButtonRect(GetItemRect(hit)).Contains(e.Location))
+            {
+                IsPaused = !IsPaused;
+                ItemPauseToggled?.Invoke(this, IsPaused);
+                Invalidate();
+                return;
+            }
 
             // Handle close button click
             if (GetXButtonRect(GetItemRect(hit)).Contains(e.Location))
@@ -453,7 +511,7 @@ namespace AndroidSideloader
             if (_dragIndex < 0 && !_scrollbarDragging)
             {
                 _hoveredIndex = -1;
-                _hoveringX = _scrollbarHovered = false;
+                _hoveringX = _hoveringPause = _scrollbarHovered = false;
                 Invalidate();
             }
         }

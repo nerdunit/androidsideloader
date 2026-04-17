@@ -75,6 +75,7 @@ namespace AndroidSideloader
         public static readonly Color ColorDonateGame = ColorTranslator.FromHtml("#cb9cf2");
         private static readonly Color ColorError = ColorTranslator.FromHtml("#f52f57");
         public static readonly Color ColorDownloaded = ColorTranslator.FromHtml("#67c7b1");
+        public static HashSet<string> DownloadedReleaseNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool downloadedFilter_Clicked = false;
         private Panel _listViewUninstallButton;
         private bool _listViewUninstallButtonHovered = false;
@@ -113,6 +114,7 @@ namespace AndroidSideloader
         private System.Windows.Forms.Timer _debounceTimer;
         private CancellationTokenSource _cts;
         private List<ListViewItem> _allItems;
+        private List<ListViewItem> _allItemsUnfiltered;
         private Dictionary<string, List<ListViewItem>> _searchIndex;
 
         public MainForm()
@@ -3043,6 +3045,7 @@ namespace AndroidSideloader
 
             // Count downloaded titles by checking for matching folders in the download directory
             int downloadedCount = 0;
+            var dlSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             if (Directory.Exists(dlDir))
             {
@@ -3059,11 +3062,15 @@ namespace AndroidSideloader
                     try
                     {
                         if (Directory.GetFiles(folderPath, "*.apk").Length > 0)
+                        {
                             downloadedCount++;
+                            dlSet.Add(releaseName);
+                        }
                     }
                     catch { }
                 }
             }
+            DownloadedReleaseNames = dlSet;
 
             // Update UI with computed list
             this.Invoke(() =>
@@ -3094,30 +3101,19 @@ namespace AndroidSideloader
 
             if (!_allItemsInitialized)
             {
-                _allItems = gamesListView.Items.Cast<ListViewItem>().ToList();
+                _allItemsUnfiltered = gamesListView.Items.Cast<ListViewItem>().ToList();
+                RebuildAllItemsFromUnfiltered();
 
-                _searchIndex = new Dictionary<string, List<ListViewItem>>(_allItems.Count * 2, StringComparer.OrdinalIgnoreCase);
-
-                foreach (var item in _allItems)
+                // Update the ListView to reflect the filtered list
+                if (!settings.ShowAdultContent)
                 {
-                    string gameNameKey = item.Text;
-                    if (!_searchIndex.TryGetValue(gameNameKey, out var list))
+                    this.Invoke(() =>
                     {
-                        list = new List<ListViewItem>(1);
-                        _searchIndex[gameNameKey] = list;
-                    }
-                    list.Add(item);
-
-                    if (item.SubItems.Count > 1)
-                    {
-                        string releaseName = item.SubItems[1].Text;
-                        if (!_searchIndex.TryGetValue(releaseName, out var releaseList))
-                        {
-                            releaseList = new List<ListViewItem>(1);
-                            _searchIndex[releaseName] = releaseList;
-                        }
-                        releaseList.Add(item);
-                    }
+                        gamesListView.BeginUpdate();
+                        gamesListView.Items.Clear();
+                        gamesListView.Items.AddRange(_allItems.ToArray());
+                        gamesListView.EndUpdate();
+                    });
                 }
 
                 _allItemsInitialized = true;
@@ -4021,6 +4017,9 @@ namespace AndroidSideloader
         {
             speedLabel.Text = String.Empty;
             progressBar.Value = 0;
+            _pausedProgressPercent = 0;
+            _pausedTransfersComplete = 0;
+            _pausedFileCount = 0;
 
             if (gamesQueueList.Count > 0)
             {
@@ -4059,6 +4058,12 @@ namespace AndroidSideloader
         public bool isinstalling = false;
         public static bool isInDownloadExtract = false;
         public static bool removedownloading = false;
+        private bool _downloadPaused;
+        private float _pausedProgressPercent;
+        private long _pausedTransfersComplete;
+        private long _pausedFileCount;
+        private TaskCompletionSource<bool> _pauseTcs;
+        private CancellationTokenSource _downloadCts;
         public async void downloadInstallGameButton_Click(object sender, EventArgs e)
         {
             // Helper to format sizes
@@ -4536,17 +4541,7 @@ namespace AndroidSideloader
 
                 _ = Logger.Log($"Starting Game Download");
 
-                Thread t1;
-                string extraArgs = string.Empty;
-                if (settings.SingleThreadMode)
-                {
-                    extraArgs = "--transfers 1 --multi-thread-streams 0";
-                }
-                string bandwidthLimit = string.Empty;
-                if (settings.BandwidthLimit > 0)
-                {
-                    bandwidthLimit = $"--bwlimit={settings.BandwidthLimit}M";
-                }
+                Thread t1 = null;
                 if (downloadedFilter_Clicked || isOffline)
                 {
                     // Downloaded/Offline View: skip download, install from downloaded files
@@ -4594,13 +4589,6 @@ namespace AndroidSideloader
                     if (doDownload)
                     {
                         downloadDirectory = $"{settings.DownloadDir}\\{gameNameHash}";
-                        _ = Logger.Log($"rclone copy \"Public:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}\"");
-                        t1 = new Thread(() =>
-                        {
-                            string rclonecommand =
-                            $"copy \":http:/{gameNameHash}/\" \"{downloadDirectory}\" {extraArgs} --progress --rc {bandwidthLimit}";
-                            gameDownloadOutput = RCLONE.runRcloneCommand_PublicConfig(rclonecommand);
-                        });
                     }
                     else
                     {
@@ -4610,12 +4598,7 @@ namespace AndroidSideloader
                 else
                 {
                     _ = Directory.CreateDirectory(gameDirectory);
-                    downloadDirectory = $"{SideloaderRCLONE.RcloneGamesFolder}/{gameName}";
-                    _ = Logger.Log($"rclone copy \"{currentRemote}:{downloadDirectory}\"");
-                    t1 = new Thread(() =>
-                    {
-                        gameDownloadOutput = RCLONE.runRcloneCommand_DownloadConfig($"copy \"{currentRemote}:{downloadDirectory}\" \"{settings.DownloadDir}\\{gameName}\" {extraArgs} --progress --rc --retries 2 --low-level-retries 1 --check-first {bandwidthLimit}");
-                    });
+                    downloadDirectory = $"{settings.DownloadDir}\\{gameName}";
                 }
 
                 if (Directory.Exists(downloadDirectory))
@@ -4628,13 +4611,11 @@ namespace AndroidSideloader
                     }
                 }
 
-                t1.IsBackground = true;
-                t1.Start();
-
                 if (!downloadedFilter_Clicked && !isOffline)
                 {
-                    changeTitle("Downloading game " + gameName);
-                    speedLabel.Text = "Starting download...";
+                    bool isResume = _pausedProgressPercent > 0;
+                    changeTitle((isResume ? "Resuming download " : "Downloading game ") + gameName);
+                    speedLabel.Text = isResume ? "Resuming download..." : "Starting download...";
                 }
                 else
                 {
@@ -4642,96 +4623,92 @@ namespace AndroidSideloader
                     speedLabel.Text = "";
                 }
 
-                // Track the highest valid progress to prevent brief progress bar flashes during multi-file transfers
-                float highestValidPercent = 0;
-
-                // Download
-                while (t1.IsAlive)
+                if (t1 == null)
                 {
-                    try
+                    // Chunked HTTP download path
+                    _downloadCts = new CancellationTokenSource();
+                    var cts = _downloadCts;
+
+                    ChunkedDownloader downloader;
+                    if (UsingPublicConfig)
                     {
-                        HttpResponseMessage response = await client.PostAsync("http://127.0.0.1:5572/core/stats", null);
-                        string foo = await response.Content.ReadAsStringAsync();
-                        dynamic results = JsonConvert.DeserializeObject<dynamic>(foo);
-
-                        if (results["transferring"] != null)
-                        {
-                            double totalSize = 0;
-                            double downloadedSize = 0;
-                            long fileCount = 0;
-                            long transfersComplete = 0;
-                            long totalChecks = 0;
-                            long globalEta = 0;
-                            float speed = 0;
-                            float downloadSpeed = 0;
-                            double estimatedFileCount = 0;
-
-                            totalSize = results["totalBytes"];
-                            downloadedSize = results["bytes"];
-                            fileCount = results["totalTransfers"];
-                            totalChecks = results["totalChecks"];
-                            transfersComplete = results["transfers"];
-                            globalEta = results["eta"];
-                            speed = results["speed"];
-                            estimatedFileCount = Math.Ceiling(totalSize / 524288000); // maximum part size
-
-                            if (totalChecks > fileCount)
-                            {
-                                fileCount = totalChecks;
-                            }
-                            if (estimatedFileCount > fileCount)
-                            {
-                                fileCount = (long)estimatedFileCount;
-                            }
-
-                            downloadSpeed = speed / 1000000;
-                            totalSize /= 1000000;
-                            downloadedSize /= 1000000;
-
-                            progressBar.IsIndeterminate = false;
-
-                            float percent = 0;
-                            if (totalSize > 0)
-                            {
-                                percent = (float)(downloadedSize / totalSize * 100);
-                            }
-
-                            // Clamp to 0-99 while download is in progress to prevent brief 100% flashes
-                            percent = Math.Max(0, Math.Min(99, percent));
-
-                            // Only allow progress to increase
-                            if (percent >= highestValidPercent)
-                            {
-                                highestValidPercent = percent;
-                            }
-                            else
-                            {
-                                // Progress went backwards? Keep showing the highest valid percent we've seen
-                                percent = highestValidPercent;
-                            }
-
-                            progressBar.Value = percent;
-
-                            TimeSpan time = TimeSpan.FromSeconds(globalEta);
-
-                            UpdateProgressStatus(
-                                "Downloading",
-                                (int)transfersComplete + 1,
-                                (int)fileCount,
-                                (int)Math.Round(percent),
-                                time,
-                                downloadSpeed);
-                        }
+                        string chunkedUrl = PublicConfigFile.BaseUri.TrimEnd('/') + "/" + gameNameHash;
+                        downloader = new ChunkedDownloader(chunkedUrl, downloadDirectory);
                     }
-                    catch
+                    else
                     {
+                        string remotePath = $"{currentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{gameName}";
+                        string configPath = Path.Combine(Environment.CurrentDirectory, "rclone", RCLONE.downloadConfigPath);
+                        string password = !string.IsNullOrEmpty(RCLONE.rclonepw) ? RCLONE.rclonepw : null;
+                        downloader = new ChunkedDownloader(remotePath, downloadDirectory, configPath, password);
                     }
-                    await Task.Delay(100);
+
+                    using (downloader)
+                    {
+                        gameDownloadOutput = await Task.Run(() => downloader.DownloadAllAsync(
+                            progress =>
+                            {
+                                this.Invoke(() =>
+                                {
+                                    progressBar.IsIndeterminate = false;
+                                    float percent = Math.Max(0, Math.Min(99, progress.OverallPercent));
+                                    progressBar.Value = percent;
+
+                                    double speedMBps = progress.SpeedBytesPerSecond / (1024.0 * 1024.0);
+
+                                    UpdateProgressStatus(
+                                        "Downloading",
+                                        progress.CurrentFileIndex,
+                                        progress.TotalFiles,
+                                        (int)Math.Round(percent),
+                                        progress.Eta,
+                                        speedMBps);
+
+                                    _pausedProgressPercent = percent;
+                                    _pausedTransfersComplete = progress.CurrentFileIndex;
+                                    _pausedFileCount = progress.TotalFiles;
+                                });
+                            },
+                            cts.Token)).ConfigureAwait(true);
+                    }
+
+                    _downloadCts = null;
+                }
+                else
+                {
+                    // Skip / offline path — t1 just produces a "Download skipped." output
+                    t1.IsBackground = true;
+                    t1.Start();
+
+                    while (t1.IsAlive)
+                    {
+                        await Task.Delay(100);
+                    }
+                }
+
+                // Handle pause: wait for resume, then re-run the same download
+                if (_downloadPaused)
+                {
+                    SaveQueueToSettings();
+                    changeTitle($"Paused: {gameDisplayName}");
+                    speedLabel.Text = "Download paused";
+                    UpdateProgressStatus("Paused", 0, 0, (int)Math.Round(_pausedProgressPercent));
+                    _pauseTcs = new TaskCompletionSource<bool>();
+                    await _pauseTcs.Task;
+                    _pauseTcs = null;
+                    if (!removedownloading)
+                    {
+                        changeTitle($"Resuming: {gameDisplayName}");
+                        continue; // Re-enter loop; same game is still at index 0, rclone resumes partial files
+                    }
                 }
 
                 if (removedownloading)
                 {
                     removedownloading = false;
+                    _pausedProgressPercent = 0;
+                    _pausedTransfersComplete = 0;
+                    _pausedFileCount = 0;
 
                     // Store game info before removing from queue
                     string cancelledGame = gameName;
@@ -4812,7 +4789,7 @@ namespace AndroidSideloader
 
                             cleanupActiveDownloadStatus();
                         }
-                        else if (!gameDownloadOutput.Error.Contains("Serving remote control on http://127.0.0.1:5572/"))
+                        else if (!string.IsNullOrEmpty(gameDownloadOutput.Error) && gameDownloadOutput.Error != "Cancelled")
                         {
                             otherError = true;
 
@@ -5090,7 +5067,11 @@ namespace AndroidSideloader
 
                 progressBar.IsIndeterminate = false;
                 gamesAreDownloading = false;
-                if (_queuePanel != null) _queuePanel.IsDownloading = false;
+                _downloadPaused = false;
+                _pausedProgressPercent = 0;
+                _pausedTransfersComplete = 0;
+                _pausedFileCount = 0;
+                if (_queuePanel != null) { _queuePanel.IsDownloading = false; _queuePanel.IsPaused = false; }
                 isinstalling = false;
 
                 changeTitle("");
@@ -5205,7 +5186,11 @@ namespace AndroidSideloader
             }
             progressBar.IsIndeterminate = false;
             gamesAreDownloading = false;
-            if (_queuePanel != null) _queuePanel.IsDownloading = false;
+            _downloadPaused = false;
+            _pausedProgressPercent = 0;
+            _pausedTransfersComplete = 0;
+            _pausedFileCount = 0;
+            if (_queuePanel != null) { _queuePanel.IsDownloading = false; _queuePanel.IsPaused = false; }
             isinstalling = false;
 
             changeTitle("");
@@ -5304,6 +5289,9 @@ namespace AndroidSideloader
         {
             // Save window state before closing
             SaveWindowState();
+
+            // Persist download progress for cross-session resume
+            SaveQueueToSettings();
 
             // Cleanup DNS helper (stops proxy)
             DnsHelper.Cleanup();
@@ -7244,6 +7232,108 @@ function onYouTubeIframeAPIReady() {
             changeTitle("");
         }
 
+        private List<ListViewItem> ApplyAdultContentFilter(List<ListViewItem> items)
+        {
+            if (settings.ShowAdultContent)
+                return items.ToList();
+
+            return items.Where(item => item.Text.IndexOf("(18+)", StringComparison.OrdinalIgnoreCase) < 0).ToList();
+        }
+
+        private void RebuildAllItemsFromUnfiltered()
+        {
+            if (_allItemsUnfiltered == null) return;
+
+            _allItems = ApplyAdultContentFilter(_allItemsUnfiltered);
+            RebuildSearchIndex();
+        }
+
+        private void RebuildSearchIndex()
+        {
+            _searchIndex = new Dictionary<string, List<ListViewItem>>(_allItems.Count * 2, StringComparer.OrdinalIgnoreCase);
+            foreach (var item in _allItems)
+            {
+                string gameNameKey = item.Text;
+                if (!_searchIndex.TryGetValue(gameNameKey, out var list))
+                {
+                    list = new List<ListViewItem>(1);
+                    _searchIndex[gameNameKey] = list;
+                }
+                list.Add(item);
+
+                if (item.SubItems.Count > 1)
+                {
+                    string releaseName = item.SubItems[1].Text;
+                    if (!_searchIndex.TryGetValue(releaseName, out var releaseList))
+                    {
+                        releaseList = new List<ListViewItem>(1);
+                        _searchIndex[releaseName] = releaseList;
+                    }
+                    releaseList.Add(item);
+                }
+            }
+        }
+
+        public void RefreshAdultContentFilter()
+        {
+            if (_allItemsUnfiltered == null || _allItemsUnfiltered.Count == 0)
+                return;
+
+            RebuildAllItemsFromUnfiltered();
+
+            // Re-apply the currently active filter on the updated _allItems
+            if (downloadedFilter_Clicked)
+            {
+                downloadedFilter_Clicked = false;
+                btnDownloaded_Click(null, EventArgs.Empty);
+            }
+            else if (upToDate_Clicked)
+            {
+                FilterListByColors(new[] { ColorInstalled, ColorUpdateAvailable, ColorDonateGame });
+            }
+            else if (updateAvailableClicked)
+            {
+                FilterListByColor(ColorUpdateAvailable);
+            }
+            else if (NeedsDonation_Clicked)
+            {
+                FilterListByColor(ColorDonateGame);
+            }
+            else if (favoriteSwitcher.Text == "ALL")
+            {
+                var favSet = new HashSet<string>(settings.FavoritedGames, StringComparer.OrdinalIgnoreCase);
+                var favoriteItems = _allItems
+                    .Where(item => item.SubItems.Count > 1 && favSet.Contains(item.SubItems[1].Text))
+                    .ToList();
+
+                gamesListView.BeginUpdate();
+                gamesListView.Items.Clear();
+                gamesListView.Items.AddRange(favoriteItems.ToArray());
+                gamesListView.EndUpdate();
+
+                _galleryDataSource = favoriteItems;
+                if (isGalleryView && _fastGallery != null)
+                {
+                    _fastGallery.RefreshFavoritesCache();
+                    _fastGallery.UpdateItems(favoriteItems);
+                }
+            }
+            else
+            {
+                string searchTerm = searchTextBox.Text;
+                if (searchTerm != "Search..." && !string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    _ = RunSearch();
+                }
+                else
+                {
+                    RestoreFullList();
+                }
+            }
+
+            UpdateFilterButtonStates();
+        }
+
         public static void OpenDirectory(string directoryPath)
         {
             if (Directory.Exists(directoryPath))
@@ -7609,13 +7699,16 @@ function onYouTubeIframeAPIReady() {
             if (_rightClickedItem == null || _rightClickedItem.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex)
             {
                 openFolderButton.Visible = false;
+                deleteFolderButton.Visible = false;
                 return;
             }
 
             string releaseName = _rightClickedItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             string folderPath = Path.Combine(dlDir, releaseName);
-            openFolderButton.Visible = Directory.Exists(folderPath);
+            bool exists = Directory.Exists(folderPath);
+            openFolderButton.Visible = exists;
+            deleteFolderButton.Visible = exists;
         }
 
         private void openFolderButton_Click(object sender, EventArgs e)
@@ -7627,6 +7720,32 @@ function onYouTubeIframeAPIReady() {
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             string folderPath = Path.Combine(dlDir, releaseName);
             OpenDirectory(folderPath);
+        }
+
+        private void deleteFolderButton_Click(object sender, EventArgs e)
+        {
+            if (_rightClickedItem == null || _rightClickedItem.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex)
+                return;
+
+            string releaseName = _rightClickedItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+            string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+            string folderPath = Path.Combine(dlDir, releaseName);
+
+            if (!Directory.Exists(folderPath)) return;
+
+            DialogResult confirm = FlexibleMessageBox.Show(Program.form,
+                $"Delete downloaded files for {releaseName}?\n\nFiles will be moved to the Recycle Bin.",
+                "Delete Downloaded Files?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (confirm != DialogResult.Yes) return;
+
+            if (!FileSystemUtilities.MoveToRecycleBin(folderPath))
+            {
+                MessageBox.Show($"Failed to move folder to Recycle Bin.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            RefreshDownloadedState();
         }
 
         private void favoriteSwitcher_Click(object sender, EventArgs e)
@@ -9299,6 +9418,7 @@ function onYouTubeIframeAPIReady() {
 
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             int downloadedCount = 0;
+            var dlSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (Directory.Exists(dlDir))
             {
@@ -9315,11 +9435,15 @@ function onYouTubeIframeAPIReady() {
                     try
                     {
                         if (Directory.GetFiles(folderPath, "*.apk").Length > 0)
+                        {
                             downloadedCount++;
+                            dlSet.Add(releaseName);
+                        }
                     }
                     catch { }
                 }
             }
+            DownloadedReleaseNames = dlSet;
 
             btnDownloaded.Text = $"{downloadedCount} DOWNLOADED";
 
@@ -9437,6 +9561,7 @@ function onYouTubeIframeAPIReady() {
             };
             _queuePanel.ItemRemoved += QueuePanel_ItemRemoved;
             _queuePanel.ItemReordered += QueuePanel_ItemReordered;
+            _queuePanel.ItemPauseToggled += QueuePanel_ItemPauseToggled;
 
             // Sync with binding list
             gamesQueueList.ListChanged += (s, e) => SyncQueuePanel();
@@ -9510,6 +9635,7 @@ function onYouTubeIframeAPIReady() {
             if (_queuePanel == null) return;
             _queuePanel.SetItems(gamesQueueList);
             _queuePanel.IsDownloading = gamesAreDownloading && gamesQueueList.Count > 0;
+            _queuePanel.IsPaused = _downloadPaused;
 
             UpdateQueueLabel();
 
@@ -9562,6 +9688,9 @@ function onYouTubeIframeAPIReady() {
         private void SaveQueueToSettings()
         {
             settings.QueuedGames = gamesQueueList.ToArray();
+            settings.QueuedProgressPercent = _pausedProgressPercent;
+            settings.QueuedTransfersComplete = _pausedTransfersComplete;
+            settings.QueuedFileCount = _pausedFileCount;
             settings.Save();
         }
 
@@ -9569,6 +9698,13 @@ function onYouTubeIframeAPIReady() {
         {
             if (settings.QueuedGames == null || settings.QueuedGames.Length == 0)
                 return;
+
+            // Restore progress state BEFORE adding items to queue.
+            // Adding items triggers ListChanged → SyncQueuePanel → SaveQueueToSettings,
+            // which would overwrite settings with zeros if fields aren't restored first.
+            _pausedProgressPercent = settings.QueuedProgressPercent;
+            _pausedTransfersComplete = settings.QueuedTransfersComplete;
+            _pausedFileCount = settings.QueuedFileCount;
 
             foreach (string game in settings.QueuedGames)
             {
@@ -9600,6 +9736,9 @@ function onYouTubeIframeAPIReady() {
             {
                 // Clear the queue if user doesn't want to resume
                 gamesQueueList.Clear();
+                _pausedProgressPercent = 0;
+                _pausedTransfersComplete = 0;
+                _pausedFileCount = 0;
                 SaveQueueToSettings();
             }
         }
@@ -9608,8 +9747,21 @@ function onYouTubeIframeAPIReady() {
         {
             if (index == 0 && gamesQueueList.Count >= 1)
             {
+                // If paused, clear pause state and wake up the download loop
+                if (_downloadPaused)
+                {
+                    _downloadPaused = false;
+                    _queuePanel.IsPaused = false;
+                    _queuePanel.Invalidate();
+                }
                 removedownloading = true;
-                RCLONE.killRclone();
+                CancelActiveDownload();
+                // Wake up the pause wait if it's active
+                if (_pauseTcs != null)
+                {
+                    _pauseTcs.TrySetResult(true);
+                    _pauseTcs = null;
+                }
             }
             else if (index > 0 && index < gamesQueueList.Count)
             {
@@ -9638,6 +9790,31 @@ function onYouTubeIframeAPIReady() {
             gamesQueueList.Insert(insertAt, item);
 
             SaveQueueToSettings();
+        }
+
+        private void CancelActiveDownload()
+        {
+            try { _downloadCts?.Cancel(); } catch { }
+            RCLONE.killRclone();
+        }
+
+        private void QueuePanel_ItemPauseToggled(object sender, bool paused)
+        {
+            _downloadPaused = paused;
+            if (paused)
+            {
+                CancelActiveDownload();
+            }
+            else
+            {
+                if (_pauseTcs != null)
+                {
+                    _pauseTcs.TrySetResult(true);
+                    _pauseTcs = null;
+                }
+            }
+            _queuePanel.IsPaused = paused;
+            _queuePanel.Invalidate();
         }
 
         private void notesRichTextBox_LinkClicked(object sender, LinkClickedEventArgs e)

@@ -136,6 +136,7 @@ namespace AndroidSideloader.Utilities
         public string ProxyPort { get; set; } = string.Empty;
         public string selectedMirror { get; set; } = string.Empty;
         public bool TrailersEnabled { get; set; } = true;
+        public bool ShowAdultContent { get; set; } = false;
         public bool UseGalleryView { get; set; } = true;
         public int GalleryTileSize { get; set; } = 100;
         public string ConfigUrl { get; set; } = string.Empty;
@@ -153,6 +154,9 @@ namespace AndroidSideloader.Utilities
 
         // Download queue persistence
         public string[] QueuedGames { get; set; } = new string[0];
+        public float QueuedProgressPercent { get; set; }
+        public long QueuedTransfersComplete { get; set; }
+        public long QueuedFileCount { get; set; }
 
         private SettingsManager()
         {
@@ -277,6 +281,7 @@ namespace AndroidSideloader.Utilities
             ProxyPort = string.Empty;
             selectedMirror = string.Empty;
             TrailersEnabled = true;
+            ShowAdultContent = false;
             UseGalleryView = true;
             GalleryTileSize = 100;
             ConfigUrl = string.Empty;
@@ -288,6 +293,9 @@ namespace AndroidSideloader.Utilities
             SortColumn = 0;
             SortAscending = true;
             QueuedGames = new string[0];
+            QueuedProgressPercent = 0;
+            QueuedTransfersComplete = 0;
+            QueuedFileCount = 0;
 
             Save();
             Debug.WriteLine("Default settings created.");

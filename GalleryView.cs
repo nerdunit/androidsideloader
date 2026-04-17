@@ -1,5 +1,6 @@
 ﻿using AndroidSideloader;
 using AndroidSideloader.Utilities;
+using JR.Utils.GUI.Forms;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -114,6 +115,7 @@ public class FastGalleryPanel : Control
     private static readonly Color BadgeFavoriteBg = Color.FromArgb(200, 255, 180, 0);
     private static readonly Color TextColor = Color.FromArgb(245, 255, 255, 255);
     private static readonly Color BadgeInstalledBg = Color.FromArgb(180, 60, 145, 230);
+    private static readonly Color BadgeDownloadedBg = Color.FromArgb(180, 80, 175, 150);
     private static readonly Color DeleteButtonBg = Color.FromArgb(200, 180, 50, 50);
     private static readonly Color DeleteButtonHoverBg = Color.FromArgb(255, 220, 70, 70);
     private static readonly Color SortButtonBg = Color.FromArgb(40, 42, 48);
@@ -1182,11 +1184,19 @@ public class FastGalleryPanel : Control
                 bool isExactInstalled = installedVersionCode > 0 && thisVersionCode == installedVersionCode;
                 bool isNewerThanInstalled = installedVersionCode > 0 && thisVersionCode > installedVersionCode;
                 bool isOlderThanInstalled = installedVersionCode > 0 && thisVersionCode < installedVersionCode;
+                bool isDownloaded = version.SubItems.Count > 1 && MainForm.DownloadedReleaseNames.Contains(version.SubItems[1].Text);
+
+                if (isDownloaded && rowRect.IntersectsWith(contentRect))
+                {
+                    using (var dlPath = CreateRoundedRectangle(rowRect, 6))
+                    using (var dlBrush = new SolidBrush(Color.FromArgb(alpha, 27, 41, 44)))
+                        g.FillPath(dlBrush, dlPath);
+                }
 
                 if (isHovered && rowRect.IntersectsWith(contentRect))
                 {
                     using (var hoverPath = CreateRoundedRectangle(rowRect, 6))
-                    using (var hoverBrush = new SolidBrush(Color.FromArgb(alpha, VersionRowHoverBg)))
+                    using (var hoverBrush = new SolidBrush(Color.FromArgb(alpha, isDownloaded ? Color.FromArgb(45, 64, 68) : VersionRowHoverBg)))
                         g.FillPath(hoverBrush, hoverPath);
                 }
 
@@ -1388,10 +1398,12 @@ public class FastGalleryPanel : Control
         bool hasUpdate = tile.Versions.Any(v => v.ForeColor.ToArgb() == MainForm.ColorUpdateAvailable.ToArgb());
         bool installed = IsAnyVersionInstalled(tile);
         bool canDonate = tile.Versions.Any(v => v.ForeColor.ToArgb() == MainForm.ColorDonateGame.ToArgb());
+        bool downloaded = tile.Versions.Any(v => v.SubItems.Count > 1 && MainForm.DownloadedReleaseNames.Contains(v.SubItems[1].Text));
 
         if (hasUpdate) { DrawBadge(g, "UPDATE", x + 4, badgeY, Color.FromArgb(180, MainForm.ColorUpdateAvailable)); badgeY += 15; }
         if (canDonate) { DrawBadge(g, "AHEAD", x + 4, badgeY, Color.FromArgb(180, MainForm.ColorDonateGame)); badgeY += 15; }
-        if (installed) DrawBadge(g, "INSTALLED", x + 4, badgeY, BadgeInstalledBg);
+        if (installed) { DrawBadge(g, "INSTALLED", x + 4, badgeY, BadgeInstalledBg); badgeY += 15; }
+        if (downloaded) DrawBadge(g, "DOWNLOADED", x + 4, badgeY, BadgeDownloadedBg);
 
         // Right-side badges (top)
         int rightBadgeY = y + 4;
@@ -1885,6 +1897,10 @@ public class FastGalleryPanel : Control
         openFolderItem.Click += ContextMenu_OpenFolderClick;
         _contextMenu.Items.Add(openFolderItem);
 
+        var deleteFolderItem = new ToolStripMenuItem("🗑 Delete from PC");
+        deleteFolderItem.Click += ContextMenu_DeleteFolderClick;
+        _contextMenu.Items.Add(deleteFolderItem);
+
         _contextMenu.Opening += ContextMenu_Opening;
     }
 
@@ -1907,15 +1923,17 @@ public class FastGalleryPanel : Control
         bool isFavorite = _favoritesCache.Contains(packageName);
         ((ToolStripMenuItem)_contextMenu.Items[0]).Text = isFavorite ? "Remove from Favorites" : "★ Add to Favorites";
 
-        // Show "Open Folder" only if the game folder exists locally
-        if (_contextMenu.Items.Count > 1)
+        // Show "Open Folder" / "Delete from PC" if the game folder exists locally
+        if (_contextMenu.Items.Count > 2)
         {
             string releaseName = targetItem.SubItems.Count > SideloaderRCLONE.ReleaseNameIndex
                 ? targetItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text : "";
             var settings = SettingsManager.Instance;
             string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
             string folderPath = Path.Combine(dlDir, releaseName);
-            _contextMenu.Items[1].Visible = !string.IsNullOrEmpty(releaseName) && Directory.Exists(folderPath);
+            bool folderExists = !string.IsNullOrEmpty(releaseName) && Directory.Exists(folderPath);
+            _contextMenu.Items[1].Visible = folderExists;
+            _contextMenu.Items[2].Visible = folderExists;
         }
     }
 
@@ -1976,6 +1994,39 @@ public class FastGalleryPanel : Control
         string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
         string folderPath = Path.Combine(dlDir, releaseName);
         MainForm.OpenDirectory(folderPath);
+    }
+
+    private void ContextMenu_DeleteFolderClick(object sender, EventArgs e)
+    {
+        if (_rightClickedIndex < 0 || _rightClickedIndex >= _displayTiles.Count) return;
+
+        var tile = _displayTiles[_rightClickedIndex];
+        ListViewItem targetItem = (_rightClickedVersionIndex >= 0 && _rightClickedVersionIndex < tile.Versions.Count)
+            ? tile.Versions[_rightClickedVersionIndex] : tile.Primary;
+
+        if (targetItem.SubItems.Count <= SideloaderRCLONE.ReleaseNameIndex) return;
+
+        string releaseName = targetItem.SubItems[SideloaderRCLONE.ReleaseNameIndex].Text;
+        var settings = SettingsManager.Instance;
+        string dlDir = settings.CustomDownloadDir ? settings.DownloadDir : Environment.CurrentDirectory;
+        string folderPath = Path.Combine(dlDir, releaseName);
+
+        if (!Directory.Exists(folderPath)) return;
+
+        DialogResult confirm = FlexibleMessageBox.Show(FindForm(),
+            $"Delete downloaded files for {releaseName}?\n\nFiles will be moved to the Recycle Bin.",
+            "Delete Downloaded Files?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+        if (confirm != DialogResult.Yes) return;
+
+        if (!FileSystemUtilities.MoveToRecycleBin(folderPath))
+        {
+            MessageBox.Show("Failed to move folder to Recycle Bin.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        var mainForm = FindForm() as MainForm;
+        mainForm?.RefreshDownloadedState();
     }
 
     private void RemoveVersionFromDisplay(GroupedTile tile, ListViewItem item, int tileIndex)

@@ -1,11 +1,51 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace AndroidSideloader.Utilities
 {
     internal static class FileSystemUtilities
     {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct SHFILEOPSTRUCT
+        {
+            public IntPtr hwnd;
+            public uint wFunc;
+            [MarshalAs(UnmanagedType.LPWStr)] public string pFrom;
+            [MarshalAs(UnmanagedType.LPWStr)] public string pTo;
+            public ushort fFlags;
+            public bool fAnyOperationsAborted;
+            public IntPtr hNameMappings;
+            [MarshalAs(UnmanagedType.LPWStr)] public string lpszProgressTitle;
+        }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern int SHFileOperation(ref SHFILEOPSTRUCT FileOp);
+
+        private const uint FO_DELETE = 0x0003;
+        private const ushort FOF_ALLOWUNDO = 0x0040;
+        private const ushort FOF_NOCONFIRMATION = 0x0010;
+        private const ushort FOF_SILENT = 0x0004;
+
+        /// <summary>
+        /// Moves a file or directory to the Recycle Bin.
+        /// Returns true on success.
+        /// </summary>
+        public static bool MoveToRecycleBin(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            if (!Directory.Exists(path) && !File.Exists(path)) return false;
+
+            var op = new SHFILEOPSTRUCT
+            {
+                wFunc = FO_DELETE,
+                pFrom = path + '\0',
+                fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT
+            };
+
+            return SHFileOperation(ref op) == 0;
+        }
         public static bool TryDeleteDirectory(string directoryPath, int maxRetries = 3, int delayMs = 150) // 3x 150ms = 450ms total
         {
             if (string.IsNullOrWhiteSpace(directoryPath))

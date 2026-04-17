@@ -42,6 +42,10 @@ namespace AndroidSideloader
         private static readonly Color RowNormal = Color.FromArgb(24, 26, 30);
         private static readonly Color RowHover = Color.FromArgb(42, 48, 58);
 
+        private static readonly Color RowDownloadedNormal = Color.FromArgb(27, 41, 44);
+        private static readonly Color RowDownloadedAlt = Color.FromArgb(32, 47, 50);
+        private static readonly Color RowDownloadedHover = Color.FromArgb(45, 64, 68);
+
         private static readonly Color RowSelectedActive = Color.FromArgb(50, 65, 85);
         private static readonly Color RowSelectedActiveBorder = Color.FromArgb(93, 203, 173);
 
@@ -56,6 +60,9 @@ namespace AndroidSideloader
         private static readonly SolidBrush RowAltBrush = new SolidBrush(RowAlt);
         private static readonly SolidBrush RowNormalBrush = new SolidBrush(RowNormal);
         private static readonly SolidBrush RowHoverBrush = new SolidBrush(RowHover);
+        private static readonly SolidBrush RowDownloadedNormalBrush = new SolidBrush(RowDownloadedNormal);
+        private static readonly SolidBrush RowDownloadedAltBrush = new SolidBrush(RowDownloadedAlt);
+        private static readonly SolidBrush RowDownloadedHoverBrush = new SolidBrush(RowDownloadedHover);
         private static readonly SolidBrush RowSelectedActiveBrush = new SolidBrush(RowSelectedActive);
         private static readonly SolidBrush RowSelectedInactiveBrush = new SolidBrush(RowSelectedInactive);
 
@@ -638,18 +645,34 @@ namespace AndroidSideloader
 
         private bool IsPointInHeader(Point pt) => pt.Y >= 0 && pt.Y < GetHeaderHeight();
 
-        private SolidBrush GetRowBrush(int itemIndex, bool isSelected, bool isHovered)
+        private static bool IsDownloadedItem(ListViewItem item)
+        {
+            if (item == null || item.SubItems.Count <= 1) return false;
+            return MainForm.DownloadedReleaseNames.Contains(item.SubItems[1].Text);
+        }
+
+        private SolidBrush GetRowBrush(int itemIndex, bool isSelected, bool isHovered, bool isDownloaded = false)
         {
             if (isSelected)
                 return _listView.Focused ? RowSelectedActiveBrush : RowSelectedInactiveBrush;
+            if (isDownloaded)
+            {
+                if (isHovered) return RowDownloadedHoverBrush;
+                return (itemIndex % 2 == 1) ? RowDownloadedAltBrush : RowDownloadedNormalBrush;
+            }
             if (isHovered)
                 return RowHoverBrush;
             return (itemIndex % 2 == 1) ? RowAltBrush : RowNormalBrush;
         }
 
-        private Color GetRowColor(int itemIndex, bool isSelected, bool isHovered)
+        private Color GetRowColor(int itemIndex, bool isSelected, bool isHovered, bool isDownloaded = false)
         {
             if (isSelected) return _listView.Focused ? RowSelectedActive : RowSelectedInactive;
+            if (isDownloaded)
+            {
+                if (isHovered) return RowDownloadedHover;
+                return (itemIndex % 2 == 1) ? RowDownloadedAlt : RowDownloadedNormal;
+            }
             if (isHovered) return RowHover;
             return (itemIndex % 2 == 1) ? RowAlt : RowNormal;
         }
@@ -796,7 +819,7 @@ namespace AndroidSideloader
             if (ShouldDrawMarquee(e.ItemIndex, e.ColumnIndex, isSelected, textBounds, text))
             {
                 DrawMarqueeText(g, textBounds, e.Bounds, text, font, textColor, _marqueeOffsets[e.ColumnIndex]);
-                DrawFadeEdgesOverlay(g, textBounds, GetRowColor(e.ItemIndex, isSelected, isHovered), MarqueeFadeWidthPx);
+                DrawFadeEdgesOverlay(g, textBounds, GetRowColor(e.ItemIndex, isSelected, isHovered, IsDownloadedItem(e.Item)), MarqueeFadeWidthPx);
 
                 e.DrawDefault = false;
                 return;
@@ -811,8 +834,9 @@ namespace AndroidSideloader
 
         private void DrawRowBackground(Graphics g, ListViewItem item, int itemIndex, bool isSelected, bool isHovered)
         {
+            bool isDl = IsDownloadedItem(item);
             int listViewWidth = _listView.ClientSize.Width;
-            var bgBrush = GetRowBrush(itemIndex, isSelected, isHovered);
+            var bgBrush = GetRowBrush(itemIndex, isSelected, isHovered, isDl);
             var fullRowRect = new Rectangle(0, item.Bounds.Top, listViewWidth, item.Bounds.Height);
             g.FillRectangle(bgBrush, fullRowRect);
 
