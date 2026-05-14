@@ -1,4 +1,12 @@
-﻿RSL 3.1
+﻿RSL 3.2
+
+- Added download pause/resume feature with cross-session progress persistence
+- Added visual indicators for downloaded titles (gallery: badge, list: row tint)
+- Added "Delete from PC" option to right-click context menu for downloaded titles
+- Added setting to show/hide adult (18+) content (off by default)
+- Fixed UI freezing during reinstall operations
+
+RSL 3.1
 
 - Introduced startup dialog to choose between online (public config or rclone config) or offline (local library) mode, also accessible anytime via dedicated 'SETUP' button; configs can be provided via local file, URL, or paste
 - Local library mode (serverless): Scans your directory, calculates sizes, fetches APK version codes, and caches results per directory (allowing multiple caches for different directories)
