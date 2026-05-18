@@ -34,10 +34,10 @@ Grab the latest release from the [Releases](https://github.com/nerdunit/androids
 
 ## Build Instructions
 
-This project is built with C# / WinForms targeting **.NET Framework 4.5.2**.
+This project is built with C# / WinForms targeting **.NET Framework 4.8**.
 
 1. Clone this repository.
-2. Install the [.NET Framework 4.5.2 Developer Pack](https://dotnet.microsoft.com/download/dotnet-framework) if you don't already have it.
+2. Install the [.NET Framework 4.8 Developer Pack](https://dotnet.microsoft.com/download/dotnet-framework) if you don't already have it.
 3. Open `AndroidSideloader.sln` in Visual Studio 2022 or later.
 
    > **Note:** If the build fails due to `packages.config`, migrate to PackageReference by right-clicking **References** in Solution Explorer and selecting **Migrate packages.config to PackageReference**.
