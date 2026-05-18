@@ -1,4 +1,4 @@
-RSL 3.2.1
+RSL 3.3
 
 - Feat: Add api key header support
 - Fix: invalid variable reference
