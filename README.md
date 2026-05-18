@@ -45,6 +45,20 @@ This project is built with C# / WinForms targeting **.NET Framework 4.5.2**.
 4. Build the solution (`Ctrl + Shift + B`).
 5. Run the application.
 
+### Building with the API key (public mirror support)
+
+Building directly from Visual Studio works for general development, but the public mirror feature requires an API key that must be embedded at compile time. Without it the app builds and runs normally — the mirror just won't be available.
+
+To produce a build with the key embedded, use `build.cmd` instead:
+
+1. Create a `.env` file in the project root:
+   ```
+   API_KEY=your-key-here
+   ```
+2. Run `build.cmd` (optionally pass `debug` as the first argument for a Debug build).
+
+The script writes the key into `Properties\ApiKey.cs` before building, then scrubs it back to the empty placeholder immediately after — so the key is never left on disk or committed to source control.
+
 ## Contributing
 
 We welcome contributions from the community. Please fork the repository, branch from the newest beta branch, make your changes, and submit a pull request.

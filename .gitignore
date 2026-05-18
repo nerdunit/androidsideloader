@@ -2,6 +2,7 @@
 *.xml
 *.xsd
 AndroidSideloader.csproj.user
+.env
 
 .vs/
 bin/

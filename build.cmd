@@ -5,18 +5,85 @@ IF NOT "%1"=="" (
     IF /I "%1"=="debug" SET CONFIG=Debug
 )
 
-REM Windows Batch script version
-REM Attempts to find MSBuild from common Visual Studio 2022 installation paths
-IF EXIST "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" (
-    SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-) ELSE IF EXIST "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe" (
-    SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe"
-) ELSE IF EXIST "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" (
-    SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
-) ELSE (
-    echo MSBuild not found! Please check your Visual Studio installation.
+REM --- Locate MSBuild via vswhere (works for VS 2017-2026, all editions) ---
+SET VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+IF NOT EXIST %VSWHERE% SET VSWHERE="%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"
+
+SET MSBUILD=
+IF EXIST %VSWHERE% (
+    FOR /F "usebackq delims=" %%P IN (`%VSWHERE% -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe`) DO (
+        SET MSBUILD="%%P"
+        GOTO :msbuild_found
+    )
+)
+
+REM --- Hardcoded fallbacks if vswhere is unavailable ---
+IF EXIST "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\MSBuild\Current\Bin\MSBuild.exe"   SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2026\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files\Microsoft Visual Studio\2026\Professional\MSBuild\Current\Bin\MSBuild.exe" SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2026\Professional\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe"    SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files\Microsoft Visual Studio\2026\BuildTools\MSBuild\Current\Bin\MSBuild.exe"   SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2026\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"   SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe" SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"    SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe"   SET MSBUILD="C:\Program Files\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe"   SET MSBUILD="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin\MSBuild.exe" SET MSBUILD="C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe"    SET MSBUILD="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe"   SET MSBUILD="C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin\MSBuild.exe"   SET MSBUILD="C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\MSBuild\15.0\Bin\MSBuild.exe" SET MSBUILD="C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\MSBuild\15.0\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe"    SET MSBUILD="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe"
+IF EXIST "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin\MSBuild.exe"   SET MSBUILD="C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin\MSBuild.exe"
+
+IF "%MSBUILD%"=="" (
+    echo MSBuild not found! Please install Visual Studio 2017 or later.
     exit /b 1
+)
+:msbuild_found
+
+REM --- Load key from .env file (primary source) ---
+SET KEY=
+IF EXIST "%~dp0.env" (
+    FOR /F "usebackq tokens=1,* delims==" %%A IN ("%~dp0.env") DO (
+        IF /I "%%A"=="API_KEY" SET KEY=%%B
+    )
+)
+
+REM --- Fall back to environment variable if _env didn't supply it ---
+IF "%KEY%"=="" SET KEY=%API_KEY%
+
+REM --- Allow explicit override via second argument: build.cmd [config] [key] ---
+IF NOT "%2"=="" SET KEY=%2
+
+REM --- Generate Properties\ApiKey.cs with the embedded key ---
+SET APIKEY_FILE=%~dp0Properties\ApiKey.cs
+IF "%KEY%"=="" (
+    echo WARNING: No API_KEY found. Public mirror will not work.
+    (
+        echo // AUTO-GENERATED BY build.cmd - DO NOT COMMIT
+        echo using System.Reflection;
+        echo [assembly: AssemblyMetadata^("API_KEY", ""^)]
+    ) > "%APIKEY_FILE%"
+) ELSE (
+    echo Embedding API_KEY into build...
+    (
+        echo // AUTO-GENERATED BY build.cmd - DO NOT COMMIT
+        echo using System.Reflection;
+        echo [assembly: AssemblyMetadata^("API_KEY", "%KEY%"^)]
+    ) > "%APIKEY_FILE%"
 )
 
 echo Building in %CONFIG% configuration...
 %MSBUILD% AndroidSideloader.sln /t:AndroidSideloader /p:Configuration=%CONFIG%
+IF %ERRORLEVEL% NEQ 0 (
+    echo Build FAILED.
+    exit /b %ERRORLEVEL%
+)
+
+REM --- Scrub the key from disk after a successful build ---
+(
+    echo // AUTO-GENERATED BY build.cmd - DO NOT COMMIT
+    echo using System.Reflection;
+    echo [assembly: AssemblyMetadata^("API_KEY", ""^)]
+) > "%APIKEY_FILE%"
+echo Build complete. ApiKey.cs scrubbed.

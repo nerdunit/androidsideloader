@@ -17,6 +17,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -108,7 +109,7 @@ namespace AndroidSideloader
         public static bool UsingPublicConfig = false;
         public static bool enviromentCreated = false;
         public static PublicConfig PublicConfigFile;
-        public static string PublicMirrorExtraArgs = " --tpslimit 1.0 --tpslimit-burst 3";
+        public static string PublicMirrorExtraArgs = GetPublicMirrorArgs();
         public static string storedIpPath;
         public static string aaptPath;
         private System.Windows.Forms.Timer _debounceTimer;
@@ -382,6 +383,32 @@ namespace AndroidSideloader
         private string oldTitle = String.Empty;
         public static bool updatesNotified = false;
         public static string backupFolder;
+
+        private static string GetPublicMirrorArgs()
+        {
+            string apiKey = null;
+            try
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                foreach (var metadata in assembly.GetCustomAttributes<AssemblyMetadataAttribute>())
+                {
+                    if (metadata.Key == "API_KEY" && !string.IsNullOrWhiteSpace(metadata.Value))
+                    {
+                        apiKey = metadata.Value;
+                        break;
+                    }
+                }
+            }
+            catch { }
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                Logger.Log("WARNING: API_KEY not embedded at build time. Public mirror will not work.", LogLevel.WARNING);
+                apiKey = "<YOUR-KEY>";
+            }
+
+            return $" --tpslimit 1.0 --tpslimit-burst 3 --header \"X-API-Key: {apiKey}\"";
+        }
 
         private static void KillAdbProcesses()
         {
