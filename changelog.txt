@@ -1,3 +1,5 @@
 RSL 3.2.1
 
-- Add api key support
+- Feat: Add api key header support
+- Fix: invalid variable reference
+- Chore: bump target framework version

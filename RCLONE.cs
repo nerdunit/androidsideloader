@@ -163,7 +163,10 @@ namespace AndroidSideloader
                     }
                     if (retSM)
                     {
-                        prcoutput = runRcloneCommand_DownloadConfig(originalCommand.Replace(oldRemote, MainForm.currentRemote));
+                        string newCommand = !string.IsNullOrEmpty(oldRemote)
+                            ? originalCommand.Replace(oldRemote, MainForm.currentRemote)
+                            : originalCommand;
+                        prcoutput = runRcloneCommand_DownloadConfig(newCommand);
                     }
                 }
             }
