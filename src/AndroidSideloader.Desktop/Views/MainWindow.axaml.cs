@@ -25,7 +25,8 @@ namespace AndroidSideloader.Desktop.Views
             var files = e.Data.GetFiles();
             if (files == null) return;
 
-            var apkFiles = files.Select(f => f.TryGetLocalPath())
+            var apkFiles = files.Where(f => f.Path.Scheme == "file")
+                                .Select(f => f.Path.LocalPath)
                                 .Where(p => !string.IsNullOrEmpty(p) && p.EndsWith(".apk"))
                                 .ToList();
 

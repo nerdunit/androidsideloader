@@ -9,8 +9,7 @@
         x:Class="AndroidSideloader.Desktop.Views.MainWindow"
         Title="Android Sideloader"
         Width="1200" Height="800"
-        Background="#151515"
-        AllowDrop="True">
+        Background="#151515">
 
     <Design.DataContext>
         <vm:MainWindowViewModel/>
