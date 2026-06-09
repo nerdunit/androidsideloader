@@ -2,23 +2,39 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="AndroidSideloader.Desktop.Views.DeviceView">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8">
             <Button Content="Refresh"
                     Command="{Binding RefreshDeviceInfoCommand}"
                     IsEnabled="{Binding !IsLoading}"/>
+            <Button Content="Installed Apps"
+                    Command="{Binding ListInstalledAppsCommand}"
+                    IsEnabled="{Binding !IsLoading}"/>
             <Button Content="Reset ADB Auth"
                     Command="{Binding ResetAdbAuthCommand}"
                     IsEnabled="{Binding !IsLoading}"/>
-            <Button Content="Reboot Device"
+            <Button Content="Reboot"
                     Command="{Binding RebootDeviceCommand}"
+                    IsEnabled="{Binding !IsLoading}"/>
+            <Button Content="Backup"
+                    Command="{Binding BackupDeviceCommand}"
+                    IsEnabled="{Binding !IsLoading}"/>
+            <Button Content="Disconnect"
+                    Command="{Binding DisconnectDeviceCommand}"
                     IsEnabled="{Binding !IsLoading}"/>
         </StackPanel>
 
-        <TextBlock Grid.Row="1" Text="Storage:" FontWeight="Bold" Margin="8,8,8,0" Foreground="#ccc"/>
-        <TextBlock Grid.Row="2" Text="{Binding StorageInfo}" Margin="8,0,8,8" Foreground="#aaa" TextWrapping="Wrap"/>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="8,0">
+            <TextBox Text="{Binding IpAddress}" Watermark="Device IP for wireless ADB" Width="200"/>
+            <Button Content="Toggle Wireless ADB"
+                    Command="{Binding ToggleWirelessAdbCommand}"/>
+        </StackPanel>
 
-        <Border Grid.Row="3" Background="#1a1a1a" Margin="8" CornerRadius="4">
+        <TextBlock Grid.Row="2" Text="Storage:" FontWeight="Bold" Margin="8,8,8,0" Foreground="#ccc"/>
+        <TextBlock Grid.Row="3" Text="{Binding StorageInfo}" Margin="8,0,8,8" Foreground="#aaa" TextWrapping="Wrap"/>
+
+        <TextBlock Grid.Row="4" Text="Device Info:" FontWeight="Bold" Margin="8,8,8,0" Foreground="#ccc"/>
+        <Border Grid.Row="5" Background="#1a1a1a" Margin="8" CornerRadius="4">
             <ScrollViewer>
                 <TextBlock Text="{Binding DeviceInfo}"
                            FontFamily="Consolas, monospace"
@@ -26,6 +42,11 @@
                            TextWrapping="Wrap"
                            Margin="8"/>
             </ScrollViewer>
+        </Border>
+
+        <Border Grid.Row="6" Background="#1a1a1a" Margin="8" CornerRadius="4"
+                IsVisible="{Binding InstalledApps.Count}">
+            <ListBox ItemsSource="{Binding InstalledApps}" MaxHeight="200" Margin="8"/>
         </Border>
     </Grid>
 

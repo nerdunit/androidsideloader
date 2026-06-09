@@ -2,7 +2,7 @@ using System.Linq;
 
 namespace AndroidSideloader.Utilities
 {
-    internal class StringUtilities
+    public class StringUtilities
     {
         public static string RemoveEverythingAfterFirst(string s, string removeMe)
         {

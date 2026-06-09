@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AndroidSideloader.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+24884e68b9c6f990768aa36ca2a8abec190d0a0d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c59833fb95c2a9aa28f1729a9cdf91cff08fa7e2")]
 [assembly: System.Reflection.AssemblyProductAttribute("AndroidSideloader.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AndroidSideloader.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

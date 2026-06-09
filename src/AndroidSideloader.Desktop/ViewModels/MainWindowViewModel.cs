@@ -22,23 +22,30 @@ namespace AndroidSideloader.Desktop.ViewModels
 
         public GamesViewModel GamesViewModel { get; }
         public DeviceViewModel DeviceViewModel { get; }
+        public QueueViewModel QueueViewModel { get; }
+        public SettingsViewModel SettingsViewModel { get; }
 
         public MainWindowViewModel()
         {
             GamesViewModel = new GamesViewModel(this);
             DeviceViewModel = new DeviceViewModel(this);
+            QueueViewModel = new QueueViewModel();
+            SettingsViewModel = new SettingsViewModel();
             CurrentView = GamesViewModel;
 
-            // Hook up backend events
             AppState.OnShowMessageBox += (title, message) =>
             {
-                // TODO: show dialog via Avalonia window
                 System.Diagnostics.Debug.WriteLine($"[MSG] {title}: {message}");
             };
 
             AppState.OnChangeTitle += title =>
             {
                 StatusText = title;
+            };
+
+            AppState.OnStatusUpdate += status =>
+            {
+                StatusText = status;
             };
 
             _ = RefreshDeviceStatusAsync();
@@ -54,6 +61,18 @@ namespace AndroidSideloader.Desktop.ViewModels
         private void ShowDevice()
         {
             CurrentView = DeviceViewModel;
+        }
+
+        [RelayCommand]
+        private void ShowQueue()
+        {
+            CurrentView = QueueViewModel;
+        }
+
+        [RelayCommand]
+        private void ShowSettings()
+        {
+            CurrentView = SettingsViewModel;
         }
 
         [RelayCommand]
@@ -97,13 +116,6 @@ namespace AndroidSideloader.Desktop.ViewModels
                 DeviceStatus = $"Error: {ex.Message}";
                 IsDeviceConnected = false;
             }
-        }
-
-        [RelayCommand]
-        private void OpenSettings()
-        {
-            // TODO: implement settings view
-            StatusText = "Settings (not yet implemented)";
         }
     }
 }

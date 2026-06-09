@@ -26,8 +26,16 @@
                         Command="{Binding ShowGamesCommand}"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Left"/>
+                <Button Content="Queue"
+                        Command="{Binding ShowQueueCommand}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"/>
                 <Button Content="Device"
                         Command="{Binding ShowDeviceCommand}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"/>
+                <Button Content="Settings"
+                        Command="{Binding ShowSettingsCommand}"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Left"/>
                 <Button Content="Refresh Device"
@@ -54,8 +62,14 @@
                     <DataTemplate DataType="vm:GamesViewModel">
                         <views:GamesView/>
                     </DataTemplate>
+                    <DataTemplate DataType="vm:QueueViewModel">
+                        <views:QueueView/>
+                    </DataTemplate>
                     <DataTemplate DataType="vm:DeviceViewModel">
                         <views:DeviceView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:SettingsViewModel">
+                        <views:SettingsView/>
                     </DataTemplate>
                 </ContentControl.DataTemplates>
             </ContentControl>
@@ -71,6 +85,7 @@
         <conv:BoolToBrushConverter x:Key="BoolToBrushConverter"
                                     TrueBrush="#4caf50"
                                     FalseBrush="#f44336"/>
+        <conv:HexToBrushConverter x:Key="HexToBrushConverter"/>
     </Window.Resources>
 
 </Window>

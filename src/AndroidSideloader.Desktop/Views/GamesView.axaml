@@ -14,20 +14,24 @@
             <Button Content="Scan Local"
                     Command="{Binding ScanLocalGamesCommand}"
                     IsEnabled="{Binding !IsRefreshing}"/>
+            <Button Content="Favorites" Command="{Binding ToggleFavoriteCommand}"/>
+            <Button Content="View" Command="{Binding ToggleViewCommand}"/>
             <TextBlock Text="{Binding RefreshStatus}"
                        VerticalAlignment="Center"
                        Foreground="#888"/>
         </StackPanel>
 
-        <!-- Install bar -->
+        <!-- Action bar -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="8,0,8,8">
-            <Button Content="Install Selected"
-                    Command="{Binding InstallSelectedGameCommand}"
+            <Button Content="Add to Queue"
+                    Command="{Binding AddToQueueCommand}"
                     IsEnabled="{Binding SelectedGame, Converter={x:Static ObjectConverters.IsNotNull}}"/>
             <TextBlock Text="{Binding SelectedGame.GameName}"
                        VerticalAlignment="Center"
                        Foreground="#aaa"
                        IsVisible="{Binding SelectedGame, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+            <TextBlock Text="{Binding SelectedGame.StatusColor}"
+                       IsVisible="False"/>
         </StackPanel>
 
         <!-- Game list -->
@@ -38,19 +42,33 @@
                   AutoGenerateColumns="False"
                   GridLinesVisibility="Horizontal"
                   Margin="8">
+            <DataGrid.Styles>
+                <Style Selector="DataGridRow">
+                    <Setter Property="Foreground" Value="{Binding StatusColor, Converter={StaticResource HexToBrushConverter}}"/>
+                </Style>
+            </DataGrid.Styles>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Game Name"
                                     Binding="{Binding GameName}"
-                                    Width="*"/>
+                                    Width="2*"/>
                 <DataGridTextColumn Header="Release"
                                     Binding="{Binding ReleaseName}"
-                                    Width="*"/>
+                                    Width="2*"/>
                 <DataGridTextColumn Header="Package"
                                     Binding="{Binding PackageName}"
                                     Width="*"/>
                 <DataGridTextColumn Header="Version"
-                                    Binding="{Binding Version}"
+                                    Binding="{Binding VersionCode}"
                                     Width="100"/>
+                <DataGridTextColumn Header="Size"
+                                    Binding="{Binding Size}"
+                                    Width="80"/>
+                <DataGridTextColumn Header="Updated"
+                                    Binding="{Binding LastUpdated}"
+                                    Width="100"/>
+                <DataGridTextColumn Header="Rank"
+                                    Binding="{Binding Downloads}"
+                                    Width="60"/>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="AndroidSideloader.Desktop.Views.SettingsView">
+
+    <ScrollViewer>
+        <StackPanel Spacing="12" Margin="16">
+            <TextBlock Text="Settings" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
+
+            <Border Background="#1e232a" CornerRadius="6" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Download" FontSize="14" FontWeight="SemiBold" Foreground="#52cbaa"/>
+                    <TextBox Text="{Binding DownloadDir}" Watermark="Download directory" IsEnabled="{Binding CustomDownloadDir}"/>
+                    <CheckBox Content="Custom download directory" IsChecked="{Binding CustomDownloadDir}"/>
+                    <CheckBox Content="Delete after install" IsChecked="{Binding DeleteAfterInstall}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#1e232a" CornerRadius="6" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Device" FontSize="14" FontWeight="SemiBold" Foreground="#52cbaa"/>
+                    <CheckBox Content="No-device mode (download only)" IsChecked="{Binding NodeviceMode}"/>
+                    <CheckBox Content="Auto reinstall on signature mismatch" IsChecked="{Binding AutoReinstall}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#1e232a" CornerRadius="6" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Appearance" FontSize="14" FontWeight="SemiBold" Foreground="#52cbaa"/>
+                    <CheckBox Content="Use gallery view" IsChecked="{Binding UseGalleryView}"/>
+                    <TextBox Text="{Binding FontFamily}" Watermark="Font family"/>
+                    <TextBox Text="{Binding FontSize}" Watermark="Font size"/>
+                    <TextBox Text="{Binding FontColor}" Watermark="Font color (hex)"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#1e232a" CornerRadius="6" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Network" FontSize="14" FontWeight="SemiBold" Foreground="#52cbaa"/>
+                    <CheckBox Content="Use proxy" IsChecked="{Binding UseProxy}"/>
+                    <TextBox Text="{Binding ProxyAddress}" Watermark="Proxy address" IsEnabled="{Binding UseProxy}"/>
+                    <TextBox Text="{Binding ProxyPort}" Watermark="Proxy port" IsEnabled="{Binding UseProxy}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#1e232a" CornerRadius="6" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="General" FontSize="14" FontWeight="SemiBold" Foreground="#52cbaa"/>
+                    <CheckBox Content="Check for updates on startup" IsChecked="{Binding CheckForUpdates}"/>
+                    <TextBox Text="{Binding BackupDir}" Watermark="Backup directory"/>
+                </StackPanel>
+            </Border>
+
+            <Button Content="Save Settings" Command="{Binding SaveSettingsCommand}" HorizontalAlignment="Left" Padding="16,8"/>
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>

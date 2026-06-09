@@ -40,3 +40,15 @@ build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
 [/Users/htttpanimations/androidsideloader--cross-/src/AndroidSideloader.Desktop/Views/MainWindow.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
+
+[/Users/htttpanimations/androidsideloader--cross-/src/AndroidSideloader.Desktop/Views/ProvideConfigDialog.axaml]
+build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
+
+[/Users/htttpanimations/androidsideloader--cross-/src/AndroidSideloader.Desktop/Views/QueueView.axaml]
+build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
+
+[/Users/htttpanimations/androidsideloader--cross-/src/AndroidSideloader.Desktop/Views/SettingsView.axaml]
+build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
+
+[/Users/htttpanimations/androidsideloader--cross-/src/AndroidSideloader.Desktop/Views/StartupDialog.axaml]
+build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,6 +14,8 @@ namespace AndroidSideloader.Desktop.ViewModels
     public partial class GamesViewModel : ObservableObject
     {
         private readonly MainWindowViewModel _mainWindow;
+        private readonly SettingsManager _settings = SettingsManager.Instance;
+        private List<GameItemViewModel> _allGames = new List<GameItemViewModel>();
 
         [ObservableProperty]
         private string _searchText = "";
@@ -29,9 +32,16 @@ namespace AndroidSideloader.Desktop.ViewModels
         [ObservableProperty]
         private string _refreshStatus = "";
 
+        [ObservableProperty]
+        private bool _showFavoritesOnly;
+
+        [ObservableProperty]
+        private bool _isGalleryView;
+
         public GamesViewModel(MainWindowViewModel mainWindow)
         {
             _mainWindow = mainWindow;
+            IsGalleryView = _settings.UseGalleryView;
         }
 
         partial void OnSearchTextChanged(string value)
@@ -39,43 +49,43 @@ namespace AndroidSideloader.Desktop.ViewModels
             FilterGames();
         }
 
+        partial void OnShowFavoritesOnlyChanged(bool value)
+        {
+            FilterGames();
+        }
+
         private void FilterGames()
         {
-            if (string.IsNullOrWhiteSpace(SearchText))
+            var query = _allGames.AsEnumerable();
+
+            if (ShowFavoritesOnly)
             {
-                LoadGamesFromCache();
-                return;
+                query = query.Where(g => g.IsFavorite);
             }
 
-            var filtered = SideloaderRCLONE.games
-                .Where(g => g.Length > SideloaderRCLONE.GameNameIndex)
-                .Where(g => g[SideloaderRCLONE.GameNameIndex].Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-                         || g[SideloaderRCLONE.ReleaseNameIndex].Contains(SearchText, StringComparison.OrdinalIgnoreCase))
-                .Select(CreateGameItem);
+            if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                query = query.Where(g =>
+                    g.GameName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                    g.ReleaseName.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            }
 
-            Games = new ObservableCollection<GameItemViewModel>(filtered);
+            Games = new ObservableCollection<GameItemViewModel>(query);
         }
 
         [RelayCommand]
-        private async Task RefreshGamesAsync()
+        private async Task InitListViewAsync()
         {
             IsRefreshing = true;
-            RefreshStatus = "Fetching game list...";
+            RefreshStatus = "Loading games...";
+            _allGames.Clear();
 
             try
             {
-                await Task.Run(() =>
-                {
-                    // Try loading from local metadata first
-                    string metaPath = Path.Combine(AppContext.BaseDirectory, "meta.7z");
-                    if (File.Exists(metaPath))
-                    {
-                        SideloaderRCLONE.ProcessMetadataFromPublic();
-                    }
-                });
-
-                LoadGamesFromCache();
-                RefreshStatus = $"Loaded {Games.Count} games";
+                var items = await Task.Run(BuildGameList);
+                _allGames = items;
+                FilterGames();
+                RefreshStatus = $"Loaded {items.Count} games";
             }
             catch (Exception ex)
             {
@@ -85,6 +95,12 @@ namespace AndroidSideloader.Desktop.ViewModels
             {
                 IsRefreshing = false;
             }
+        }
+
+        [RelayCommand]
+        private async Task RefreshGamesAsync()
+        {
+            await InitListViewAsync();
         }
 
         [RelayCommand]
@@ -95,15 +111,14 @@ namespace AndroidSideloader.Desktop.ViewModels
 
             try
             {
-                string downloadDir = SettingsManager.Instance.DownloadDir;
+                string downloadDir = _settings.DownloadDir;
                 if (string.IsNullOrEmpty(downloadDir) || !Directory.Exists(downloadDir))
                 {
                     downloadDir = Path.Combine(AppContext.BaseDirectory, "downloads");
                 }
 
                 await Task.Run(() => SideloaderRCLONE.ScanLocalGames(downloadDir));
-                LoadGamesFromCache();
-                RefreshStatus = $"Scanned {Games.Count} games locally";
+                await InitListViewAsync();
             }
             catch (Exception ex)
             {
@@ -115,63 +130,190 @@ namespace AndroidSideloader.Desktop.ViewModels
             }
         }
 
-        private void LoadGamesFromCache()
+        private List<GameItemViewModel> BuildGameList()
         {
-            var items = SideloaderRCLONE.games
-                .Where(g => g.Length > SideloaderRCLONE.GameNameIndex)
-                .Select(CreateGameItem);
+            var result = new List<GameItemViewModel>();
+            if (SideloaderRCLONE.games.Count == 0) return result;
 
-            Games = new ObservableCollection<GameItemViewModel>(items);
+            var installedApps = _settings.InstalledApps
+                .Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // Parse installed versions from dumpsys if connected
+            var installedVersions = new Dictionary<string, ulong>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var dump = ADB.RunAdbCommandToString("shell dumpsys package", suppressLogging: true).Output;
+                string? currentPkg = null;
+                foreach (var rawLine in dump.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var line = rawLine.TrimStart();
+                    if (line.StartsWith("Package [", StringComparison.Ordinal))
+                    {
+                        var start = line.IndexOf('[');
+                        var end = line.IndexOf(']');
+                        if (start >= 0 && end > start)
+                            currentPkg = line.Substring(start + 1, end - start - 1);
+                        else
+                            currentPkg = null;
+                        continue;
+                    }
+                    if (currentPkg != null && line.StartsWith("versionCode=", StringComparison.Ordinal))
+                    {
+                        var after = line.Substring(12);
+                        int spaceIdx = after.IndexOf(' ');
+                        var digits = spaceIdx > 0 ? after.Substring(0, spaceIdx) : after;
+                        if (ulong.TryParse(digits, out var v))
+                        {
+                            if (installedApps.Contains(currentPkg))
+                                installedVersions[currentPkg] = v;
+                        }
+                        currentPkg = null;
+                    }
+                }
+            }
+            catch { }
+
+            // Precompute cloud max version per package
+            var cloudMaxVersion = new Dictionary<string, ulong>(StringComparer.OrdinalIgnoreCase);
+            foreach (var release in SideloaderRCLONE.games)
+            {
+                string pkg = release[SideloaderRCLONE.PackageNameIndex];
+                ulong v = 0;
+                try { v = ulong.Parse(StringUtilities.KeepOnlyNumbers(release[SideloaderRCLONE.VersionCodeIndex])); }
+                catch { v = 0; }
+                if (cloudMaxVersion.TryGetValue(pkg, out var existing))
+                { if (v > existing) cloudMaxVersion[pkg] = v; }
+                else
+                { cloudMaxVersion[pkg] = v; }
+            }
+
+            foreach (var release in SideloaderRCLONE.games)
+            {
+                var item = CreateGameItem(release, installedVersions, cloudMaxVersion);
+                if (item != null)
+                    result.Add(item);
+            }
+
+            return result;
         }
 
-        private GameItemViewModel CreateGameItem(string[] game)
+        private GameItemViewModel? CreateGameItem(string[] game,
+            Dictionary<string, ulong> installedVersions,
+            Dictionary<string, ulong> cloudMaxVersion)
         {
-            string name = game.Length > SideloaderRCLONE.GameNameIndex ? game[SideloaderRCLONE.GameNameIndex] : "Unknown";
-            string release = game.Length > SideloaderRCLONE.ReleaseNameIndex ? game[SideloaderRCLONE.ReleaseNameIndex] : "";
-            string package = game.Length > SideloaderRCLONE.PackageNameIndex ? game[SideloaderRCLONE.PackageNameIndex] : "";
-            string version = game.Length > SideloaderRCLONE.VersionNameIndex ? game[SideloaderRCLONE.VersionNameIndex] : "";
+            string gameName = game.Length > SideloaderRCLONE.GameNameIndex ? game[SideloaderRCLONE.GameNameIndex] : "";
+            string releaseName = game.Length > SideloaderRCLONE.ReleaseNameIndex ? game[SideloaderRCLONE.ReleaseNameIndex] : "";
+            string packageName = game.Length > SideloaderRCLONE.PackageNameIndex ? game[SideloaderRCLONE.PackageNameIndex] : "";
+            string versionCode = game.Length > SideloaderRCLONE.VersionCodeIndex ? game[SideloaderRCLONE.VersionCodeIndex] : "";
+            string versionName = game.Length > SideloaderRCLONE.VersionNameIndex ? game[SideloaderRCLONE.VersionNameIndex] : "";
+            string downloads = game.Length > SideloaderRCLONE.DownloadsIndex ? game[SideloaderRCLONE.DownloadsIndex] : "";
+            string lastUpdated = game.Length > 4 ? game[4] : "";
+            string sizeRaw = game.Length > 5 ? game[5] : "";
 
-            return new GameItemViewModel
+            double sizeMB = 0;
+            if (StringUtilities.TryParseDouble(sizeRaw, out sizeMB)) { }
+
+            string sizeText = sizeMB >= 1024 ? $"{sizeMB / 1024:F2} GB" : $"{sizeMB:F0} MB";
+            lastUpdated = lastUpdated.Replace(" UTC", "");
+
+            var item = new GameItemViewModel
             {
-                GameName = name,
-                ReleaseName = release,
-                PackageName = package,
-                Version = version
+                GameName = gameName,
+                ReleaseName = releaseName,
+                PackageName = packageName,
+                VersionCode = versionCode,
+                VersionName = versionName,
+                Downloads = downloads,
+                Size = sizeText,
+                LastUpdated = lastUpdated,
+                IsFavorite = _settings.FavoritedGames.Contains(releaseName)
             };
+
+            // Determine status
+            if (installedVersions.TryGetValue(packageName, out ulong installedVersion))
+            {
+                item.IsInstalled = true;
+                item.InstalledVersion = $"v{installedVersion}";
+
+                cloudMaxVersion.TryGetValue(packageName, out ulong cloudVersion);
+                if (installedVersion == cloudVersion)
+                {
+                    item.StatusColor = "#3c91e6"; // installed, up to date
+                }
+                else if (installedVersion < cloudVersion)
+                {
+                    item.UpdateAvailable = true;
+                    item.StatusColor = "#4daa57"; // update available
+                }
+                else
+                {
+                    item.IsDonateGame = true;
+                    item.StatusColor = "#cb9cf2"; // newer than list
+                }
+            }
+            else
+            {
+                item.StatusColor = "#ffffff";
+            }
+
+            // Mark downloaded if in download dir
+            string downloadDir = _settings.CustomDownloadDir ? _settings.DownloadDir : AppContext.BaseDirectory;
+            string gameDir = Path.Combine(downloadDir, releaseName);
+            if (Directory.Exists(gameDir))
+            {
+                item.IsDownloaded = true;
+                if (!item.IsInstalled)
+                    item.StatusColor = "#67c7b1";
+            }
+
+            return item;
         }
 
         [RelayCommand]
-        private async Task InstallSelectedGameAsync()
+        private void ToggleFavorite()
         {
             if (SelectedGame == null) return;
+            SelectedGame.IsFavorite = !SelectedGame.IsFavorite;
 
-            _mainWindow.StatusText = $"Installing {SelectedGame.GameName}...";
-
-            try
+            if (SelectedGame.IsFavorite)
             {
-                // TODO: implement full install flow (download + sideload)
-                await Task.Delay(500);
-                _mainWindow.StatusText = $"Installed {SelectedGame.GameName}";
+                if (!_settings.FavoritedGames.Contains(SelectedGame.ReleaseName))
+                {
+                    var list = _settings.FavoritedGames.ToList();
+                    list.Add(SelectedGame.ReleaseName);
+                    _settings.FavoritedGames = list.ToArray();
+                }
             }
-            catch (Exception ex)
+            else
             {
-                _mainWindow.StatusText = $"Install failed: {ex.Message}";
+                var list = _settings.FavoritedGames.ToList();
+                list.Remove(SelectedGame.ReleaseName);
+                _settings.FavoritedGames = list.ToArray();
             }
+            _settings.Save();
         }
-    }
 
-    public partial class GameItemViewModel : ObservableObject
-    {
-        [ObservableProperty]
-        private string _gameName = "";
+        [RelayCommand]
+        private void AddToQueue()
+        {
+            if (SelectedGame == null) return;
+            double sizeMB = 0;
+            if (double.TryParse(SelectedGame.Size.Replace(" GB", "").Replace(" MB", ""), out var parsed))
+            {
+                if (SelectedGame.Size.Contains("GB")) sizeMB = parsed * 1024;
+                else sizeMB = parsed;
+            }
+            _mainWindow.QueueViewModel.AddToQueue(SelectedGame.ReleaseName, SelectedGame.GameName, SelectedGame.PackageName, sizeMB);
+            _mainWindow.StatusText = $"Added {SelectedGame.GameName} to queue";
+        }
 
-        [ObservableProperty]
-        private string _releaseName = "";
-
-        [ObservableProperty]
-        private string _packageName = "";
-
-        [ObservableProperty]
-        private string _version = "";
+        [RelayCommand]
+        private void ToggleView()
+        {
+            IsGalleryView = !IsGalleryView;
+            _settings.UseGalleryView = IsGalleryView;
+            _settings.Save();
+        }
     }
 }

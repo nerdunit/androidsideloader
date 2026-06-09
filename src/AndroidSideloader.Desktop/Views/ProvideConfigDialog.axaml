@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="460" Height="340"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#181d24"
+        Title="Provide Config"
+        x:Class="AndroidSideloader.Desktop.Views.ProvideConfigDialog">
+
+  <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="16">
+    <TextBlock Grid.Row="0" Text="{Binding HintText}" Foreground="White" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+    <TextBox Grid.Row="1" Text="{Binding ConfigText, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
+             Watermark="Paste config here, or enter a URL..." FontSize="11"
+             Background="#1e232a" Foreground="White" CaretBrush="White"
+             BorderBrush="#333" BorderThickness="1" Padding="8"/>
+
+    <TextBlock Grid.Row="2" Text="{Binding ErrorText}" Foreground="#f52f57" FontSize="11" TextWrapping="Wrap"
+               IsVisible="{Binding HasError}" Margin="0,4"/>
+
+    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,8,0,0">
+      <Button Content="Browse..." Click="Browse_Click"/>
+      <Button Content="OK" Click="Ok_Click" IsDefault="True"/>
+      <Button Content="Cancel" Click="Cancel_Click" IsCancel="True"/>
+    </StackPanel>
+  </Grid>
+
+</Window>

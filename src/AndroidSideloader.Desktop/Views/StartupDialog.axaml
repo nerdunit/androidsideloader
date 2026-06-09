@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="420" Height="360"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="#14181d"
+        Title="Rookie Sideloader"
+        x:Class="AndroidSideloader.Desktop.Views.StartupDialog">
+
+  <Border Background="#181d24" Margin="8" CornerRadius="8" Padding="16">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+      <!-- Title + close -->
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" Text="Rookie Sideloader" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+        <Button Grid.Column="1" Content="x" Width="28" Height="28" Click="CloseButton_Click"
+                Background="Transparent" Foreground="White" FontSize="12" Padding="0"
+                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+      </Grid>
+
+      <TextBlock Grid.Row="1" Text="{Binding VersionText}" FontSize="11" Foreground="#888" Margin="0,2,0,8"/>
+
+      <!-- Error / existing config labels -->
+      <StackPanel Grid.Row="2" Spacing="4" Margin="0,0,0,8">
+        <TextBlock Text="{Binding ErrorText}" Foreground="#f52f57" FontSize="11" TextWrapping="Wrap"
+                   IsVisible="{Binding HasError}"/>
+        <TextBlock Text="&#x2714; Public config found - click here to reconnect" Foreground="#52cbaa" FontSize="11"
+                   Cursor="Hand" PointerPressed="ExistingConfig_Click"
+                   IsVisible="{Binding HasExistingConfig}"/>
+        <TextBlock Text="&#x2714; Rclone config found - click here to reconnect" Foreground="#52cbaa" FontSize="11"
+                   Cursor="Hand" PointerPressed="ExistingRclone_Click"
+                   IsVisible="{Binding HasExistingRcloneConfig}"/>
+      </StackPanel>
+
+      <!-- Buttons -->
+      <StackPanel Grid.Row="3" Spacing="8" VerticalAlignment="Center">
+        <Border Background="#1e232a" CornerRadius="6" Padding="12,10"
+                PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited"
+                PointerPressed="ProvidePublic_Click" Cursor="Hand">
+          <TextBlock Text="PROVIDE PUBLIC CONFIG" Foreground="#52cbaa" FontWeight="SemiBold" FontSize="12"
+                     HorizontalAlignment="Center"/>
+        </Border>
+
+        <Border Background="#1e232a" CornerRadius="6" Padding="12,10"
+                PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited"
+                PointerPressed="ProvideRclone_Click" Cursor="Hand">
+          <TextBlock Text="PROVIDE RCLONE CONFIG" Foreground="#52cbaa" FontWeight="SemiBold" FontSize="12"
+                     HorizontalAlignment="Center"/>
+        </Border>
+
+        <Border Height="1" Background="#333" Margin="0,4"/>
+
+        <Border Background="#1e232a" CornerRadius="6" Padding="12,10"
+                PointerEntered="Button_PointerEntered" PointerExited="Button_PointerExited"
+                PointerPressed="Offline_Click" Cursor="Hand">
+          <TextBlock Text="USE LOCAL LIBRARY" Foreground="#a0a5af" FontWeight="SemiBold" FontSize="12"
+                     HorizontalAlignment="Center"/>
+        </Border>
+      </StackPanel>
+
+      <TextBlock Grid.Row="4" Text="or continue offline using your local library" FontSize="10" Foreground="#777"
+                 HorizontalAlignment="Center" Margin="0,8,0,0"/>
+    </Grid>
+  </Border>
+
+</Window>

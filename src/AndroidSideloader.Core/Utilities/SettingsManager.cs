@@ -126,6 +126,9 @@ namespace AndroidSideloader.Utilities
                 };
 
                 var json = JsonConvert.SerializeObject(this, settings);
+                string? dir = Path.GetDirectoryName(settingsFilePath);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
                 File.WriteAllText(settingsFilePath, json);
             }
             catch (Exception ex)
