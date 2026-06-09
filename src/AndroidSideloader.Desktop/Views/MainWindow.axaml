@@ -1,0 +1,76 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:AndroidSideloader.Desktop.ViewModels"
+        xmlns:conv="clr-namespace:AndroidSideloader.Desktop.Converters"
+        xmlns:views="clr-namespace:AndroidSideloader.Desktop.Views"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+        x:Class="AndroidSideloader.Desktop.Views.MainWindow"
+        Title="Android Sideloader"
+        Width="1200" Height="800"
+        Background="#151515">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid ColumnDefinitions="200,*">
+        <!-- Sidebar -->
+        <Border Grid.Column="0" Background="#1a1a1a" Padding="8">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Android Sideloader" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,8"/>
+                <TextBlock Text="Cross-Platform" FontSize="10" Foreground="#888" Margin="0,-4,0,12"/>
+
+                <Button Content="Games"
+                        Command="{Binding ShowGamesCommand}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"/>
+                <Button Content="Device"
+                        Command="{Binding ShowDeviceCommand}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"/>
+                <Button Content="Refresh Device"
+                        Command="{Binding RefreshDeviceStatusCommand}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"/>
+
+                <Border Height="1" Background="#333" Margin="0,12"/>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Device Status" FontSize="10" Foreground="#666" TextDecorations="Underline"/>
+                    <Ellipse Width="10" Height="10"
+                             Fill="{Binding IsDeviceConnected, Converter={StaticResource BoolToBrushConverter}}"
+                             HorizontalAlignment="Left"/>
+                    <TextBlock Text="{Binding DeviceStatus}" FontSize="11" Foreground="#aaa" TextWrapping="Wrap"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Main content -->
+        <Grid Grid.Column="1" RowDefinitions="*,Auto">
+            <ContentControl Grid.Row="0" Content="{Binding CurrentView}" Margin="8">
+                <ContentControl.DataTemplates>
+                    <DataTemplate DataType="vm:GamesViewModel">
+                        <views:GamesView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:DeviceViewModel">
+                        <views:DeviceView/>
+                    </DataTemplate>
+                </ContentControl.DataTemplates>
+            </ContentControl>
+
+            <!-- Status bar -->
+            <Border Grid.Row="1" Background="#1a1a1a" Padding="8,4">
+                <TextBlock Text="{Binding StatusText}" Foreground="#888" FontSize="11"/>
+            </Border>
+        </Grid>
+    </Grid>
+
+    <Window.Resources>
+        <conv:BoolToBrushConverter x:Key="BoolToBrushConverter"
+                                    TrueBrush="#4caf50"
+                                    FalseBrush="#f44336"/>
+    </Window.Resources>
+
+</Window>

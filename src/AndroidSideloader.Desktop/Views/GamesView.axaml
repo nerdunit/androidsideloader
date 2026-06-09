@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="AndroidSideloader.Desktop.Views.GamesView">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+        <!-- Toolbar -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8">
+            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     Watermark="Search games..."
+                     Width="250"/>
+            <Button Content="Refresh"
+                    Command="{Binding RefreshGamesCommand}"
+                    IsEnabled="{Binding !IsRefreshing}"/>
+            <Button Content="Scan Local"
+                    Command="{Binding ScanLocalGamesCommand}"
+                    IsEnabled="{Binding !IsRefreshing}"/>
+            <TextBlock Text="{Binding RefreshStatus}"
+                       VerticalAlignment="Center"
+                       Foreground="#888"/>
+        </StackPanel>
+
+        <!-- Install bar -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="8,0,8,8">
+            <Button Content="Install Selected"
+                    Command="{Binding InstallSelectedGameCommand}"
+                    IsEnabled="{Binding SelectedGame, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+            <TextBlock Text="{Binding SelectedGame.GameName}"
+                       VerticalAlignment="Center"
+                       Foreground="#aaa"
+                       IsVisible="{Binding SelectedGame, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+        </StackPanel>
+
+        <!-- Game list -->
+        <DataGrid Grid.Row="2"
+                  ItemsSource="{Binding Games}"
+                  SelectedItem="{Binding SelectedGame}"
+                  IsReadOnly="True"
+                  AutoGenerateColumns="False"
+                  GridLinesVisibility="Horizontal"
+                  Margin="8">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Game Name"
+                                    Binding="{Binding GameName}"
+                                    Width="*"/>
+                <DataGridTextColumn Header="Release"
+                                    Binding="{Binding ReleaseName}"
+                                    Width="*"/>
+                <DataGridTextColumn Header="Package"
+                                    Binding="{Binding PackageName}"
+                                    Width="*"/>
+                <DataGridTextColumn Header="Version"
+                                    Binding="{Binding Version}"
+                                    Width="100"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+
+</UserControl>
