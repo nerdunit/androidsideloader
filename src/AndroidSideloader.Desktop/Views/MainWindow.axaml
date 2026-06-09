@@ -9,7 +9,8 @@
         x:Class="AndroidSideloader.Desktop.Views.MainWindow"
         Title="Android Sideloader"
         Width="1200" Height="800"
-        Background="#151515">
+        Background="#151515"
+        AllowDrop="True">
 
     <Design.DataContext>
         <vm:MainWindowViewModel/>
@@ -36,6 +37,10 @@
                         HorizontalContentAlignment="Left"/>
                 <Button Content="Settings"
                         Command="{Binding ShowSettingsCommand}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"/>
+                <Button Content="ADB Command"
+                        Command="{Binding OpenAdbCommandCommand}"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Left"/>
                 <Button Content="Refresh Device"

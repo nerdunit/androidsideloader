@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using AndroidSideloader.Desktop.ViewModels;
 using AndroidSideloader.Desktop.Views;
 using AndroidSideloader.Utilities;
@@ -26,6 +27,18 @@ namespace AndroidSideloader.Desktop
             }
 
             base.OnFrameworkInitializationCompleted();
+        }
+
+        private void ApplyThemeSettings()
+        {
+            try
+            {
+                var settings = SettingsManager.Instance;
+                var fontFamily = FontFamily.Parse(settings.FontFamily);
+                Resources["FontFamilyKey"] = fontFamily;
+                Resources["FontSizeKey"] = settings.FontSize;
+            }
+            catch { }
         }
 
         private async Task RunStartupAsync(IClassicDesktopStyleApplicationLifetime desktop)
@@ -107,7 +120,19 @@ namespace AndroidSideloader.Desktop
                         bool hasUpdate = await Updater.CheckUpdateAsync();
                         if (hasUpdate)
                         {
-                            // TODO: show update dialog
+                            var updateDlg = new UpdateDialog("A new version of Android Sideloader is available.");
+                            updateDlg.Show();
+                            var updateTcs = new TaskCompletionSource<bool>();
+                            updateDlg.Closed += (s, e) =>
+                            {
+                                if (s is UpdateDialog dlg)
+                                    updateTcs.TrySetResult(dlg.ShouldDownload);
+                            };
+                            bool shouldDownload = await updateTcs.Task;
+                            if (shouldDownload)
+                            {
+                                // TODO: trigger update download
+                            }
                         }
                     }
                     catch { }
@@ -131,8 +156,18 @@ namespace AndroidSideloader.Desktop
                 }
 
                 // Show main window
-                desktop.MainWindow = new MainWindow();
-                desktop.MainWindow.Show();
+                var mainWindow = new MainWindow();
+                desktop.MainWindow = mainWindow;
+                mainWindow.Show();
+
+                // Trigger game list load
+                if (mainWindow.DataContext is MainWindowViewModel vm)
+                {
+                    vm.GamesViewModel.RefreshGamesCommand.Execute(null);
+                }
+
+                // Apply theme settings
+                ApplyThemeSettings();
             }
             catch (Exception ex)
             {

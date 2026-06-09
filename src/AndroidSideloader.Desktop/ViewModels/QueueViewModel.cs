@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -97,19 +99,55 @@ namespace AndroidSideloader.Desktop.ViewModels
 
             try
             {
-                // Simulate download progress for now
-                for (int i = 0; i <= 100; i += 10)
+                // Download via ChunkedDownloader
+                string downloadDir = _settings.CustomDownloadDir ? _settings.DownloadDir : AppContext.BaseDirectory;
+                string gameDir = Path.Combine(downloadDir, item.ReleaseName);
+                Directory.CreateDirectory(gameDir);
+
+                if (AppState.PublicConfigFile != null && !string.IsNullOrEmpty(AppState.PublicConfigFile.BaseUri))
                 {
-                    ct.ThrowIfCancellationRequested();
-                    item.Progress = i;
-                    await Task.Delay(200, ct);
+                    // Public config download
+                    string gameNameHash = ComputeHash(item.ReleaseName + "\n");
+                    string chunkedUrl = AppState.PublicConfigFile.BaseUri.TrimEnd('/') + "/" + gameNameHash;
+                    using var downloader = new ChunkedDownloader(chunkedUrl, gameDir);
+                    var progress = new Progress<DownloadProgressInfo>(info =>
+                    {
+                        item.Progress = info.OverallPercent;
+                    });
+                    await downloader.DownloadAllAsync(progress, ct);
+                }
+                else if (!string.IsNullOrEmpty(AppState.CurrentRemote))
+                {
+                    // Rclone config download
+                    string remotePath = $"{AppState.CurrentRemote}:{SideloaderRCLONE.RcloneGamesFolder}/{item.ReleaseName}";
+                    string configPath = Path.Combine(AppContext.BaseDirectory, "rclone", "download.config");
+                    string? password = null; // TODO: get from RCLONE if needed
+                    using var downloader = new ChunkedDownloader(remotePath, gameDir, configPath, password);
+                    var progress = new Progress<DownloadProgressInfo>(info =>
+                    {
+                        item.Progress = info.OverallPercent;
+                    });
+                    await downloader.DownloadAllAsync(progress, ct);
+                }
+
+                // Extract 7z if present
+                var sevenZFiles = Directory.GetFiles(gameDir, "*.7z*", SearchOption.TopDirectoryOnly);
+                if (sevenZFiles.Length > 0)
+                {
+                    StatusText = $"Extracting {item.GameName}...";
+                    string? password = AppState.PublicConfigFile?.Password;
+                    if (!string.IsNullOrEmpty(password))
+                    {
+                        Utilities.Zip.ExtractFile(sevenZFiles[0], downloadDir, password);
+                    }
+                    else
+                    {
+                        Utilities.Zip.ExtractFile(sevenZFiles[0], downloadDir);
+                    }
                 }
 
                 item.Status = QueueStatus.Installing;
                 StatusText = $"Installing {item.GameName}...";
-
-                string downloadDir = _settings.CustomDownloadDir ? _settings.DownloadDir : AppContext.BaseDirectory;
-                string gameDir = Path.Combine(downloadDir, item.ReleaseName);
 
                 // Find APK
                 string? apkPath = Directory.GetFiles(gameDir, "*.apk", SearchOption.AllDirectories).FirstOrDefault();
@@ -172,6 +210,17 @@ namespace AndroidSideloader.Desktop.ViewModels
                 item.ErrorMessage = ex.Message;
                 StatusText = $"Failed: {ex.Message}";
             }
+        }
+
+        private static string ComputeHash(string input)
+        {
+            using var md5 = MD5.Create();
+            byte[] bytes = Encoding.UTF8.GetBytes(input);
+            byte[] hash = md5.ComputeHash(bytes);
+            var sb = new StringBuilder();
+            foreach (byte b in hash)
+                sb.Append(b.ToString("x2"));
+            return sb.ToString();
         }
     }
 

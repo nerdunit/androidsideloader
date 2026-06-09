@@ -76,6 +76,13 @@ namespace AndroidSideloader.Desktop.ViewModels
         }
 
         [RelayCommand]
+        private void OpenAdbCommand()
+        {
+            var dialog = new Views.AdbCommandDialog();
+            dialog.Show();
+        }
+
+        [RelayCommand]
         private async Task RefreshDeviceStatusAsync()
         {
             try

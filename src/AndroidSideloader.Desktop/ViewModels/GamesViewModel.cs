@@ -38,6 +38,9 @@ namespace AndroidSideloader.Desktop.ViewModels
         [ObservableProperty]
         private bool _isGalleryView;
 
+        [ObservableProperty]
+        private string? _selectedGameNotes;
+
         public GamesViewModel(MainWindowViewModel mainWindow)
         {
             _mainWindow = mainWindow;
@@ -52,6 +55,37 @@ namespace AndroidSideloader.Desktop.ViewModels
         partial void OnShowFavoritesOnlyChanged(bool value)
         {
             FilterGames();
+        }
+
+        partial void OnSelectedGameChanged(GameItemViewModel? value)
+        {
+            LoadGameNotes(value);
+        }
+
+        private void LoadGameNotes(GameItemViewModel? game)
+        {
+            if (game == null)
+            {
+                SelectedGameNotes = null;
+                return;
+            }
+
+            try
+            {
+                string notesPath = Path.Combine(SideloaderRCLONE.NotesFolder, game.ReleaseName + ".txt");
+                if (File.Exists(notesPath))
+                {
+                    SelectedGameNotes = File.ReadAllText(notesPath);
+                }
+                else
+                {
+                    SelectedGameNotes = null;
+                }
+            }
+            catch
+            {
+                SelectedGameNotes = null;
+            }
         }
 
         private void FilterGames()
@@ -314,6 +348,18 @@ namespace AndroidSideloader.Desktop.ViewModels
             IsGalleryView = !IsGalleryView;
             _settings.UseGalleryView = IsGalleryView;
             _settings.Save();
+        }
+
+        [RelayCommand]
+        private void CopyPackageName()
+        {
+            if (SelectedGame == null) return;
+            try
+            {
+                // TODO: implement clipboard copy when Avalonia clipboard API is available
+                _mainWindow.StatusText = $"Package: {SelectedGame.PackageName}";
+            }
+            catch { }
         }
     }
 }

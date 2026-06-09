@@ -1,11 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="AndroidSideloader.Desktop.Views.GamesView">
+             x:Class="AndroidSideloader.Desktop.Views.GamesView"
+             Focusable="True">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
         <!-- Toolbar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8">
-            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+            <TextBox x:Name="SearchTextBox"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                      Watermark="Search games..."
                      Width="250"/>
             <Button Content="Refresh"
@@ -34,43 +36,100 @@
                        IsVisible="False"/>
         </StackPanel>
 
-        <!-- Game list -->
-        <DataGrid Grid.Row="2"
-                  ItemsSource="{Binding Games}"
-                  SelectedItem="{Binding SelectedGame}"
-                  IsReadOnly="True"
-                  AutoGenerateColumns="False"
-                  GridLinesVisibility="Horizontal"
-                  Margin="8">
-            <DataGrid.Styles>
-                <Style Selector="DataGridRow">
-                    <Setter Property="Foreground" Value="{Binding StatusColor, Converter={StaticResource HexToBrushConverter}}"/>
-                </Style>
-            </DataGrid.Styles>
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Game Name"
-                                    Binding="{Binding GameName}"
-                                    Width="2*"/>
-                <DataGridTextColumn Header="Release"
-                                    Binding="{Binding ReleaseName}"
-                                    Width="2*"/>
-                <DataGridTextColumn Header="Package"
-                                    Binding="{Binding PackageName}"
-                                    Width="*"/>
-                <DataGridTextColumn Header="Version"
-                                    Binding="{Binding VersionCode}"
-                                    Width="100"/>
-                <DataGridTextColumn Header="Size"
-                                    Binding="{Binding Size}"
-                                    Width="80"/>
-                <DataGridTextColumn Header="Updated"
-                                    Binding="{Binding LastUpdated}"
-                                    Width="100"/>
-                <DataGridTextColumn Header="Rank"
-                                    Binding="{Binding Downloads}"
-                                    Width="60"/>
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- Game list / Gallery -->
+        <Panel Grid.Row="2" Margin="8">
+            <DataGrid IsVisible="{Binding !IsGalleryView}"
+                      ItemsSource="{Binding Games}"
+                      SelectedItem="{Binding SelectedGame}"
+                      IsReadOnly="True"
+                      AutoGenerateColumns="False"
+                      GridLinesVisibility="Horizontal">
+                <DataGrid.Styles>
+                    <Style Selector="DataGridRow">
+                        <Setter Property="Foreground" Value="{Binding StatusColor, Converter={StaticResource HexToBrushConverter}}"/>
+                    </Style>
+                </DataGrid.Styles>
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Add to Queue" Command="{Binding AddToQueueCommand}"/>
+                        <MenuItem Header="Toggle Favorite" Command="{Binding ToggleFavoriteCommand}"/>
+                        <MenuItem Header="Copy Package Name" Command="{Binding CopyPackageNameCommand}"/>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Game Name"
+                                        Binding="{Binding GameName}"
+                                        Width="2*"/>
+                    <DataGridTextColumn Header="Release"
+                                        Binding="{Binding ReleaseName}"
+                                        Width="2*"/>
+                    <DataGridTextColumn Header="Package"
+                                        Binding="{Binding PackageName}"
+                                        Width="*"/>
+                    <DataGridTextColumn Header="Version"
+                                        Binding="{Binding VersionCode}"
+                                        Width="100"/>
+                    <DataGridTextColumn Header="Size"
+                                        Binding="{Binding Size}"
+                                        Width="80"/>
+                    <DataGridTextColumn Header="Updated"
+                                        Binding="{Binding LastUpdated}"
+                                        Width="100"/>
+                    <DataGridTextColumn Header="Rank"
+                                        Binding="{Binding Downloads}"
+                                        Width="60"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <ScrollViewer IsVisible="{Binding IsGalleryView}">
+                <ItemsControl ItemsSource="{Binding Games}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="180" Height="140" Margin="6"
+                                    Background="#1e232a" CornerRadius="6"
+                                    BorderBrush="{Binding StatusColor, Converter={StaticResource HexToBrushConverter}}"
+                                    BorderThickness="1"
+                                    PointerPressed="GalleryItem_PointerPressed">
+                                <Grid RowDefinitions="*,Auto">
+                                    <Image Grid.Row="0" Source="{Binding ThumbnailPath}"
+                                           Stretch="UniformToFill"
+                                           IsVisible="{Binding ThumbnailPath, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                    <Border Grid.Row="0" Background="#1e232a"
+                                            IsVisible="{Binding ThumbnailPath, Converter={x:Static ObjectConverters.IsNull}}">
+                                        <TextBlock Text="No Image" Foreground="#666"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Grid.Row="1" Text="{Binding GameName}"
+                                               Foreground="{Binding StatusColor, Converter={StaticResource HexToBrushConverter}}"
+                                               FontSize="11"
+                                               TextWrapping="Wrap"
+                                               MaxLines="2"
+                                               TextTrimming="CharacterEllipsis"
+                                               Margin="4"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Panel>
+
+        <!-- Notes panel -->
+        <Border Grid.Row="3" Background="#1a1a1a" Margin="8" CornerRadius="4"
+                IsVisible="{Binding SelectedGameNotes, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <ScrollViewer MaxHeight="120">
+                <TextBlock Text="{Binding SelectedGameNotes}"
+                           Foreground="#aaa"
+                           TextWrapping="Wrap"
+                           Margin="8"/>
+            </ScrollViewer>
+        </Border>
     </Grid>
 
 </UserControl>

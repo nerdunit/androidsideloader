@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="400" Height="200"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#181d24"
+        Title="Update Available"
+        x:Class="AndroidSideloader.Desktop.Views.UpdateDialog">
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+        <TextBlock Grid.Row="0" Text="Update Available" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" Text="{Binding UpdateMessage}" Foreground="#aaa" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Content="Download" Click="Download_Click" IsDefault="True"/>
+            <Button Content="Later" Click="Later_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+
+</Window>

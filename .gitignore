@@ -1,9 +1,28 @@
-*.pdb
-*.xml
-*.xsd
-AndroidSideloader.csproj.user
+# Build outputs
+**/bin/
+**/obj/
+**/publish/
+
+# IDE
+.vs/
+.idea/
+*.csproj.user
+*.sln.DotSettings.user
+
+# Dependencies
+packages/
+
+# Runtime / logs
+*.log
+debuglog.txt
+crashlog.txt
+
+# Config that may contain secrets
 .env
 
-.vs/
-bin/
-packages/
+# OS
+.DS_Store
+Thumbs.db
+
+# User-specific settings
+settings.json
