@@ -3265,7 +3265,7 @@ namespace AndroidSideloader
                         }
                         catch (Exception ex)
                         {
-                            Logger.Log($"Exception occured in ProcessNewApps: {ex.Message}", LogLevel.ERROR);
+                            Logger.Log($"Exception occurred in ProcessNewApps: {ex.Message}", LogLevel.ERROR);
                         }
                     }
                 }
