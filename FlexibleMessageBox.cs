@@ -843,9 +843,22 @@ namespace JR.Utils.GUI.Forms
             {
                 FlexibleMessageBoxForm flexibleMessageBoxForm = new FlexibleMessageBoxForm
                 {
-                    ShowInTaskbar = false,
+                    // Show in the taskbar and keep the prompt above other windows so it can
+                    // never hide behind another app (e.g. a browser/IDE) and leave the disabled
+                    // main window looking "frozen" while it silently waits for an answer.
+                    ShowInTaskbar = true,
+                    TopMost = true,
                     CaptionText = caption,
                     MessageText = text
+                };
+                flexibleMessageBoxForm.Shown += (s, e) =>
+                {
+                    try
+                    {
+                        flexibleMessageBoxForm.BringToFront();
+                        flexibleMessageBoxForm.Activate();
+                    }
+                    catch { }
                 };
                 flexibleMessageBoxForm.FlexibleMessageBoxFormBindingSource.DataSource = flexibleMessageBoxForm;
                 flexibleMessageBoxForm.titleLabel.Text = caption;

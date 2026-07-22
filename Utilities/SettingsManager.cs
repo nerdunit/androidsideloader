@@ -123,7 +123,13 @@ namespace AndroidSideloader.Utilities
         public bool CustomDownloadDir { get; set; } = false;
         public bool CustomBackupDir { get; set; } = false;
         public string BackupDir { get; set; } = string.Empty;
-        public bool SingleThreadMode { get; set; } = true;
+        public bool SingleThreadMode { get; set; } = false;
+        // Number of download parts fetched in parallel when multithreading is enabled.
+        // Ignored when SingleThreadMode is on.
+        public int DownloadThreads { get; set; } = 6;
+        // Number of OBB files uploaded concurrently over SFTP (FileZilla-style queue).
+        // Kept modest so the on-device sshd / FUSE storage is not overwhelmed.
+        public int SftpThreads { get; set; } = 3;
         public bool VirtualFilesystemCompatibility { get; set; } = false;
         public bool UpdateSettings { get; set; } = true;
         public string UUID { get; set; } = Guid.NewGuid().ToString();
@@ -140,6 +146,16 @@ namespace AndroidSideloader.Utilities
         public bool UseGalleryView { get; set; } = true;
         public int GalleryTileSize { get; set; } = 100;
         public string ConfigUrl { get; set; } = string.Empty;
+
+        // SFTP fast transfers (rooted headsets running an SSH server).
+        // Empty host = auto-detect from ADB; port 0 = probe 22, 8022, 2222;
+        // empty key path = try ~/.ssh/quest_root, id_ed25519, id_rsa.
+        public bool EnableSftpTransfers { get; set; } = true;
+        public string SftpHost { get; set; } = string.Empty;
+        public int SftpPort { get; set; } = 0;
+        public string SftpUsername { get; set; } = "root";
+        public string SftpPassword { get; set; } = string.Empty;
+        public string SftpPrivateKeyPath { get; set; } = string.Empty;
 
         // Window state persistence
         public int WindowX { get; set; } = -1;
@@ -268,7 +284,9 @@ namespace AndroidSideloader.Utilities
             CustomDownloadDir = false;
             CustomBackupDir = false;
             BackupDir = string.Empty;
-            SingleThreadMode = true;
+            SingleThreadMode = false;
+            DownloadThreads = 6;
+            SftpThreads = 3;
             VirtualFilesystemCompatibility = false;
             UpdateSettings = true;
             UUID = Guid.NewGuid().ToString();
@@ -285,6 +303,12 @@ namespace AndroidSideloader.Utilities
             UseGalleryView = true;
             GalleryTileSize = 100;
             ConfigUrl = string.Empty;
+            EnableSftpTransfers = true;
+            SftpHost = string.Empty;
+            SftpPort = 0;
+            SftpUsername = "root";
+            SftpPassword = string.Empty;
+            SftpPrivateKeyPath = string.Empty;
             WindowX = -1;
             WindowY = -1;
             WindowWidth = -1;

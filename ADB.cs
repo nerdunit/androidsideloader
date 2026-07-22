@@ -72,7 +72,7 @@ namespace AndroidSideloader
             return _currentDevice;
         }
 
-        public static ProcessOutput RunAdbCommandToString(string command, bool suppressLogging = false)
+        public static ProcessOutput RunAdbCommandToString(string command, bool suppressLogging = false, int timeoutMs = 0)
         {
             if (!File.Exists(adbFilePath))
             {
@@ -101,7 +101,30 @@ namespace AndroidSideloader
             }
 
             bool isConnectCommand = command.Contains("connect");
-            int timeoutMs = isConnectCommand ? 5000 : -1; // 5 second timeout for connect commands
+            // Large transfers and on-device backup/restore prompts can legitimately run
+            // for a long time, so they must never be force-killed. Every other shell
+            // command gets a safety timeout so a wedged device command (e.g. Android's
+            // `df` blocking on an unresponsive mount) can't freeze the app indefinitely.
+            bool isLongOp = command.Contains("pull") || command.Contains("push")
+                            || command.Contains("backup") || command.Contains("restore")
+                            || command.Contains("install");
+            int effectiveTimeout;
+            if (timeoutMs != 0)
+            {
+                effectiveTimeout = timeoutMs; // caller override (-1 = wait forever)
+            }
+            else if (isConnectCommand)
+            {
+                effectiveTimeout = 5000;
+            }
+            else if (isLongOp)
+            {
+                effectiveTimeout = -1;
+            }
+            else
+            {
+                effectiveTimeout = 45000;
+            }
 
             using (Process adb = new Process())
             {
@@ -119,21 +142,30 @@ namespace AndroidSideloader
 
                 try
                 {
-                    if (isConnectCommand)
+                    if (effectiveTimeout > 0)
                     {
-                        // For connect commands, we use async reading with timeout to avoid blocking on TCP timeout
+                        // Async reads + a bounded wait so a wedged device command can't block
+                        // forever (also avoids the classic sequential stdout/stderr deadlock).
                         var outputTask = adb.StandardOutput.ReadToEndAsync();
                         var errorTask = adb.StandardError.ReadToEndAsync();
 
-                        bool exited = adb.WaitForExit(timeoutMs);
+                        bool exited = adb.WaitForExit(effectiveTimeout);
 
                         if (!exited)
                         {
                             try { adb.Kill(); } catch { }
                             adb.WaitForExit(1000);
-                            output = "Connection timed out";
-                            error = "cannot connect: Connection timed out";
-                            Logger.Log($"ADB connect command timed out after {timeoutMs}ms", LogLevel.WARNING);
+                            if (isConnectCommand)
+                            {
+                                output = "Connection timed out";
+                                error = "cannot connect: Connection timed out";
+                            }
+                            else
+                            {
+                                output = "";
+                                error = $"adb command timed out after {effectiveTimeout}ms";
+                            }
+                            Logger.Log($"ADB command timed out after {effectiveTimeout}ms: {command.Trim()}", LogLevel.WARNING);
                         }
                         else
                         {
@@ -144,7 +176,7 @@ namespace AndroidSideloader
                     }
                     else
                     {
-                        // For non-connect commands, read output normally
+                        // Long-running op (transfer/backup/restore/install): read to completion.
                         output = adb.StandardOutput.ReadToEnd();
                         error = adb.StandardError.ReadToEnd();
                     }
@@ -170,6 +202,78 @@ namespace AndroidSideloader
                 _ = Logger.Log(error, LogLevel.ERROR);
                 return new ProcessOutput(output, error);
             }
+        }
+
+        // Returns true if the `adb devices` output lists at least one usable device.
+        private static bool HasOnlineDevice(string devicesOutput)
+        {
+            if (string.IsNullOrEmpty(devicesOutput))
+            {
+                return false;
+            }
+
+            string[] lines = devicesOutput.Split('\n');
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                if (line.Length == 0)
+                {
+                    continue;
+                }
+                if (line.IndexOf("List of devices", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    continue;
+                }
+                if (line.IndexOf("unauthorized", StringComparison.OrdinalIgnoreCase) >= 0
+                    || line.IndexOf("offline", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    continue;
+                }
+                if (line.IndexOf("device", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // `adb devices` briefly reports nothing while the daemon is (re)starting - which
+        // happens whenever a different-version adb client (e.g. one in PATH) forces the
+        // server to kill and restart. Reading that transient empty result as a disconnect
+        // is what makes the UI flash "No Device Connected". This retries across the restart
+        // window so a server bounce never registers as a disconnect. Call off the UI thread.
+        public static ProcessOutput GetDevicesResilient(int maxAttempts = 4, int delayMs = 600)
+        {
+            ProcessOutput result = new ProcessOutput("", "");
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                result = RunAdbCommandToString("devices", suppressLogging: true);
+                if (HasOnlineDevice(result.Output))
+                {
+                    return result;
+                }
+
+                string combined = (result.Output ?? "") + (result.Error ?? "");
+                bool daemonRestarting =
+                    combined.IndexOf("daemon not running", StringComparison.OrdinalIgnoreCase) >= 0
+                    || combined.IndexOf("daemon started", StringComparison.OrdinalIgnoreCase) >= 0
+                    || combined.IndexOf("killing", StringComparison.OrdinalIgnoreCase) >= 0
+                    || combined.IndexOf("doesn't match this client", StringComparison.OrdinalIgnoreCase) >= 0
+                    || combined.IndexOf("cannot connect to daemon", StringComparison.OrdinalIgnoreCase) >= 0
+                    || combined.IndexOf("starting now", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                // If the daemon is up and simply reports no device, don't keep waiting.
+                if (!daemonRestarting && attempt >= 1)
+                {
+                    break;
+                }
+
+                if (attempt < maxAttempts - 1)
+                {
+                    System.Threading.Thread.Sleep(delayMs);
+                }
+            }
+            return result;
         }
 
         // Executes a shell command on the device.
@@ -292,6 +396,25 @@ namespace AndroidSideloader
             {
                 Logger.Log($"SideloadWithProgressAsync error: {ex.Message}", LogLevel.ERROR);
 
+                // AdvancedSharpAdbClient throws "An unknown error occurred." whenever it cannot
+                // parse pm install's result - which frequently happens even though the install
+                // actually succeeded (a connection blip right after install, unusual pm output).
+                // Verify against the device before treating it as a failure.
+                try
+                {
+                    if (VerifyInstalled(path, packagename))
+                    {
+                        Logger.Log($"{gameName}: install reported '{ex.Message}', but the package is present on the device with a matching version - treating as success.", LogLevel.WARNING);
+                        progressCallback?.Invoke(100, null);
+                        statusCallback?.Invoke("");
+                        return new ProcessOutput($"{gameName}: Success (verified on device)\n");
+                    }
+                }
+                catch (Exception vex)
+                {
+                    Logger.Log($"Install verification failed: {vex.Message}", LogLevel.WARNING);
+                }
+
                 // Signature mismatches and version downgrades can be fixed by reinstalling
                 bool isReinstallEligible = ex.Message.Contains("signatures do not match") ||
                                            ex.Message.Contains("INSTALL_FAILED_VERSION_DOWNGRADE") ||
@@ -382,6 +505,68 @@ namespace AndroidSideloader
             }
         }
 
+        // Confirms an APK actually installed by checking the device, so a benign "unknown error"
+        // from the install-result parser isn't treated as a real failure. Reads the APK's package
+        // name + version code with aapt and requires the device to report the same version.
+        private static bool VerifyInstalled(string apkPath, string knownPackage)
+        {
+            try
+            {
+                string apkPkg = knownPackage;
+                string apkVc = null;
+
+                string aapt = Path.Combine(adbFolderPath, "aapt.exe");
+                if (File.Exists(aapt) && File.Exists(apkPath))
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = aapt,
+                        Arguments = $"dump badging \"{apkPath}\"",
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    };
+                    using (var p = Process.Start(psi))
+                    {
+                        string outp = p.StandardOutput.ReadToEnd();
+                        p.WaitForExit(10000);
+                        var pm = System.Text.RegularExpressions.Regex.Match(outp, @"package: name='([^']+)'");
+                        if (string.IsNullOrEmpty(apkPkg) && pm.Success) apkPkg = pm.Groups[1].Value;
+                        var vm = System.Text.RegularExpressions.Regex.Match(outp, @"versionCode='(\d+)'");
+                        if (vm.Success) apkVc = vm.Groups[1].Value;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(apkPkg)) return false;
+
+                // Is the package present on the device at all?
+                string listed = RunAdbCommandToString($"shell pm list packages {apkPkg}", true).Output ?? "";
+                if (listed.IndexOf("package:" + apkPkg, StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    return false;
+                }
+
+                // If we know the APK's version code, require the installed one to match so a
+                // failed *upgrade* (old version still present) is not mistaken for success.
+                if (!string.IsNullOrEmpty(apkVc))
+                {
+                    string devOut = RunAdbCommandToString($"shell \"dumpsys package {apkPkg} | grep versionCode\"", true).Output ?? "";
+                    var dm = System.Text.RegularExpressions.Regex.Match(devOut, @"versionCode=(\d+)");
+                    if (dm.Success)
+                    {
+                        return dm.Groups[1].Value == apkVc;
+                    }
+                }
+
+                return true; // present, versions unknown -> accept
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         // Copies OBB folder with real-time progress reporting using AdvancedSharpAdbClient
         public static async Task<ProcessOutput> CopyOBBWithProgressAsync(
             string localPath,
@@ -404,6 +589,15 @@ namespace AndroidSideloader
                     return new ProcessOutput("", "No device connected");
                 }
 
+                // Fast path: rooted headsets running an SSH server take OBBs over SFTP,
+                // which is far faster than adb push. Returns null when unavailable.
+                ProcessOutput sftpResult = await SFTP.TryCopyObbWithProgressAsync(
+                    localPath, progressCallback, statusCallback, gameName);
+                if (sftpResult != null)
+                {
+                    return sftpResult;
+                }
+
                 var client = GetAdbClient();
                 string remotePath = $"/sdcard/Android/obb/{folderName}";
 
@@ -419,7 +613,15 @@ namespace AndroidSideloader
                 long totalBytes = files.Sum(f => new FileInfo(f).Length);
                 long transferredBytes = 0;
 
+                // Surface each file in the transfer window (adb push path).
+                var pushItems = new System.Collections.Generic.Dictionary<string, TransferItem>(StringComparer.Ordinal);
+                foreach (var pf in files)
+                {
+                    pushItems[pf] = TransferQueue.Add(Path.GetFileName(pf), "Push", new FileInfo(pf).Length);
+                }
+
                 // Throttle UI updates to prevent lag
+                DateTime pushStartTime = DateTime.UtcNow;
                 DateTime lastProgressUpdate = DateTime.MinValue;
                 float lastReportedPercent = -1;
                 const int ThrottleMs = 100; // Update UI every 100ms
@@ -447,9 +649,17 @@ namespace AndroidSideloader
                         long fileSize = fileInfo.Length;
                         long capturedTransferredBytes = transferredBytes;
 
+                        TransferItem pushItem = pushItems[file];
+                        TransferQueue.SetState(pushItem, TransferState.Active);
+                        DateTime fileStart = DateTime.UtcNow;
+
                         Action<SyncProgressChangedEventArgs> progressHandler = (args) =>
                         {
                             long totalProgressBytes = capturedTransferredBytes + args.ReceivedBytesSize;
+
+                            double feSecs = (DateTime.UtcNow - fileStart).TotalSeconds;
+                            double fileMBps = feSecs > 0.1 ? (args.ReceivedBytesSize / 1048576.0) / feSecs : 0;
+                            TransferQueue.Report(pushItem, args.ReceivedBytesSize, fileMBps);
 
                             float overallPercent = totalBytes > 0
                                 ? (float)(totalProgressBytes * 100.0 / totalBytes)
@@ -474,7 +684,9 @@ namespace AndroidSideloader
                                 lastProgressUpdate = now2;
                                 lastReportedPercent = overallPercent;
                                 progressCallback?.Invoke(overallPercent, displayEta);
-                                statusCallback?.Invoke(fileName);
+                                double pushElapsed = (now2 - pushStartTime).TotalSeconds;
+                                double pushMBps = pushElapsed > 0.1 ? (totalProgressBytes / 1048576.0) / pushElapsed : 0;
+                                statusCallback?.Invoke($"{fileName} · {pushMBps:0.0} MB/s");
                             }
                         };
 
@@ -492,6 +704,8 @@ namespace AndroidSideloader
                             });
                         }
 
+                        TransferQueue.Report(pushItem, fileSize, 0);
+                        TransferQueue.SetState(pushItem, TransferState.Done);
                         transferredBytes += fileSize;
                     }
                 }

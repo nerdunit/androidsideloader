@@ -11,7 +11,7 @@ IF NOT EXIST %VSWHERE% SET VSWHERE="%ProgramFiles%\Microsoft Visual Studio\Insta
 
 SET MSBUILD=
 IF EXIST %VSWHERE% (
-    FOR /F "usebackq delims=" %%P IN (`%VSWHERE% -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe`) DO (
+    FOR /F "usebackq delims=" %%P IN (`%VSWHERE% -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe`) DO (
         SET MSBUILD="%%P"
         GOTO :msbuild_found
     )

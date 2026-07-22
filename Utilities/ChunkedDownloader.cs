@@ -366,8 +366,9 @@ namespace AndroidSideloader.Utilities
                     }
                 };
 
-                // Determine concurrency
-                int maxConcurrency = _settings.SingleThreadMode ? 1 : Math.Min(4, files.Count);
+                // Determine concurrency (files downloaded in parallel).
+                int desiredThreads = _settings.DownloadThreads > 0 ? _settings.DownloadThreads : 6;
+                int maxConcurrency = _settings.SingleThreadMode ? 1 : Math.Min(desiredThreads, Math.Max(1, files.Count));
                 var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
 
                 var tasks = new List<Task<string>>();
