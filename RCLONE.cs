@@ -35,7 +35,7 @@ namespace AndroidSideloader
                 }
                 catch (Exception ex)
                 {
-                    _ = Logger.Log($"Exception occured while attempting to shut down RCLONE with exception message: {ex.Message}", LogLevel.ERROR);
+                    _ = Logger.Log($"Exception occurred while attempting to shut down RCLONE with exception message: {ex.Message}", LogLevel.ERROR);
                 }
             }
         }
