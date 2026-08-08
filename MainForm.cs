@@ -960,6 +960,18 @@ namespace AndroidSideloader
             changeTitlebarToDevice();
             UpdateStatusLabels();
 
+            // If the app launched with sideloading already disabled, the startup scan
+            // above still ran CheckForDevice / listAppsBtn / UpdateQuestInfoPanel, so the
+            // panel shows a device-info snapshot (device list, battery, installed apps,
+            // storage). Now shut the ADB server down so it doesn't keep running in the
+            // background while sideloading is off (the per-second poll is already skipped
+            // in this mode). It restarts on demand once sideloading is re-enabled.
+            if (settings.NodeviceMode)
+            {
+                DeviceConnected = false;
+                _ = Task.Run(() => ADB.RunAdbCommandToString("kill-server"));
+            }
+
             // Load saved download queue and offer to resume
             LoadQueueFromSettings();
             if (gamesQueueList.Count > 0 && !isOffline)
@@ -7418,7 +7430,7 @@ function onYouTubeIframeAPIReady() {
             OpenDirectory(pathToOpen);
         }
 
-        private void btnNoDevice_Click(object sender, EventArgs e)
+        private async void btnNoDevice_Click(object sender, EventArgs e)
         {
             bool currentStatus = settings.NodeviceMode || false;
 
@@ -7442,10 +7454,62 @@ function onYouTubeIframeAPIReady() {
                 settings.NodeviceMode = true;
                 settings.DeleteAllAfterInstall = false;
                 btnNoDevice.Text = "ENABLE SIDELOADING";
+
+                // Sideloading is now off. Before we stop ADB, grab one last device-info
+                // snapshot (device list, battery, installed apps, storage) so the user
+                // can still see what's on the headset while in this mode, then shut the
+                // ADB server down so it stops running in the background (the device-check
+                // poll is also skipped while in this mode). It restarts on demand the
+                // next time a command runs after sideloading is re-enabled.
+                await SnapshotDeviceInfoThenStopAdb();
+
                 UpdateStatusLabels();
             }
 
             settings.Save();
+        }
+
+        /// <summary>
+        /// Pulls a fresh device-info snapshot (device list + battery, installed apps,
+        /// model/firmware/storage) so it stays visible on the panel even while
+        /// sideloading is disabled, then shuts the ADB server down so nothing keeps
+        /// running in the background. Called when the user turns sideloading off at
+        /// runtime; startup performs the equivalent snapshot as part of its device
+        /// scan before killing the server.
+        /// </summary>
+        private async Task SnapshotDeviceInfoThenStopAdb()
+        {
+            try
+            {
+                // Optimistically treat the device as connected so CheckForDevice and
+                // UpdateQuestInfoPanel actually query it for the snapshot even though
+                // sideloading may already be flagged off.
+                DeviceConnected = true;
+
+                // Device list + battery, and (via CheckForDevice) the quest info panel
+                // (model / firmware / storage).
+                _ = await CheckForDevice();
+
+                bool hasDevice = Devices.Count > 0 && Devices[0].Length > 1 && !Devices.Contains("unauthorized");
+                if (hasDevice)
+                {
+                    // Installed-apps list.
+                    await Task.Run(() => listAppsBtn());
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Failed to snapshot device info before stopping ADB: {ex.Message}", LogLevel.ERROR);
+            }
+            finally
+            {
+                // The snapshot is captured and the info panel keeps showing it. Now stop
+                // the ADB server so it isn't left running in the background while
+                // sideloading is disabled. It restarts on demand once sideloading is
+                // re-enabled and the poll resumes.
+                DeviceConnected = false;
+                await Task.Run(() => ADB.RunAdbCommandToString("kill-server"));
+            }
         }
 
         private async void btnLocalLibrary_Click(object sender, EventArgs e)
@@ -10208,6 +10272,11 @@ function onYouTubeIframeAPIReady() {
         }
         private async void timer_DeviceCheck(object sender, EventArgs e)
         {
+            // Skip the background "adb devices" poll entirely when the user has turned off
+            // sideloading. In that mode we deliberately don't touch ADB, so we avoid the
+            // per-second adb spawns that spike CPU on low-end machines.
+            if (settings.NodeviceMode) return;
+
             // Skip if a device is connected, we're in the middle of loading or other operations
             if (DeviceConnected || isLoading || isinstalling || isuploading) return;
 
