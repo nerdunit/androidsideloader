@@ -932,23 +932,6 @@ namespace AndroidSideloader
             // Initialize list view
             initListView(false);
 
-            // Cleanup in background
-            _ = Task.Run(() =>
-            {
-                string[] files = Directory.GetFiles(Environment.CurrentDirectory);
-                foreach (string file in files)
-                {
-                    string fileName = Path.GetFileName(file);
-                    if (!fileName.Contains(settings.CurrentLogName) &&
-                        !fileName.Contains(settings.CurrentCrashName) &&
-                        !fileName.Contains("debuglog") &&
-                        fileName.EndsWith(".txt"))
-                    {
-                        try { System.IO.File.Delete(file); } catch { }
-                    }
-                }
-            });
-
             searchTextBox.Enabled = true;
 
             if (isOffline)
